@@ -115,6 +115,15 @@ DEFAULT_CONFIG: Dict[str, object] = {
     "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
     "attacks": ["clean", "template", "template_plus_projection"],
     "retrievers": ["bm25", "dense"],
+    # ---- real-encoder backbone (retriever "st") ---------------------------
+    # "gte-base"   matches Zhao et al. (FARO), arXiv:2605.15790
+    # "contriever" matches Kim & Diaz (ICTIR 2025), arXiv:2409.11598
+    # "e5-base-v2" matches BRRA (IEEE TDSC 2026) and Wu et al. (COLING 2025)
+    # Requires HF_ENDPOINT=https://hf-mirror.com where huggingface.co is blocked.
+    "backbone": "gte-base",
+    "st_batch_size": 64,
+    "st_max_length": 512,
+    "dense_dim": 512,
     "epsilons": [1.0, 0.5, 0.25, 0.1, 0.0],
     "budget_modes": ["group", "stance", "both"],
     "subspace_lambda": 1.0,
@@ -200,13 +209,72 @@ def build_bundle(cfg: Dict[str, object]):
 # Building retrievers and attacks
 # --------------------------------------------------------------------------- #
 
-def build_retriever(kind: str, docs: Sequence[Document]):
+def _supports_vector_control(retriever) -> bool:
+    """True when a retriever exposes vectors we can perturb and re-install.
+
+    Both the feature-hashing dense retriever and the sentence-transformers
+    encoders expose ``_embed``/``_encode`` plus ``set_matrix``, which is all the
+    subspace-projection attack needs.  A lexical retriever has no vectors to
+    perturb, so the projection attack degrades to template-only there.
+    """
+    return hasattr(retriever, "set_matrix") and (
+        hasattr(retriever, "_embed") or hasattr(retriever, "_encode")
+    )
+
+
+def _retriever_embed(retriever, texts: Sequence[str]):
+    """Return vectors for ``texts`` from whichever encoder the retriever uses.
+
+    Fast path: when the requested texts are exactly the indexed corpus -- the
+    common case, since the projection attack needs document vectors and the
+    manifold calibrator needs clean-document vectors -- return ``matrix``
+    directly. It is already computed and, for sentence-transformers retrievers,
+    also in the content cache, so this avoids a full re-encode.
+    """
+    docs = getattr(retriever, "docs", None)
+    if docs is not None and len(docs) == len(texts):
+        if all(d.text == t for d, t in zip(docs, texts)):
+            return retriever.matrix
+    fn = getattr(retriever, "_embed", None) or getattr(retriever, "_encode")
+    return fn(list(texts))
+
+
+def build_retriever(kind: str, docs: Sequence[Document], cfg: Optional[Dict[str, object]] = None):
+    """Construct and index a retrieval back-end.
+
+    ``kind`` selects the family:
+
+      ``"bm25"``   -- vectorised lexical retriever, no dependencies
+      ``"dense"``  -- the self-contained feature-hashing dense retriever used
+                      for the main experiments (no downloads, deterministic)
+      ``"st"``     -- a real sentence-transformers encoder, selected by
+                      ``cfg["backbone"]``.  This is what makes the numbers
+                      comparable with published work: ``gte-base`` matches
+                      Zhao et al. (FARO), ``contriever`` matches Kim & Diaz
+                      (ICTIR 2025), ``e5-base-v2`` matches BRRA and Wu et al.
+
+    Requires ``HF_ENDPOINT=https://hf-mirror.com`` on networks where
+    huggingface.co is unreachable.
+    """
+    cfg = cfg or {}
     if kind == "bm25":
         r = BM25Retriever()
         r.index(docs)
         return r
     if kind == "dense":
-        r = DenseRetriever(dim=512)
+        r = DenseRetriever(dim=int(cfg.get("dense_dim", 512)))
+        r.index(docs)
+        return r
+    if kind == "st":
+        from .retrieval.dense import build_sentence_transformer
+
+        backbone = str(cfg.get("backbone", "gte-base"))
+        r = build_sentence_transformer(
+            backbone,
+            batch_size=int(cfg.get("st_batch_size", 64)),
+            device=cfg.get("st_device") or None,
+            max_length=int(cfg.get("st_max_length", 512)),
+        )
         r.index(docs)
         return r
     raise ValueError(f"unknown retriever {kind!r}")
@@ -255,9 +323,9 @@ def apply_attack(
     all_docs = list(clean_docs) + poison
     retriever.index(all_docs)
 
-    if kind == "template_plus_projection" and isinstance(retriever, DenseRetriever):
+    if kind == "template_plus_projection" and _supports_vector_control(retriever):
         n_clean = len(clean_docs)
-        qmat = retriever._embed([q.text for q in queries])
+        qmat = _retriever_embed(retriever, [q.text for q in queries])
         new_matrix = retriever.matrix.copy()
         new_matrix[n_clean:] = subspace_project(
             new_matrix[n_clean:], qmat, lam=float(cfg["subspace_lambda"])
@@ -283,8 +351,8 @@ def build_defenses(retriever, clean_docs: Sequence[Document], cfg):
         VanillaTopK(retriever),
         MultiQueryConsistency(retriever, n_variants=5, delta=0.05),
     ]
-    if isinstance(retriever, DenseRetriever):
-        calib = retriever._embed([d.text for d in clean_docs])
+    if _supports_vector_control(retriever):
+        calib = _retriever_embed(retriever, [d.text for d in clean_docs])
         defenses.append(ManifoldFilter(retriever, calib_matrix=calib))
 
     for mode in cfg.get("budget_modes", ["both"]):
@@ -318,7 +386,7 @@ def run_block(
     clean_docs = bundle.docs
     queries = bundle.queries
 
-    retriever = build_retriever(retriever_kind, clean_docs)
+    retriever = build_retriever(retriever_kind, clean_docs, cfg)
     retriever, poison_docs = apply_attack(
         attack, retriever, clean_docs, queries, cfg, bundle.groups
     )
@@ -327,7 +395,7 @@ def run_block(
     qid_to_stratum = {q.qid: q.stratum for q in queries}
     # clean reference retrieval: score the *clean* corpus so the R1 reference
     # profile is attack-independent
-    ref_retriever = build_retriever(retriever_kind, clean_docs)
+    ref_retriever = build_retriever(retriever_kind, clean_docs, cfg)
     clean_refs: Dict[str, Sequence[Document]] = {}
     for q in queries:
         clean_refs[q.qid] = ref_retriever.search(q.text, int(cfg["top_k"])).docs
@@ -421,15 +489,25 @@ def run_adaptive(
     resulting poison@k and drift.  A defense whose advantage disappears under
     this evaluation is only robust against a non-adaptive attacker -- which is
     the honest conclusion to report.
+
+    The back-end is taken from ``retriever_kind`` and ``cfg["backbone"]``.  It
+    was previously hard-coded to the feature-hashing dense retriever, which
+    silently returned hashed-retriever numbers for real-encoder configurations
+    -- the two were indistinguishable in the output and only a bit-identical
+    comparison against an earlier run exposed it.
     """
     clean_docs = bundle.docs
     queries = bundle.queries
     k = int(cfg["top_k"])
     qmat = None
 
+    # adaptive evaluation perturbs embeddings, so it needs a vector back-end
+    if retriever_kind == "bm25":
+        retriever_kind = "st" if cfg.get("backbone") else "dense"
+
     # a reference retriever over the CLEAN corpus only, so the R1 reference is
     # never itself contaminated by the attack under test
-    ref_retriever = build_retriever("dense", clean_docs)
+    ref_retriever = build_retriever(retriever_kind, clean_docs, cfg)
     clean_refs = {q.qid: ref_retriever.search(q.text, k).docs for q in queries}
 
     corpus_fav_ref = {
@@ -440,15 +518,17 @@ def run_adaptive(
     }
 
     out: List[Dict[str, object]] = []
+    print(f"  [adaptive] back-end = {retriever_kind} "
+          f"backbone = {cfg.get('backbone', '-')}")
 
     for defense_name in ("multi_query", "manifold", "repr_conserving"):
         for lam in cfg["adaptive_lambdas"]:
-            retriever = build_retriever("dense", clean_docs)
+            retriever = build_retriever(retriever_kind, clean_docs, cfg)
             poison, _ = _make_all_poison(clean_docs, cfg, bundle.groups)
             all_docs = list(clean_docs) + poison
             retriever.index(all_docs)
             if qmat is None:
-                qmat = retriever._embed([q.text for q in queries])
+                qmat = _retriever_embed(retriever, [q.text for q in queries])
 
             n_clean = len(clean_docs)
             new_matrix = retriever.matrix.copy()
@@ -472,7 +552,7 @@ def run_adaptive(
             if defense_name == "multi_query":
                 d = MultiQueryConsistency(retriever, n_variants=5, delta=0.05)
             elif defense_name == "manifold":
-                calib = retriever._embed([x.text for x in clean_docs])
+                calib = _retriever_embed(retriever, [x.text for x in clean_docs])
                 d = ManifoldFilter(retriever, calib_matrix=calib)
             else:
                 d = RepresentationConservingSelector(retriever, epsilon=0.25)
@@ -592,20 +672,41 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     f"({n_per * len(bundle.groups)} injected of {len(bundle.docs)})"
                 )
             for rk in cfg["retrievers"]:
-                pq, ag = run_block(
-                    attack=attack,
-                    retriever_kind=rk,
-                    bundle=bundle,
-                    cfg=cfg_run,
-                    poison_ids_by_stratum={},
+                # a real-encoder retriever is swept over several backbones so
+                # that one run yields the cross-encoder comparison that the
+                # backbone-alignment claim depends on
+                backbones = (
+                    [str(b) for b in cfg["backbones"]]  # type: ignore[index]
+                    if rk == "st" and cfg.get("backbones")
+                    else [str(cfg.get("backbone", "gte-base"))]
                 )
-                for row in pq + ag:
-                    row["poison_rate"] = "" if rate is None else float(rate)
-                per_query_rows.extend(pq)
-                agg_rows.extend(ag)
+                for bb in backbones:
+                    cfg_bb = dict(cfg_run)
+                    cfg_bb["backbone"] = bb
+                    print(f"  [backbone] {bb} (retriever={rk})")
+                    pq, ag = run_block(
+                        attack=attack,
+                        retriever_kind=rk,
+                        bundle=bundle,
+                        cfg=cfg_bb,
+                        poison_ids_by_stratum={},
+                    )
+                    for row in pq + ag:
+                        row["poison_rate"] = "" if rate is None else float(rate)
+                        row["backbone"] = bb if rk == "st" else ""
+                    per_query_rows.extend(pq)
+                    agg_rows.extend(ag)
 
     print("\n-- adaptive attacker " + "-" * 55)
-    adaptive_rows = run_adaptive(bundle=bundle, cfg=cfg)
+    # the adaptive evaluation perturbs embeddings, so it runs on a vector
+    # back-end: the configured real encoder when one is selected, else the
+    # self-contained dense retriever
+    adaptive_rows = run_adaptive(
+        bundle=bundle,
+        cfg=cfg,
+        retriever_kind="st" if cfg.get("backbone") and "st" in cfg["retrievers"]
+        else "dense",
+    )
 
     # ---- write outputs ---------------------------------------------------- #
     def _write(path: str, rows: List[Dict[str, object]]) -> None:

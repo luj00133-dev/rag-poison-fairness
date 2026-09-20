@@ -190,8 +190,18 @@ class MultiQueryConsistency:
             self._perturb(query.text, i) for i in range(self.n_variants)
         ]
         fetch = max(k * 3, k + 5)
-        for text in variants:
-            r = self.retriever.search(text, fetch)
+
+        # Encode all variants in one model call when the back-end supports it.
+        # A real encoder charges a fixed per-call overhead that dominates when
+        # queries are encoded one at a time, and this defense is the heaviest
+        # caller (one query per variant per user query).
+        batch = getattr(self.retriever, "search_batch", None)
+        if batch is not None:
+            results = batch(variants, fetch)
+        else:
+            results = [self.retriever.search(t, fetch) for t in variants]
+
+        for r in results:
             for rank, d in enumerate(r.docs):
                 cands.setdefault(d.doc_id, d)
                 appear[d.doc_id] = appear.get(d.doc_id, 0) + 1
@@ -270,7 +280,11 @@ class ManifoldFilter:
     def retrieve(self, query: Query, k: int) -> RetrievalResult:
         fetch = max(k * 3, k + 5)
         r = self.retriever.search(query.text, fetch)
-        embed = getattr(self.retriever, "_embed", None)
+        # accept either encoder entry point: the feature-hashing retriever
+        # exposes ``_embed``, the sentence-transformers retrievers ``_encode``
+        embed = getattr(self.retriever, "_embed", None) or getattr(
+            self.retriever, "_encode", None
+        )
         if embed is None:
             # a lexical retriever exposes no vectors, so no manifold penalty
             return _to_result(query.qid, r.docs[:k], r.scores[:k])

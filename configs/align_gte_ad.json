@@ -1,0 +1,43 @@
+{
+  "run_tag": "align_gte_ad",
+  "seed": 20260101,
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 12,
+  "strata": [
+    "bbq-gender",
+    "bbq-disability",
+    "stereoset-age",
+    "stereoset-race"
+  ],
+  "attacks": [
+    "clean"
+  ],
+  "retrievers": [
+    "bm25",
+    "st"
+  ],
+  "epsilons": [
+    1.0
+  ],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [
+    0.0,
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "poison_rates": [
+    0.005
+  ],
+  "budget_modes": [
+    "both"
+  ],
+  "backbones": [
+    "gte-base"
+  ]
+}
