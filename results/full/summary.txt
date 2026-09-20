@@ -1,0 +1,379 @@
+Retrieval Poisoning / Group-Representation Drift -- summary
+run_tag=main  elapsed=20.1s
+
+TABLE 1  Attack effect (no defense), by retriever
+                    attack retriever  drift_tv  drift_js stance_sh stance_dv  poison@k    util
+                     clean      bm25    0.0000    0.0000    0.4667    0.2859       nan   0.083
+                     clean     dense    0.0000    0.0000    0.5000    0.3113       nan   0.067
+                  template      bm25    0.1438    0.0401    0.5000    0.3113     0.688   0.017
+                  template     dense    0.0500    0.0152    0.5000    0.3113     0.438   0.033
+                  template      bm25    0.1687    0.1324    0.5000    0.3113     0.750   0.017
+                  template     dense    0.0813    0.0419    0.5000    0.3113     0.625   0.012
+                  template      bm25    0.1625    0.0806    0.5000    0.3113     0.750   0.012
+                  template     dense    0.0812    0.0419    0.5000    0.3113     0.625   0.008
+                  template      bm25    0.1438    0.0553    0.5000    0.3113     0.750   0.000
+                  template     dense    0.0625    0.0217    0.5000    0.3113     0.625   0.008
+                  template      bm25    0.1188    0.0373    0.5000    0.3113     0.750   0.000
+                  template     dense    0.0625    0.0217    0.5000    0.3113     0.625   0.000
+  template_plus_projection      bm25    0.1438    0.0401    0.5000    0.3113     0.688   0.017
+  template_plus_projection     dense    0.2375    0.0665    0.5000    0.3113     1.000   0.000
+  template_plus_projection      bm25    0.1687    0.1324    0.5000    0.3113     0.750   0.017
+  template_plus_projection     dense    0.1750    0.0639    0.5000    0.3113     1.000   0.000
+  template_plus_projection      bm25    0.1625    0.0806    0.5000    0.3113     0.750   0.012
+  template_plus_projection     dense    0.1625    0.0463    0.5000    0.3113     1.000   0.000
+  template_plus_projection      bm25    0.1438    0.0553    0.5000    0.3113     0.750   0.000
+  template_plus_projection     dense    0.1625    0.0378    0.5000    0.3113     1.000   0.000
+  template_plus_projection      bm25    0.1188    0.0373    0.5000    0.3113     0.750   0.000
+  template_plus_projection     dense    0.1750    0.0461    0.5000    0.3113     1.000   0.000
+
+TABLE 2  Defense comparison under the strongest attack
+retriever      defense   eps  drift_tv stance_dv  poison@k    util mean_score
+     bm25      vanilla          0.1438    0.3113     0.688   0.017     6.6454
+     bm25  multi_query          0.1385    0.3048     0.688   0.021     1.3765
+     bm25   repr_group   1.0    0.1438    0.3113     0.688   0.017     6.6454
+     bm25   repr_group   0.5    0.1438    0.3113     0.688   0.017     6.6454
+     bm25   repr_group  0.25    0.1438    0.3113     0.688   0.017     6.6454
+     bm25   repr_group   0.1    0.1812    0.3113     0.688   0.017     6.6454
+     bm25   repr_group   0.0    0.1812    0.3113     0.688   0.017     6.6454
+     bm25  repr_stance   1.0    0.1625    0.3113     0.688   0.025     6.4340
+     bm25  repr_stance   0.5    0.1625    0.3113     0.688   0.025     6.4340
+     bm25  repr_stance  0.25    0.1500    0.2905     0.688   0.017     6.5382
+     bm25  repr_stance   0.1    0.1500    0.2905     0.688   0.017     6.5382
+     bm25  repr_stance   0.0    0.1500    0.2905     0.688   0.017     6.5382
+     bm25    repr_both   1.0    0.1750    0.2890     0.688   0.025     6.3753
+     bm25    repr_both   0.5    0.1750    0.2890     0.688   0.025     6.3753
+     bm25    repr_both  0.25    0.1625    0.2905     0.625   0.017     6.5311
+     bm25    repr_both   0.1    0.1500    0.2905     0.688   0.017     6.5382
+     bm25    repr_both   0.0    0.1500    0.2905     0.688   0.017     6.5382
+    dense      vanilla          0.2375    0.3113     1.000   0.000     0.7925
+    dense  multi_query          0.2313    0.3113     1.000   0.000     1.4198
+    dense     manifold          0.2000    0.3113     0.000   0.071     0.1185
+    dense   repr_group   1.0    0.2375    0.3113     1.000   0.000     0.7925
+    dense   repr_group   0.5    0.2375    0.3113     1.000   0.000     0.7925
+    dense   repr_group  0.25    0.2375    0.3113     1.000   0.000     0.7925
+    dense   repr_group   0.1    0.2375    0.3113     1.000   0.000     0.7925
+    dense   repr_group   0.0    0.2375    0.3113     1.000   0.000     0.7925
+    dense  repr_stance   1.0    0.2359    0.3113     1.000   0.008     0.7203
+    dense  repr_stance   0.5    0.2359    0.3113     1.000   0.008     0.7203
+    dense  repr_stance  0.25    0.2234    0.3113     1.000   0.004     0.7398
+    dense  repr_stance   0.1    0.2234    0.3113     1.000   0.004     0.7398
+    dense  repr_stance   0.0    0.2234    0.3113     1.000   0.004     0.7398
+    dense    repr_both   1.0    0.2734    0.2380     1.000   0.017     0.7022
+    dense    repr_both   0.5    0.2734    0.2380     1.000   0.017     0.7022
+    dense    repr_both  0.25    0.2234    0.3113     1.000   0.004     0.7398
+    dense    repr_both   0.1    0.2234    0.3113     1.000   0.004     0.7398
+    dense    repr_both   0.0    0.2234    0.3113     1.000   0.004     0.7398
+     bm25      vanilla          0.1687    0.3113     0.750   0.017     6.9652
+     bm25  multi_query          0.1552    0.3113     0.750   0.017     1.3589
+     bm25   repr_group   1.0    0.1687    0.3113     0.750   0.017     6.9652
+     bm25   repr_group   0.5    0.1687    0.3113     0.750   0.017     6.9652
+     bm25   repr_group  0.25    0.1438    0.3113     0.750   0.017     6.9094
+     bm25   repr_group   0.1    0.1688    0.3113     0.750   0.017     6.9094
+     bm25   repr_group   0.0    0.1938    0.3113     0.750   0.017     6.7524
+     bm25  repr_stance   1.0    0.1500    0.3113     0.750   0.017     6.7895
+     bm25  repr_stance   0.5    0.1500    0.3113     0.750   0.017     6.7895
+     bm25  repr_stance  0.25    0.1375    0.2666     0.750   0.017     6.7907
+     bm25  repr_stance   0.1    0.1375    0.2666     0.750   0.017     6.7978
+     bm25  repr_stance   0.0    0.1375    0.2666     0.750   0.017     6.7978
+     bm25    repr_both   1.0    0.2063    0.2930     0.750   0.017     6.6789
+     bm25    repr_both   0.5    0.2063    0.2930     0.750   0.017     6.6789
+     bm25    repr_both  0.25    0.1687    0.2666     0.750   0.017     6.6801
+     bm25    repr_both   0.1    0.1562    0.2666     0.750   0.017     6.6871
+     bm25    repr_both   0.0    0.1375    0.2666     0.750   0.017     6.7978
+    dense      vanilla          0.1750    0.3113     1.000   0.000     0.8576
+    dense  multi_query          0.1750    0.3113     1.000   0.000     1.4200
+    dense     manifold          0.2250    0.3113     0.938   0.008    -8.5727
+    dense   repr_group   1.0    0.1750    0.3113     1.000   0.000     0.8576
+    dense   repr_group   0.5    0.1750    0.3113     1.000   0.000     0.8576
+    dense   repr_group  0.25    0.1687    0.3113     1.000   0.000     0.8523
+    dense   repr_group   0.1    0.1687    0.3113     1.000   0.000     0.8523
+    dense   repr_group   0.0    0.2438    0.3113     1.000   0.000     0.8204
+    dense  repr_stance   1.0    0.2312    0.3113     1.000   0.000     0.8219
+    dense  repr_stance   0.5    0.2312    0.3113     1.000   0.000     0.8219
+    dense  repr_stance  0.25    0.2312    0.3113     1.000   0.000     0.8219
+    dense  repr_stance   0.1    0.2312    0.3113     1.000   0.000     0.8200
+    dense  repr_stance   0.0    0.2312    0.3113     1.000   0.000     0.8200
+    dense    repr_both   1.0    0.3000    0.2923     1.000   0.000     0.7971
+    dense    repr_both   0.5    0.3000    0.2923     1.000   0.000     0.7971
+    dense    repr_both  0.25    0.2875    0.3113     1.000   0.000     0.8001
+    dense    repr_both   0.1    0.2750    0.3113     1.000   0.000     0.8001
+    dense    repr_both   0.0    0.2312    0.3113     1.000   0.000     0.8200
+     bm25      vanilla          0.1625    0.3113     0.750   0.012     6.9587
+     bm25  multi_query          0.1670    0.3113     0.750   0.017     1.3478
+     bm25   repr_group   1.0    0.1625    0.3113     0.750   0.012     6.9587
+     bm25   repr_group   0.5    0.1625    0.3113     0.750   0.012     6.9587
+     bm25   repr_group  0.25    0.1500    0.3113     0.750   0.012     6.9587
+     bm25   repr_group   0.1    0.1625    0.3113     0.750   0.012     6.8599
+     bm25   repr_group   0.0    0.1875    0.3113     0.750   0.012     6.7285
+     bm25  repr_stance   1.0    0.1938    0.3113     0.750   0.013     6.8036
+     bm25  repr_stance   0.5    0.1938    0.3113     0.750   0.013     6.8036
+     bm25  repr_stance  0.25    0.1687    0.2889     0.750   0.017     6.7894
+     bm25  repr_stance   0.1    0.1687    0.2889     0.750   0.017     6.7726
+     bm25  repr_stance   0.0    0.1687    0.2889     0.750   0.017     6.7726
+     bm25    repr_both   1.0    0.3250    0.2696     0.750   0.017     6.6803
+     bm25    repr_both   0.5    0.3250    0.2696     0.750   0.017     6.6803
+     bm25    repr_both  0.25    0.2313    0.2889     0.750   0.017     6.6796
+     bm25    repr_both   0.1    0.1812    0.2889     0.750   0.017     6.7179
+     bm25    repr_both   0.0    0.1687    0.2889     0.750   0.017     6.7726
+    dense      vanilla          0.1625    0.3113     1.000   0.000     0.8816
+    dense  multi_query          0.1417    0.3113     1.000   0.000     1.4085
+    dense     manifold          0.2312    0.3113     0.938   0.000    -8.5344
+    dense   repr_group   1.0    0.1625    0.3113     1.000   0.000     0.8816
+    dense   repr_group   0.5    0.1625    0.3113     1.000   0.000     0.8816
+    dense   repr_group  0.25    0.1625    0.3113     1.000   0.000     0.8813
+    dense   repr_group   0.1    0.1750    0.3113     1.000   0.000     0.8698
+    dense   repr_group   0.0    0.2563    0.3113     1.000   0.000     0.8333
+    dense  repr_stance   1.0    0.1938    0.3113     1.000   0.000     0.8624
+    dense  repr_stance   0.5    0.1938    0.3113     1.000   0.000     0.8624
+    dense  repr_stance  0.25    0.1938    0.3113     1.000   0.000     0.8605
+    dense  repr_stance   0.1    0.1938    0.3113     1.000   0.000     0.8586
+    dense  repr_stance   0.0    0.1938    0.3113     1.000   0.000     0.8586
+    dense    repr_both   1.0    0.3188    0.2943     1.000   0.000     0.8449
+    dense    repr_both   0.5    0.3188    0.2943     1.000   0.000     0.8449
+    dense    repr_both  0.25    0.2812    0.3113     1.000   0.000     0.8392
+    dense    repr_both   0.1    0.2500    0.3113     1.000   0.000     0.8395
+    dense    repr_both   0.0    0.1938    0.3113     1.000   0.000     0.8586
+     bm25      vanilla          0.1438    0.3113     0.750   0.000     6.7786
+     bm25  multi_query          0.1531    0.3113     0.750   0.017     1.3387
+     bm25   repr_group   1.0    0.1438    0.3113     0.750   0.000     6.7786
+     bm25   repr_group   0.5    0.1438    0.3113     0.750   0.000     6.7786
+     bm25   repr_group  0.25    0.1562    0.3113     0.750   0.000     6.7776
+     bm25   repr_group   0.1    0.1875    0.3113     0.750   0.000     6.7675
+     bm25   repr_group   0.0    0.1875    0.3113     0.750   0.000     6.7675
+     bm25  repr_stance   1.0    0.1812    0.3113     0.750   0.000     6.7149
+     bm25  repr_stance   0.5    0.1812    0.3113     0.750   0.000     6.7149
+     bm25  repr_stance  0.25    0.1812    0.2889     0.750   0.004     6.6786
+     bm25  repr_stance   0.1    0.1812    0.2889     0.750   0.008     6.6424
+     bm25  repr_stance   0.0    0.1812    0.2889     0.750   0.008     6.6424
+     bm25    repr_both   1.0    0.4062    0.3113     0.750   0.000     6.6513
+     bm25    repr_both   0.5    0.4000    0.3113     0.750   0.000     6.6469
+     bm25    repr_both  0.25    0.2938    0.2889     0.750   0.004     6.6472
+     bm25    repr_both   0.1    0.1812    0.2889     0.750   0.008     6.6424
+     bm25    repr_both   0.0    0.1812    0.2889     0.750   0.008     6.6424
+    dense      vanilla          0.1625    0.3113     1.000   0.000     0.8940
+    dense  multi_query          0.1479    0.3113     1.000   0.000     1.3869
+    dense     manifold          0.3563    0.3113     1.000   0.000    -9.2019
+    dense   repr_group   1.0    0.1625    0.3113     1.000   0.000     0.8940
+    dense   repr_group   0.5    0.1625    0.3113     1.000   0.000     0.8940
+    dense   repr_group  0.25    0.1625    0.3113     1.000   0.000     0.8940
+    dense   repr_group   0.1    0.1625    0.3113     1.000   0.000     0.8921
+    dense   repr_group   0.0    0.1625    0.3113     1.000   0.000     0.8872
+    dense  repr_stance   1.0    0.1625    0.3113     1.000   0.000     0.8900
+    dense  repr_stance   0.5    0.1625    0.3113     1.000   0.000     0.8900
+    dense  repr_stance  0.25    0.1625    0.3113     1.000   0.000     0.8900
+    dense  repr_stance   0.1    0.1625    0.3113     1.000   0.000     0.8900
+    dense  repr_stance   0.0    0.1625    0.3113     1.000   0.000     0.8900
+    dense    repr_both   1.0    0.4125    0.3113     1.000   0.000     0.8815
+    dense    repr_both   0.5    0.4000    0.3113     1.000   0.000     0.8799
+    dense    repr_both  0.25    0.2500    0.3113     1.000   0.000     0.8860
+    dense    repr_both   0.1    0.1500    0.3113     1.000   0.000     0.8877
+    dense    repr_both   0.0    0.1625    0.3113     1.000   0.000     0.8900
+     bm25      vanilla          0.1188    0.3113     0.750   0.000     6.3938
+     bm25  multi_query          0.1260    0.3113     0.750   0.012     1.3467
+     bm25   repr_group   1.0    0.1188    0.3113     0.750   0.000     6.3938
+     bm25   repr_group   0.5    0.1188    0.3113     0.750   0.000     6.3938
+     bm25   repr_group  0.25    0.1438    0.3113     0.750   0.000     6.3887
+     bm25   repr_group   0.1    0.1812    0.3113     0.750   0.000     6.3836
+     bm25   repr_group   0.0    0.1812    0.3113     0.750   0.000     6.3836
+     bm25  repr_stance   1.0    0.1812    0.3113     0.750   0.000     6.3786
+     bm25  repr_stance   0.5    0.1812    0.3113     0.750   0.000     6.3786
+     bm25  repr_stance  0.25    0.1812    0.2889     0.750   0.000     6.3786
+     bm25  repr_stance   0.1    0.1812    0.2889     0.750   0.000     6.3786
+     bm25  repr_stance   0.0    0.1812    0.2889     0.750   0.000     6.3786
+     bm25    repr_both   1.0    0.4062    0.3113     0.750   0.000     6.3684
+     bm25    repr_both   0.5    0.4062    0.3113     0.750   0.000     6.3684
+     bm25    repr_both  0.25    0.2938    0.2889     0.750   0.000     6.3735
+     bm25    repr_both   0.1    0.1812    0.2889     0.750   0.000     6.3786
+     bm25    repr_both   0.0    0.1812    0.2889     0.750   0.000     6.3786
+    dense      vanilla          0.1750    0.3113     1.000   0.000     0.8984
+    dense  multi_query          0.1687    0.3113     1.000   0.000     1.4014
+    dense     manifold          0.3500    0.3113     1.000   0.000    -9.3559
+    dense   repr_group   1.0    0.1750    0.3113     1.000   0.000     0.8984
+    dense   repr_group   0.5    0.1750    0.3113     1.000   0.000     0.8984
+    dense   repr_group  0.25    0.1875    0.3113     1.000   0.000     0.8981
+    dense   repr_group   0.1    0.1750    0.3113     1.000   0.000     0.8977
+    dense   repr_group   0.0    0.1750    0.3113     1.000   0.000     0.8977
+    dense  repr_stance   1.0    0.1625    0.3113     1.000   0.000     0.8953
+    dense  repr_stance   0.5    0.1625    0.3113     1.000   0.000     0.8953
+    dense  repr_stance  0.25    0.1625    0.3113     1.000   0.000     0.8953
+    dense  repr_stance   0.1    0.1625    0.3113     1.000   0.000     0.8953
+    dense  repr_stance   0.0    0.1625    0.3113     1.000   0.000     0.8953
+    dense    repr_both   1.0    0.4125    0.3113     1.000   0.000     0.8905
+    dense    repr_both   0.5    0.4125    0.3113     1.000   0.000     0.8905
+    dense    repr_both  0.25    0.2875    0.3113     1.000   0.000     0.8929
+    dense    repr_both   0.1    0.1625    0.3113     1.000   0.000     0.8953
+    dense    repr_both   0.0    0.1625    0.3113     1.000   0.000     0.8953
+
+TABLE 3  Epsilon sweep (representation budget) -- the frontier
+retriever      defense   eps  drift_tv   stance  poison@k    util
+     bm25   repr_group   1.0    0.1438   0.5000     0.688   0.017
+     bm25   repr_group   0.5    0.1438   0.5000     0.688   0.017
+     bm25   repr_group  0.25    0.1438   0.5000     0.688   0.017
+     bm25   repr_group   0.1    0.1812   0.5000     0.688   0.017
+     bm25   repr_group   0.0    0.1812   0.5000     0.688   0.017
+     bm25  repr_stance   1.0    0.1625   0.5000     0.688   0.025
+     bm25  repr_stance   0.5    0.1625   0.5000     0.688   0.025
+     bm25  repr_stance  0.25    0.1500   0.4762     0.688   0.017
+     bm25  repr_stance   0.1    0.1500   0.4762     0.688   0.017
+     bm25  repr_stance   0.0    0.1500   0.4762     0.688   0.017
+     bm25    repr_both   1.0    0.1750   0.4643     0.688   0.025
+     bm25    repr_both   0.5    0.1750   0.4643     0.688   0.025
+     bm25    repr_both  0.25    0.1625   0.4762     0.625   0.017
+     bm25    repr_both   0.1    0.1500   0.4762     0.688   0.017
+     bm25    repr_both   0.0    0.1500   0.4762     0.688   0.017
+    dense   repr_group   1.0    0.2375   0.5000     1.000   0.000
+    dense   repr_group   0.5    0.2375   0.5000     1.000   0.000
+    dense   repr_group  0.25    0.2375   0.5000     1.000   0.000
+    dense   repr_group   0.1    0.2375   0.5000     1.000   0.000
+    dense   repr_group   0.0    0.2375   0.5000     1.000   0.000
+    dense  repr_stance   1.0    0.2359   0.5000     1.000   0.008
+    dense  repr_stance   0.5    0.2359   0.5000     1.000   0.008
+    dense  repr_stance  0.25    0.2234   0.5000     1.000   0.004
+    dense  repr_stance   0.1    0.2234   0.5000     1.000   0.004
+    dense  repr_stance   0.0    0.2234   0.5000     1.000   0.004
+    dense    repr_both   1.0    0.2734   0.3937     1.000   0.017
+    dense    repr_both   0.5    0.2734   0.3937     1.000   0.017
+    dense    repr_both  0.25    0.2234   0.5000     1.000   0.004
+    dense    repr_both   0.1    0.2234   0.5000     1.000   0.004
+    dense    repr_both   0.0    0.2234   0.5000     1.000   0.004
+     bm25   repr_group   1.0    0.1687   0.5000     0.750   0.017
+     bm25   repr_group   0.5    0.1687   0.5000     0.750   0.017
+     bm25   repr_group  0.25    0.1438   0.5000     0.750   0.017
+     bm25   repr_group   0.1    0.1688   0.5000     0.750   0.017
+     bm25   repr_group   0.0    0.1938   0.5000     0.750   0.017
+     bm25  repr_stance   1.0    0.1500   0.5000     0.750   0.017
+     bm25  repr_stance   0.5    0.1500   0.5000     0.750   0.017
+     bm25  repr_stance  0.25    0.1375   0.4487     0.750   0.017
+     bm25  repr_stance   0.1    0.1375   0.4487     0.750   0.017
+     bm25  repr_stance   0.0    0.1375   0.4487     0.750   0.017
+     bm25    repr_both   1.0    0.2063   0.4846     0.750   0.017
+     bm25    repr_both   0.5    0.2063   0.4846     0.750   0.017
+     bm25    repr_both  0.25    0.1687   0.4487     0.750   0.017
+     bm25    repr_both   0.1    0.1562   0.4487     0.750   0.017
+     bm25    repr_both   0.0    0.1375   0.4487     0.750   0.017
+    dense   repr_group   1.0    0.1750   0.5000     1.000   0.000
+    dense   repr_group   0.5    0.1750   0.5000     1.000   0.000
+    dense   repr_group  0.25    0.1687   0.5000     1.000   0.000
+    dense   repr_group   0.1    0.1687   0.5000     1.000   0.000
+    dense   repr_group   0.0    0.2438   0.5000     1.000   0.000
+    dense  repr_stance   1.0    0.2312   0.5000     1.000   0.000
+    dense  repr_stance   0.5    0.2312   0.5000     1.000   0.000
+    dense  repr_stance  0.25    0.2312   0.5000     1.000   0.000
+    dense  repr_stance   0.1    0.2312   0.5000     1.000   0.000
+    dense  repr_stance   0.0    0.2312   0.5000     1.000   0.000
+    dense    repr_both   1.0    0.3000   0.4750     1.000   0.000
+    dense    repr_both   0.5    0.3000   0.4750     1.000   0.000
+    dense    repr_both  0.25    0.2875   0.5000     1.000   0.000
+    dense    repr_both   0.1    0.2750   0.5000     1.000   0.000
+    dense    repr_both   0.0    0.2312   0.5000     1.000   0.000
+     bm25   repr_group   1.0    0.1625   0.5000     0.750   0.012
+     bm25   repr_group   0.5    0.1625   0.5000     0.750   0.012
+     bm25   repr_group  0.25    0.1500   0.5000     0.750   0.012
+     bm25   repr_group   0.1    0.1625   0.5000     0.750   0.012
+     bm25   repr_group   0.0    0.1875   0.5000     0.750   0.012
+     bm25  repr_stance   1.0    0.1938   0.5000     0.750   0.013
+     bm25  repr_stance   0.5    0.1938   0.5000     0.750   0.013
+     bm25  repr_stance  0.25    0.1687   0.4744     0.750   0.017
+     bm25  repr_stance   0.1    0.1687   0.4744     0.750   0.017
+     bm25  repr_stance   0.0    0.1687   0.4744     0.750   0.017
+     bm25    repr_both   1.0    0.3250   0.4538     0.750   0.017
+     bm25    repr_both   0.5    0.3250   0.4538     0.750   0.017
+     bm25    repr_both  0.25    0.2313   0.4744     0.750   0.017
+     bm25    repr_both   0.1    0.1812   0.4744     0.750   0.017
+     bm25    repr_both   0.0    0.1687   0.4744     0.750   0.017
+    dense   repr_group   1.0    0.1625   0.5000     1.000   0.000
+    dense   repr_group   0.5    0.1625   0.5000     1.000   0.000
+    dense   repr_group  0.25    0.1625   0.5000     1.000   0.000
+    dense   repr_group   0.1    0.1750   0.5000     1.000   0.000
+    dense   repr_group   0.0    0.2563   0.5000     1.000   0.000
+    dense  repr_stance   1.0    0.1938   0.5000     1.000   0.000
+    dense  repr_stance   0.5    0.1938   0.5000     1.000   0.000
+    dense  repr_stance  0.25    0.1938   0.5000     1.000   0.000
+    dense  repr_stance   0.1    0.1938   0.5000     1.000   0.000
+    dense  repr_stance   0.0    0.1938   0.5000     1.000   0.000
+    dense    repr_both   1.0    0.3188   0.4857     1.000   0.000
+    dense    repr_both   0.5    0.3188   0.4857     1.000   0.000
+    dense    repr_both  0.25    0.2812   0.5000     1.000   0.000
+    dense    repr_both   0.1    0.2500   0.5000     1.000   0.000
+    dense    repr_both   0.0    0.1938   0.5000     1.000   0.000
+     bm25   repr_group   1.0    0.1438   0.5000     0.750   0.000
+     bm25   repr_group   0.5    0.1438   0.5000     0.750   0.000
+     bm25   repr_group  0.25    0.1562   0.5000     0.750   0.000
+     bm25   repr_group   0.1    0.1875   0.5000     0.750   0.000
+     bm25   repr_group   0.0    0.1875   0.5000     0.750   0.000
+     bm25  repr_stance   1.0    0.1812   0.5000     0.750   0.000
+     bm25  repr_stance   0.5    0.1812   0.5000     0.750   0.000
+     bm25  repr_stance  0.25    0.1812   0.4744     0.750   0.004
+     bm25  repr_stance   0.1    0.1812   0.4744     0.750   0.008
+     bm25  repr_stance   0.0    0.1812   0.4744     0.750   0.008
+     bm25    repr_both   1.0    0.4062   0.5000     0.750   0.000
+     bm25    repr_both   0.5    0.4000   0.5000     0.750   0.000
+     bm25    repr_both  0.25    0.2938   0.4744     0.750   0.004
+     bm25    repr_both   0.1    0.1812   0.4744     0.750   0.008
+     bm25    repr_both   0.0    0.1812   0.4744     0.750   0.008
+    dense   repr_group   1.0    0.1625   0.5000     1.000   0.000
+    dense   repr_group   0.5    0.1625   0.5000     1.000   0.000
+    dense   repr_group  0.25    0.1625   0.5000     1.000   0.000
+    dense   repr_group   0.1    0.1625   0.5000     1.000   0.000
+    dense   repr_group   0.0    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   1.0    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.5    0.1625   0.5000     1.000   0.000
+    dense  repr_stance  0.25    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.1    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.0    0.1625   0.5000     1.000   0.000
+    dense    repr_both   1.0    0.4125   0.5000     1.000   0.000
+    dense    repr_both   0.5    0.4000   0.5000     1.000   0.000
+    dense    repr_both  0.25    0.2500   0.5000     1.000   0.000
+    dense    repr_both   0.1    0.1500   0.5000     1.000   0.000
+    dense    repr_both   0.0    0.1625   0.5000     1.000   0.000
+     bm25   repr_group   1.0    0.1188   0.5000     0.750   0.000
+     bm25   repr_group   0.5    0.1188   0.5000     0.750   0.000
+     bm25   repr_group  0.25    0.1438   0.5000     0.750   0.000
+     bm25   repr_group   0.1    0.1812   0.5000     0.750   0.000
+     bm25   repr_group   0.0    0.1812   0.5000     0.750   0.000
+     bm25  repr_stance   1.0    0.1812   0.5000     0.750   0.000
+     bm25  repr_stance   0.5    0.1812   0.5000     0.750   0.000
+     bm25  repr_stance  0.25    0.1812   0.4744     0.750   0.000
+     bm25  repr_stance   0.1    0.1812   0.4744     0.750   0.000
+     bm25  repr_stance   0.0    0.1812   0.4744     0.750   0.000
+     bm25    repr_both   1.0    0.4062   0.5000     0.750   0.000
+     bm25    repr_both   0.5    0.4062   0.5000     0.750   0.000
+     bm25    repr_both  0.25    0.2938   0.4744     0.750   0.000
+     bm25    repr_both   0.1    0.1812   0.4744     0.750   0.000
+     bm25    repr_both   0.0    0.1812   0.4744     0.750   0.000
+    dense   repr_group   1.0    0.1750   0.5000     1.000   0.000
+    dense   repr_group   0.5    0.1750   0.5000     1.000   0.000
+    dense   repr_group  0.25    0.1875   0.5000     1.000   0.000
+    dense   repr_group   0.1    0.1750   0.5000     1.000   0.000
+    dense   repr_group   0.0    0.1750   0.5000     1.000   0.000
+    dense  repr_stance   1.0    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.5    0.1625   0.5000     1.000   0.000
+    dense  repr_stance  0.25    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.1    0.1625   0.5000     1.000   0.000
+    dense  repr_stance   0.0    0.1625   0.5000     1.000   0.000
+    dense    repr_both   1.0    0.4125   0.5000     1.000   0.000
+    dense    repr_both   0.5    0.4125   0.5000     1.000   0.000
+    dense    repr_both  0.25    0.2875   0.5000     1.000   0.000
+    dense    repr_both   0.1    0.1625   0.5000     1.000   0.000
+    dense    repr_both   0.0    0.1625   0.5000     1.000   0.000
+
+TABLE 4  Adaptive attacker (knows the defense)
+           defense  lambda  poison@k  drift_tv stance_dv
+       multi_query    0.00     0.729    0.1701    0.3113
+       multi_query    0.25     0.958    0.1531    0.3113
+       multi_query    0.50     1.000    0.1111    0.3113
+       multi_query    1.00     1.000    0.1417    0.3113
+       multi_query    2.00     1.000    0.1354    0.3113
+       multi_query    4.00     1.000    0.1417    0.3113
+          manifold    0.00     0.250    0.2625    0.3113
+          manifold    0.25     0.562    0.3000    0.3113
+          manifold    0.50     0.812    0.2938    0.3113
+          manifold    1.00     0.938    0.2312    0.3113
+          manifold    2.00     1.000    0.2312    0.3113
+          manifold    4.00     1.000    0.2500    0.3113
+   repr_conserving    0.00     0.625    0.1500    0.2871
+   repr_conserving    0.25     0.875    0.2354    0.3113
+   repr_conserving    0.50     1.000    0.2500    0.2905
+   repr_conserving    1.00     1.000    0.2812    0.3113
+   repr_conserving    2.00     1.000    0.2750    0.3113
+   repr_conserving    4.00     1.000    0.2688    0.3113

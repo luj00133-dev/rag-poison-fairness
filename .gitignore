@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Downloaded benchmark data (see data/README.md to fetch)
+data/bbq/*.jsonl
+
+# Scratch analysis scripts (superseded by dump_*.py)
+author_info.txt
+orcid.txt
+probe_reference.py
+
+# Smoke-test and scratch result dirs (keep full/ and bbq/)
+results/smoke*/
+results/chk*/
+results/verify/
+results/rate_chk/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+~$*
