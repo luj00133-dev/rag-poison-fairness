@@ -32,3 +32,6 @@ Thumbs.db
 *.env
 results/attribution_cache.json
 test_deepseek.py
+
+# Run logs (regenerable; keep the CSV results, not the console output)
+results/*.log
