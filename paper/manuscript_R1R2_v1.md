@@ -22,11 +22,9 @@ We formalise both dimensions, construct the pairwise attack, and re-implement fi
 4. **Injection must be reported as a rate, not a count.** With 0.1% of the corpus injected (8 passages), the text attack already reaches 68.75% inclusion against BM25 on the controlled corpus. An earlier version of this study used a fixed count and reached the opposite conclusion for the wrong reason; we report the correction and the mechanism behind the discrepancy (Finding 4).
 5. **The projection attack is robust to corpus naturalness; the text attack is not.** The text-only attack reaches 0.000 on BBQ at every rate up to 2%, while the projection attack reaches 0.903 at 0.1% and 1.000 by 2%. We identify the mechanism: an injection that works by aligning its text with query vocabulary needs the injected tokens to stand out, which repetitive corpora permit and naturally varied text does not. The same condition reappears in the *representation*: across four retrievers the text attack succeeds 0.750 (BM25), 0.625 (feature hashing), 0.5625 (Contriever) and 0.0625 (GTE-base) — a nine-fold spread between two real encoders of the same size class.
 
-Finding (2) is a **negative result about a class of defenses**, and we argue it is the paper's central contribution: a constraint expressed over the aggregate composition of a retrieved set, however many dimensions it is extended to, has no purchase on an attacker who shapes injected passages to match those statistics. We characterise this limit formally, and show by four-way backbone alignment that it does not depend on the attack leaving R1 undisturbed — on real encoders the attack moves R1 by 0.37–0.47, more than three times as much as on our own retrievers, and the R1 constraint is inert at every budget setting regardless.
+Finding (2) is a **negative result about a class of defenses**, and we argue it is the paper's central contribution. We prove it (§6): under a relevance-overlap assumption, a distribution-constrained defense faces a **trilemma** — it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Violating an ε-constraint costs the attacker at most $k$ replacements once its passages are retrieved; whether they are retrieved is a separate, corpus- and encoder-dependent question, and our four-way backbone comparison shows it varies by an order of magnitude. We also show by backbone alignment that the inertness does not depend on the attack leaving R1 undisturbed: on real encoders the attack moves R1 by 0.37–0.47, more than three times as much as on our own retrievers, and the R1 constraint remains inert at every budget setting.
 
-Finding (3) is a **negative result about a class of defenses**, and we argue it is the paper's central contribution: a constraint expressed over the aggregate composition of a retrieved set, however many dimensions it is extended to, has no purchase on an attacker who shapes injected passages to match those statistics. We characterise this limit formally.
-
-We then replicate on **BBQ**, a naturally written bias benchmark, using BBQ's own stereotype annotations to derive stance labels, and report results that are **partly unfavourable to our own earlier conclusions**. Two findings change: the text-only template attack, which reached 75% inclusion on the controlled corpus against BM25, is entirely ineffective on natural data (0%), so we withdraw the claim that text-level injection suffices; and the R2-constraining defense, which was inert against the projection attack on the controlled corpus, does reduce adversarial inclusion on natural data (0.764 → 0.660) while improving the utility proxy. Two findings survive on both corpora, and they are the ones we retain: **constraints on group composition are inert against this attack** — attaining exactly the adversarial-inclusion rate of no defense, at every value of their budget parameter — and **the within-group stance dimension is the only one along which any metric moves in the desired direction**.
+The retrieval-layer skew also **propagates to the generated output** (§5.6): with a fixed generator and only the retrieved context varying, the generation-layer stance gap rises 46% under poisoning (0.271 → 0.396), and it does so by driving one group's favourable rate to ceiling (0.708 → 1.000) while the other stays flat — a more specific failure than a uniform shift. Neither constraint repairs this.
 
 A methodological by-product is relevant to anyone building monitoring for this threat: of three plausible R2 statistics we tested, two are silently blind to the attack, and on a bias benchmark the third is confounded by a pre-existing corpus imbalance. We report all three to document the failure modes.
 
@@ -148,7 +146,7 @@ This asymmetry is the attack's entire mechanism, and it is invisible to an R1 mo
 
 ### 4.1 Corpus
 
-We require a corpus in which (i) every passage carries exact group and stance annotations, and (ii) the clean reference for both R1 and R2 is known by construction. Public bias benchmarks provide stereotype/anti-stereotype template inventories [15, 16] but not passage-level scaffolding with a known clean reference, so we build a controlled corpus: for each of four bias strata (gender, disability, age, race), a balanced pool of passages is instantiated from the stratum's template inventory, with an equal number of favourable and unfavourable passages per group and a set of group-neutral passages. Queries are group-neutral by construction — the query text never names a protected group — so any group skew in a retrieved set is attributable to the corpus and not to the question. [FILL: replace with or replicate on TREC 2022 Fair Ranking Track [17] and BBQ [15] corpora; see §8.]
+We require a corpus in which (i) every passage carries exact group and stance annotations, and (ii) the clean reference for both R1 and R2 is known by construction. Public bias benchmarks provide stereotype/anti-stereotype template inventories [15, 16] but not passage-level scaffolding with a known clean reference, so we build a controlled corpus: for each of four bias strata (gender, disability, age, race), a balanced pool of passages is instantiated from the stratum's template inventory, with an equal number of favourable and unfavourable passages per group and a set of group-neutral passages. Queries are group-neutral by construction — the query text never names a protected group — so any group skew in a retrieved set is attributable to the corpus and not to the question. §5.4 replicates the mechanism findings on the naturally written BBQ corpus, and §8 discusses why no *neutral* retrieval corpus can substitute (§8, Limitation 1).
 
 ### 4.2 Attack
 
@@ -195,13 +193,13 @@ The two-sided R2 constraint is deliberate. An upper bound alone stops an attacke
 
 We deliberately report three R2 statistics rather than one. The two reference-based variants are included as **controls**: §5.1 shows they do not respond to the attack, which is itself a finding, and reporting them documents the failure mode rather than hiding it.
 
-Ground-truth poison labels are used **only** for the attack-success metrics; no defense receives them. All defenses are evaluated with $k = 5$; retrieval back-ends are BM25 and a dense embedder. [FILL: add GTE-base (matching [5]) and Contriever/SPLADE (matching [8]) to enable direct comparison.]
+Ground-truth poison labels are used **only** for the attack-success metrics; no defense receives them. All defenses are evaluated with $k = 5$. Retrieval back-ends are BM25, a self-contained feature-hashing dense retriever, and — for the backbone alignment of §5.5 — the real encoders GTE-base [5] and Contriever [8]. SPLADE and the E5 family (used by [4, 6]) remain to be added (Limitation 5).
 
 ---
 
 ## 5. Results
 
-> **Status of this section.** All numbers reported below were produced by the released implementation and are reproducible with the commands in Appendix A. Two corpora are used: a controlled corpus with an exactly known clean reference (§5.1–§5.3) and the natural BBQ corpus (§5.4), each swept over injection rate $\rho \in \{0.1\%, \dots, 2\%\}$ of corpus size. The controlled suite completes in ~25 s and the BBQ replication in ~180 s, both on CPU with no GPU. Remaining `[FILL]` placeholders concern the additional retrieval back-ends and the generation-stage evaluation described in §8.
+> **Status of this section.** All numbers reported below were produced by the released implementation and are reproducible with the commands in Appendix A. Two corpora are used: a controlled corpus with an exactly known clean reference (§5.1–§5.3) and the natural BBQ corpus (§5.4), each swept over injection rate $\rho \in \{0.1\%, \dots, 2\%\}$ of corpus size; §5.5 adds the backbone alignment against two real semantic encoders, and §5.6 the generation-stage propagation check. The controlled suite completes in ~25 s, the BBQ replication in ~180 s, and the multi-backbone sweep in ~12 min, all on CPU with no GPU.
 
 ### 5.1 Pairwise poisoning is an R2 attack, not an R1 attack
 
@@ -430,25 +428,82 @@ Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is r
 
 ## 6. Why Distribution-Level Defense Has a Limit
 
-Finding 3 is not a tuning failure. It follows from what a distributional constraint *is*.
+Findings 2, 3 and 6 are not tuning failures. They follow from what a distributional constraint *is*, and we give the derivation here.
 
-Let a defense constrain $\mathcal{D}_q$ to a region $\mathcal{R} \subseteq 2^{\mathcal{C}}$ of admissible retrieved sets, defined by conditions on aggregate statistics of $\mathcal{D}_q$ (group composition, stance composition, exposure). Let $\mathcal{A}$ be the set of passages the attacker controls.
+### 6.1 Setup
 
-**Proposition 1.** If there exists an admissible set $\mathcal{D} \in \mathcal{R}$ with $\mathcal{D} \cap \mathcal{A} \neq \emptyset$, then any defense that only enforces $\mathcal{D} \in \mathcal{R}$ admits adversarial passages.
+Let $\mathcal{C}$ be the corpus; each passage $d$ carries a group $g(d) \in \mathcal{G} \cup \{\bot\}$ and a stance $s(d) \in \{+1,-1,0\}$ ($+1$ favourable toward $g(d)$). Let $\mathcal{A} \subseteq \mathcal{C}$ be the passages the attacker controls, $n = |\mathcal{A}|$. A defense selects $\mathcal{D}_q \subseteq \mathcal{C}$ with $|\mathcal{D}_q| = k$ (we write $\mathcal{D}$ where $q$ is clear). Define
 
-*Proof.* Immediate: the defense's acceptance test is membership in $\mathcal{R}$, which the set satisfies. $\square$
+$$p_{\text{grp}}(g;\mathcal{D}) = \frac{|\{d \in \mathcal{D} : g(d) = g,\ s(d)\neq 0\}|}{|\{d \in \mathcal{D} : g(d)\neq\bot,\ s(d)\neq 0\}|}, \qquad p_{\text{fav}}(g;\mathcal{D}) = \frac{|\{d \in \mathcal{D} : g(d) = g,\ s(d)=+1\}|}{|\{d \in \mathcal{D} : g(d) = g,\ s(d)\neq 0\}|}.$$
 
-The force of the proposition is that $\mathcal{R}$ is constructed from *clean* statistics — the reference profiles $P^{*}$. An attacker who shapes injected passages to match those statistics generates sets in $\mathcal{R}$ at will. Pairwise injection is the canonical construction: by drawing from the legitimate template inventory and balancing the two groups, the attacker produces a set whose group composition is exactly $P^{*}_{\text{grp}}$, and by controlling stance within each group the attacker can place the set's stance composition anywhere in $[0,1]^{|\mathcal{G}|}$ that the $\epsilon$-ball around $P^{*}_{\text{fav}}$ permits.
+**Definition (ε-feasible).** Fix references $p^{*}_{\text{grp}}, p^{*}_{\text{fav}}$. A selection $\mathcal{D}$ is *ε-feasible*, written $\mathcal{D} \in \mathcal{R}_\varepsilon$, if for every $g \in \mathcal{G}$
 
-Two consequences follow, and they are the actionable content of this section.
+$$\bigl|p_{\text{grp}}(g;\mathcal{D}) - p^{*}_{\text{grp}}(g)\bigr| \le \varepsilon \quad\text{and}\quad \bigl|p_{\text{fav}}(g;\mathcal{D}) - p^{*}_{\text{fav}}(g)\bigr| \le \varepsilon. \tag{1}$$
 
-**(a) Dimensionality does not help.** Extending the constraint from R1 to R2 to $m$ dimensions does not shrink $\mathcal{R}$ in a way that excludes adversarial passages; it merely gives the attacker more statistics to match. The attacker's cost grows, but their *feasibility* does not disappear, because the injected passages are, by construction, individually indistinguishable from legitimate ones under any statistic computed over their aggregate.
+A distribution-constrained defense accepts exactly $\mathcal{R}_\varepsilon$. All defenses in the family we evaluate — the R1 constraint of §4.3, and by inspection the objective of [5] and the proportion adjustment of [6] — are of this form, with $\mathcal{R}$ built from *clean* statistics.
 
-**(b) The only escape is individual-level evidence.** To exclude an adversarial passage, a defense must evaluate a property of *that passage* that is not a function of the retrieved set's composition. In the adversarial setting this is a provenance question — was this passage injected? — and it is answerable only from signals the attacker's optimisation leaves behind.
+### 6.2 Proposition 1 — the injection is admissible at every tolerance
 
-This reframes the defense problem. Prior work in this space has largely been an optimisation problem (which composition is fairest, and how to reach it). Under an adversary it is a *detection* problem, and the two are not interchangeable: as §5.3 and §5.4 jointly show, a defense can improve its fairness objective while its security objective is unchanged (controlled corpus) — and, more importantly, the *only* configurations in which the security objective moves at all are those that constrain the R2 dimension (BBQ). An optimisation framing that does not include a composition-independent term has no purchase on the attacker.
+**Proposition 1.** Let the attacker inject $n$ passages that are (i) group-relevant, (ii) split between groups in proportion $p^{*}_{\text{grp}}$, and (iii) stance-balanced so that $p_{\text{fav}}(g) = p^{*}_{\text{fav}}(g)$ for every $g$. Then any selection consisting only of injected passages is ε-feasible for every $\varepsilon \ge 0$.
 
-[FILL: formalise the attacker's feasibility set $\mathcal{R} \cap \{\mathcal{D} : \mathcal{D} \cap \mathcal{A} \neq \emptyset\}$ as a function of $n$, $k$, and $\epsilon$, and derive the minimum injection ratio required for $\epsilon$-stance-shift. This is the natural extension of Proposition 1 and is planned as follow-up work.]
+*Proof.* Take $\mathcal{D} \subseteq \mathcal{A}$ with $|\mathcal{D}| = k$. By (ii), the count of passages of group $g$ in $\mathcal{D}$ is $p^{*}_{\text{grp}}(g)\,k$ up to rounding, so $p_{\text{grp}}(g;\mathcal{D}) = p^{*}_{\text{grp}}(g)$, and the first inequality of (1) holds with equality. By (iii), $p_{\text{fav}}(g;\mathcal{D}) = p^{*}_{\text{fav}}(g)$, so the second holds with equality. Hence $\mathcal{D} \in \mathcal{R}_\varepsilon$ for all $\varepsilon \ge 0$. $\square$
+
+**Consequence.** A defense whose acceptance test is membership in $\mathcal{R}_\varepsilon$ admits a **fully adversarial** selection at any tolerance, including $\varepsilon = 0$. Tightening the budget does not exclude the injection; it constrains the attacker's *composition*, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical `poison@k` is *identical* to no defense at every $\varepsilon$ rather than merely close to it: the injected selection is not near the boundary of $\mathcal{R}_\varepsilon$, it is at the reference point.
+
+### 6.3 Proposition 2 — the minimum injection for an ε-shift
+
+Proposition 1 shows the attacker *can* be admissible; we now give the budget at which it becomes *effective*.
+
+**Proposition 2.** Fix a query and a group $g$. Suppose the clean selection contains $m_g \le k$ passages about $g$, of which $f_g$ are favourable, so $p^{*}_{\text{fav}}(g) = f_g/m_g$. An attacker who replaces $j \le \min(n, m_g)$ of these with injected passages about $g$ (favourable, to flood; unfavourable, to suppress) violates the stance constraint of (1) for $g$ if and only if
+
+$$j > \varepsilon\, m_g, \qquad\text{so}\qquad j^{*}_g(\varepsilon) = \lceil \varepsilon\, m_g \rceil + 1. \tag{2}$$
+
+*Proof.* Flooding: $p_{\text{fav}}(g) = (f_g + j)/m_g$ for $j \le m_g - f_g$, so $p_{\text{fav}}(g) - p^{*}_{\text{fav}}(g) = j/m_g > \varepsilon \iff j > \varepsilon m_g$. Suppressing: $p_{\text{fav}}(g) = (f_g - j)/m_g$, and $p^{*}_{\text{fav}}(g) - p_{\text{fav}}(g) = j/m_g$, giving the same condition. The smallest integer satisfying the strict inequality is $\lceil \varepsilon m_g\rceil + 1$, which is needed to handle the case where $\varepsilon m_g$ is an integer. $\square$
+
+**Corollary 1 (the *constraint* cost is at most $k$).** Since $m_g \le k$, $j^{*}_g(\varepsilon) \le k$ for all $\varepsilon \le 1$. With $k$ typically 3–5, violating the constraint is cheap in the currency of the constraint itself.
+
+**Corollary 2 (suppression is cheaper than flooding when the clean retrieval is one-sided).** If $f_g = 0$ then $p^{*}_{\text{fav}}(g) = 0$ and the flooding direction requires no violation at all, while the suppression direction must overcome the full rate; if $f_g = m_g$ the reverse holds. The cheaper direction is always the one pushing an already-extreme rate further toward its extreme — consistent with the empirical Finding 9, where the attack drove one group's favourable rate to ceiling rather than shifting both.
+
+**A correction we had to make.** An earlier version of this section concluded from Corollary 1 that "the number of passages required is bounded by a small constant independent of corpus size". That conflates two requirements that behave very differently:
+
+| Requirement | Governed by | Depends on corpus size? |
+|---|---|---|
+| **Violate the constraint** (Prop. 2) | $\varepsilon$ and $m_g \le k$ | **No** |
+| **Be retrieved at all** | whether injected passages out-rank the clean competition | **Yes** |
+
+The second is the *premise* of the derivation, not its conclusion. Our measurements show that premise failing in a corpus-dependent way: on the controlled corpus **2 injected passages per stratum (0.1% of 1,824)** already reach `poison@k` = 0.688, whereas on BBQ **356 per stratum (2% of 17,792)** reach **0.000**. Nor is $j^{*} \le k = 5$ sufficient on the controlled corpus, where 5 passages reach only 0.750 — replacement requires out-ranking a large field of equally relevant clean passages. The defensible statement is therefore conditional: **once the attacker's passages are retrieved, violating an ε-constraint costs at most $k$ replacements; whether they are retrieved is governed by the attack's relevance advantage, which is corpus- and encoder-dependent (Findings 4 and 7).** The error mattered: taken at face value it predicts that injection *rate* is irrelevant, which our rate sweep falsifies.
+
+### 6.4 Proposition 3 — the trilemma
+
+**Assumption (relevance overlap).** Every injected passage admits an admissible selection: for each $a \in \mathcal{A}$ there is $\mathcal{D} \in \mathcal{P}$ with $a \in \mathcal{D}$, where $\mathcal{P}$ is the set of selections meeting a utility floor (e.g. every selected passage is within a relevance loss $\delta$ of the unconstrained top-$k$). This is the standard assumption of corpus-poisoning work and our measurements support it — the projection attack attains `poison@k` = 1.000 on our retrievers and 0.903–1.000 on real encoders at $\rho = 0.1\%$.
+
+**Proposition 3.** Under relevance overlap, for every $\varepsilon$ there exists an injection of at most $k$ passages per group that is simultaneously ε-feasible and $\mathcal{P}$-admissible.
+
+*Proof.* Prop. 1 supplies an injection that is ε-feasible for all $\varepsilon$; relevance overlap supplies a $\mathcal{P}$-admissible selection containing each of its passages; the intersection is non-empty. $\square$
+
+**Consequence — the trilemma.** A distribution-constrained defense faces three requirements and can satisfy at most two:
+
+| Requirement | Formal condition |
+|---|---|
+| **Soundness** — exclude adversarial passages | $\mathcal{R}_\varepsilon \cap \{\mathcal{D} : \mathcal{D}\cap\mathcal{A} \neq \emptyset\} = \emptyset$ |
+| **Usefulness** — admit good clean selections | $\mathcal{R}_\varepsilon \cap \mathcal{P} \neq \emptyset$ |
+| **Tightness** — a non-vacuous constraint | $\varepsilon < 1$ |
+
+Soundness fails for every $\varepsilon$ whenever the attacker can construct an ε-feasible injection — which requires only knowledge of $p^{*}$ and $\varepsilon$, both public for an auditable defense. So a defense must either (i) accept adversarial passages, (ii) restrict $\mathcal{R}_\varepsilon$ so severely that $\mathcal{R}_\varepsilon \cap \mathcal{P}$ shrinks or empties, sacrificing Usefulness, or (iii) set $\varepsilon$ so large the constraint is vacuous, sacrificing Tightness.
+
+**This is the formal content of the paper's central claim, and our experiments land on all three horns.** (i) Soundness fails: `poison@k` equals no defense at every $\varepsilon$ on four retrievers, two corpora and all injection rates. (ii) Usefulness is squeezed: tightening the R1 budget to $\varepsilon=0$ on the controlled corpus changes `in_pool_rate` from 0.017 to 0.088 with no security gain, and on the dense back-end from 0.2437 to 0.2812 — i.e. the constraint perturbs the selection without excluding anything. (iii) Tightness is vacuous at $\varepsilon = 1$, where the constraint reduces to no defense by construction.
+
+### 6.5 Dimensionality does not help, and the only escape is individual-level evidence
+
+Two consequences of the above are the actionable content of this section.
+
+**(a) Adding dimensions does not shrink the admissible set usefully.** Extending the constraint from R1 to R2 to $m$ dimensions does not remove adversarial selections from $\mathcal{R}$; it gives the attacker more statistics to match, all of them computable from the public references. Prop. 1 applies verbatim with $\mathcal{R}$ the $m$-dimensional feasible set. The attacker's cost rises, their *feasibility* does not fall — and since Prop. 2 bounds the cost by $k$, the rise is cheap.
+
+**(b) The only escape is evidence about individual passages.** To exclude an adversarial passage a defense must evaluate a property of *that passage* that is not a function of the retrieved set's aggregate. In the adversarial setting this is a provenance question, answerable only from traces the attacker's optimisation leaves behind. §7 reports one candidate and its validity threat.
+
+This reframes the problem. Prior work in this area is an **optimisation** problem — which composition is fairest, and how to reach it. Under an adversary it becomes a **detection** problem, and §5.3 shows the two are not interchangeable: a defense can improve its fairness objective while its security objective is untouched. Prop. 3 is the reason the optimisation framing cannot be repaired by tuning: the failure is not at the optimum, it is in the feasible set.
+
+**What this analysis does not establish.** Prop. 3 rests on the relevance-overlap assumption, which we support empirically but do not prove. A defense able to certify that an injected passage is *not* δ-competitive — for instance by proving a relevance upper bound for it — would escape the trilemma, and we know of no such defense in this literature. Constructing one is, in our view, the most promising direction this analysis opens. Prop. 2's bound also assumes replacement, i.e. that injected passages out-rank those they displace; when they do not the bound is vacuous rather than wrong, which is exactly the corpus- and encoder-dependence documented in Findings 4 and 7. Finally, the analysis is pointwise in the query; a defense enforcing the constraint in expectation across queries has more room than the version analysed here, though ours are pointwise, so the measurements are unaffected.
 
 ---
 
@@ -490,7 +545,7 @@ We report the signal because it is the direction Proposition 1 points to, and be
 
 **Limitations.**
 
-1. **The measurement requires group- and stance-annotated passages, and natural retrieval corpora do not have them.** This is the binding constraint on this line of work, and it is worth stating plainly rather than as a data-collection to-do. R1 needs a group label per passage; R2 needs a stance label per passage. NQ and MS MARCO — the standard neutral retrieval corpora — carry neither, and stance toward a social group is not a property that can be inferred from a neutral passage, because a neutral passage does not express one. We therefore could not substitute a neutral corpus for BBQ, and neither can the defenses we evaluate: an R1-constraining defense needs the same group labels, and an R2-constraining defense needs labels that no existing neutral corpus provides. The framework's applicability is thus bounded by annotation, not by computation, and constructing a neutral, group- and stance-annotated retrieval benchmark is the field's outstanding infrastructure problem. Our two corpora bound the behaviour from the two sides available today: a template-controlled corpus with an exact known reference, and a naturally written bias benchmark. [FILL: construct or adopt such a benchmark.]
+1. **The measurement requires group- and stance-annotated passages, and natural retrieval corpora do not have them.** This is the binding constraint on this line of work, and it is worth stating plainly rather than as a data-collection to-do. R1 needs a group label per passage; R2 needs a stance label per passage. NQ and MS MARCO — the standard neutral retrieval corpora — carry neither, and stance toward a social group is not a property that can be inferred from a neutral passage, because a neutral passage does not express one. We therefore could not substitute a neutral corpus for BBQ, and neither can the defenses we evaluate: an R1-constraining defense needs the same group labels, and an R2-constraining defense needs labels that no existing neutral corpus provides. The framework's applicability is thus bounded by annotation, not by computation, and constructing a neutral, group- and stance-annotated retrieval benchmark is the field's outstanding infrastructure problem. Our two corpora bound the behaviour from the two sides available today: a template-controlled corpus with an exactly known reference, and a naturally written bias benchmark. We flag this as an open problem rather than a gap in the present study.
 2. **Neither corpus is a neutral retrieval benchmark, and they disagree in two respects.** The text-only template attack is effective only on the controlled corpus (Finding 4), and the R2 constraint reduces adversarial inclusion only on BBQ. We report both conditions rather than selecting the favourable one. The mechanism behind the first disagreement is identified (lexical room depends on corpus repetitiveness), which we regard as a finding rather than a gap; the second is a smaller effect whose magnitude we expect to depend on the corpus's pre-existing stance imbalance.
 3. **The absolute R2 metric does not transfer.** `stance_gap` is exactly 0 on the balanced controlled corpus and near its maximum (0.9326) on BBQ *before any attack*, where it is dominated by the benchmark's own stereotyped construction. On such a corpus only the change from the clean baseline is informative. A corpus-relative normalisation of $\Delta_{\text{R2}}$ would be preferable and we leave it open.
 4. **Injection budget is a rate, not a count.** We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
