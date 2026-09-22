@@ -1,0 +1,23 @@
+{
+  "run_tag": "contriever_ad",
+  "seed": 20260101,
+  "corpus": "controlled",
+  "top_k": 5,
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [0.005],
+  "n_poison": 6,
+  "n_queries_per_stratum": 12,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean"],
+  "retrievers": ["st"],
+  "backbone": "contriever",
+  "backbones": ["contriever"],
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "dense_dim": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["both"],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [0.0, 0.25, 0.5, 1.0, 2.0, 4.0]
+}

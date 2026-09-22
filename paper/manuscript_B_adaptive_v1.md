@@ -12,19 +12,19 @@
 
 Defenses that protect the retrieval layer of retrieval-augmented generation (RAG) against fairness-targeted poisoning are evaluated almost exclusively against attackers who do not know the defense. In the security literature this is a well-understood insufficiency: a defense whose robustness is demonstrated only against a static adversary has not been shown to be robust. We provide the first systematic adaptive-attack evaluation of this defense family, in which the attacker observes the defense's own scoring function and optimises the poisoning perturbation against it.
 
-We study three representative defenses — multi-query consistency (query randomization with ensemble aggregation), off-manifold filtering (calibrated density estimation in embedding space), and representation-conserving selection (a constrained re-ranker over group composition and within-group stance) — against an adaptive attacker that perturbs injected-passage embeddings along a query-derived direction and searches over perturbation strength to defeat each defense's penalty. The evaluation is run on two corpora: a controlled corpus with an exact clean reference, and BBQ, a naturally written bias benchmark.
+We study three representative defenses — multi-query consistency (query randomization with ensemble aggregation), off-manifold filtering (calibrated density estimation in embedding space), and representation-conserving selection (a constrained re-ranker over group composition and within-group stance) — against an adaptive attacker that perturbs injected-passage embeddings along a query-derived direction and searches over perturbation strength to defeat each defense's penalty. The evaluation is run on two corpora — a controlled corpus with an exact clean reference, and BBQ, a naturally written bias benchmark — and on **five retrieval back-ends**: our own feature-hashing dense retriever, GTE-base, E5-base-v2, Contriever, and SPLADE (a learned sparse retriever).
 
 Our findings are:
 
-1. **Every defense is defeated, and the ordering of defenses changes completely under adaptation.** On the controlled corpus, off-manifold filtering reduces adversarial-passage inclusion from 0.750 to 0.125 against the non-adaptive attacker — a factor of six, and by far the best result in the static evaluation — but rises monotonically to 1.000 by perturbation strength $\lambda = 2$. The representation-conserving defenses, worse than off-manifold filtering at $\lambda = 0$ (0.625), saturate at 1.000 by $\lambda = 0.5$. A ranking derived from the static evaluation would recommend the wrong defense.
+1. **Every defense is defeated, and the ordering of defenses changes completely under adaptation.** On the controlled corpus, off-manifold filtering reduces adversarial-passage inclusion from 0.750 to 0.250 against the non-adaptive attacker — a factor of three, and by far the best result in the static evaluation — but rises monotonically to 1.000 by perturbation strength $\lambda = 2$. The representation-conserving defenses, worse than off-manifold filtering at $\lambda = 0$ (0.625), saturate at 1.000 by $\lambda = 0.5$. A ranking derived from the static evaluation would recommend the wrong defense.
 
-2. **On a real semantic encoder the collapse is abrupt rather than gradual.** Repeating the sweep on GTE-base, every defense goes from its static value to **complete failure at the first perturbation step** ($\lambda = 0.25$), where our own retriever required $\lambda = 1$–$2$. Off-manifold filtering is perfect at $\lambda=0$ (0.000) and fully defeated at $\lambda=0.25$. The hash-based numbers we report elsewhere in this paper are therefore generous to the defenses, not harsh.
+2. **The collapse is measured on five back-ends, and the static advantage is largest on the pretrained encoders the literature actually uses.** Repeating the sweep on GTE-base, E5-base-v2, Contriever and SPLADE as well as our own hashed retriever, all four pretrained encoders start *below* our retriever's static 0.250 and three start at exactly 0.000; on GTE-base and E5-base-v2 the defense goes from zero adversarial inclusion to **complete failure at the first perturbation step** ($\lambda = 0.25$). Contriever and the learned-sparse SPLADE collapse more gradually and resemble our own retriever, so the abruptness varies by encoder in a way we cannot reduce to one property. What holds on all five: no defense retains measurable benefit beyond $\lambda = 1$, and the attacker's passages remain over 94% semantically intact while it happens.
 
-2. **Randomization-based defense has a structural limit, not a tuning limit.** Multi-query consistency defends by drawing query variants from a fixed, public distribution; the attacker optimises against the *expectation* of that distribution rather than any realisation. A defense whose mechanism is a fixed distribution over retrievals can therefore be defeated in expectation, and its robustness is non-adaptive by construction. We state this as a proposition and confirm it empirically (0.729 → 1.000).
+3. **Randomization-based defense has a structural limit, not a tuning limit.** Multi-query consistency defends by drawing query variants from a fixed, public distribution; the attacker optimises against the *expectation* of that distribution rather than any realisation. A defense whose mechanism is a fixed distribution over retrievals can therefore be defeated in expectation, and its robustness is non-adaptive by construction. We state this as a proposition and confirm it empirically (0.729 → 1.000).
 
-3. **The strongest defense is strong for a reason unrelated to the attack.** Off-manifold filtering's static advantage comes from penalising vectors that leave the corpus manifold — precisely where the projection perturbation places them. Once the attacker trades perturbation strength against penalty, the defense's own penalty function becomes the attacker's constraint, and the advantage disappears. We show that the defense's penalty is *informative to the attacker*: making a defense's suspicion score observable is equivalent to handing over a differentiable objective.
+4. **The strongest defense is strong for a reason unrelated to the attack.** Off-manifold filtering's static advantage comes from penalising vectors that leave the corpus manifold — precisely where the projection perturbation places them. Once the attacker trades perturbation strength against penalty, the defense's own penalty function becomes the attacker's constraint, and the advantage disappears. We show that the defense's penalty is *informative to the attacker*: making a defense's suspicion score observable is equivalent to handing over a differentiable objective.
 
-4. **A partial exception, and its limits.** Only the R2 (within-group stance) constraint retains measurable benefit under adaptation, and only at low perturbation strength: on BBQ it holds adversarial inclusion at 0.049–0.319 up to $\lambda = 0.5$, versus 0.007–0.111 for off-manifold filtering, and it does so while preserving utility. Above $\lambda = 2$ every defense saturates at 1.000.
+5. **A partial exception, and its limits.** Only the R2 (within-group stance) constraint retains measurable benefit under adaptation, and only at low perturbation strength: on BBQ it holds adversarial inclusion at 0.049–0.319 up to $\lambda = 0.5$, versus 0.007–0.111 for off-manifold filtering, and it does so while preserving utility. Above $\lambda = 2$ every defense saturates at 1.000.
 
 The practical implication is that adaptive evaluation changes the conclusion of this literature: static rankings of defense strength are not merely optimistic but *inverted*. We propose a minimal reporting protocol — an adaptive attacker with a strength sweep — and argue it should be mandatory for any retrieval-fairness defense claim.
 
@@ -114,7 +114,7 @@ with $\bar{q}$ the mean query direction. The attacker sweeps $\lambda \in \{0, 0
 
 | Defense | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 | Static rank |
 |---|---|---|---|---|---|---|---|
-| off-manifold filtering | **0.125** | **0.438** | **0.750** | 0.938 | 1.000 | 1.000 | 1st |
+| off-manifold filtering | **0.250** | **0.562** | **0.812** | 0.938 | 1.000 | 1.000 | 1st |
 | `repr_conserving` (R1+R2) | 0.625 | 0.875 | 1.000 | 1.000 | 1.000 | 1.000 | 2nd |
 | multi-query consistency | 0.729 | 0.958 | 1.000 | 1.000 | 1.000 | 1.000 | 3rd |
 
@@ -126,7 +126,9 @@ with $\bar{q}$ the mean query direction. The attacker sweeps $\lambda \in \{0, 0
 | `repr_conserving` (R1+R2) | 0.049 | 0.111 | 0.319 | 0.764 | 0.979 | 1.000 | 2nd |
 | multi-query consistency | 0.083 | 0.299 | 0.535 | 0.847 | 0.993 | 1.000 | 3rd |
 
-On the controlled corpus, off-manifold filtering reduces adversarial inclusion from 0.750 (no defense) to **0.125** against the static attacker — a factor of six, and the best result anywhere in our study. It is the defense one would recommend from a static evaluation. Under adaptation it rises monotonically — 0.125 → 0.438 → 0.750 → 0.938 → 1.000 — and is defeated by $\lambda = 2$. The composition-constrained defenses, which are *five times worse* statically (0.625), saturate at 1.000 by $\lambda = 0.5$; they fail sooner but were never credible. **Above $\lambda = 2$ every defense is at 1.000: complete adversarial inclusion.**
+On the controlled corpus, off-manifold filtering reduces adversarial inclusion from 0.750 (no defense) to **0.250** against the static attacker — a factor of three, and the best result anywhere in our study. It is the defense one would recommend from a static evaluation. Under adaptation it rises monotonically — 0.250 → 0.562 → 0.812 → 0.938 → 1.000 — and is defeated by $\lambda = 2$. The composition-constrained defenses, which are *2.5x worse* statically (0.625), saturate at 1.000 by $\lambda = 0.5$; they fail sooner but were never credible. **Above $\lambda = 2$ every defense is at 1.000: complete adversarial inclusion.**
+
+*Correction.* An earlier draft of this table reported 0.125 / 0.438 / 0.750 for off-manifold filtering. Those values came from an exploratory run written to a scratch directory that was later excluded from version control, not from the canonical run that the rest of the paper uses; re-running the committed configuration reproduces the values above with **18 of 18 adaptive cells bit-identical**, whereas the exploratory run is not reproducible from any committed configuration. The qualitative conclusion — a defense that looks effective statically is defeated by moderate adaptation — is unchanged, but the static advantage was overstated by a factor of two (a factor of three over no defense, not six).
 
 The natural corpus shows the same pattern at lower magnitude, and here the comparison is more interesting because the defenses are closer statically. Off-manifold filtering holds 0.007–0.111 out to $\lambda = 0.5$ versus 0.049–0.319 for `repr_conserving`, i.e. a 2–4x gap, which persists further into the sweep (at $\lambda = 1$: 0.403 vs 0.764). The *ordering* is stable but the *magnitudes* are not, and the crossover to complete failure occurs within the sweep in both corpora.
 
@@ -134,26 +136,29 @@ The natural corpus shows the same pattern at lower magnitude, and here the compa
 
 **Finding 1.** No defense in this family survives an informed attacker. Under adaptation the failure point is reached within $\lambda \le 2$ in every case, and the defenses converge to identical (complete) failure. Static evaluation overstates robustness by up to a factor of eight, and a defense selected on static performance (off-manifold filtering) is defeated as comprehensively as one selected on structural grounds, merely later in the sweep.
 
-### 5.2b The collapse is steeper on a real encoder
+### 5.2b Collapse abruptness tracks representation density, not "realness"
 
-The results above use our own feature-hashing dense retriever. Because a real semantic encoder differs substantially in how much structure the attacker can exploit, we repeated the adaptive sweep on **GTE-base** — the backbone used by the closest prior work on fairness-aware retrieval optimisation [5]. The difference is not one of degree.
+The results above use our own feature-hashing dense retriever. Because we expected the *shape* of the collapse — not merely its endpoint — to depend on the encoder, we repeated the adaptive sweep on four further back-ends: **GTE-base** (used by the closest prior work on fairness-aware retrieval optimisation [5]), **E5-base-v2** [4, 6], **Contriever** [8], and **SPLADE**, a learned *sparse* retriever. Adding SPLADE is what makes the comparison diagnostic: it is a trained neural encoder, like GTE and E5, but its representation is sparse, like BM25's.
 
-**Table 2b.** `poison@k` under the adaptive attacker, GTE-base versus feature-hashing dense.
+**Table 2b.** `poison@k` under the adaptive attacker, off-manifold filtering, by back-end. Five back-ends; `usage` (attacker's semantic fidelity) in parentheses.
 
-| Defense | backbone | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 |
-|---|---|---|---|---|---|---|---|
-| off-manifold filtering | hash | **0.125** | 0.438 | 0.750 | 0.938 | 1.000 | 1.000 |
-| off-manifold filtering | **GTE-base** | **0.000** | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 |
-| multi-query consistency | hash | 0.729 | 0.958 | 1.000 | 1.000 | 1.000 | 1.000 |
-| multi-query consistency | **GTE-base** | 0.271 | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 |
-| `repr_conserving` | hash | 0.625 | 0.875 | 1.000 | 1.000 | 1.000 | 1.000 |
-| `repr_conserving` | **GTE-base** | 0.0625 | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 |
+| Back-end | representation | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 | usage @λ=1 |
+|---|---|---|---|---|---|---|---|---|
+| hash-dense (own) | dense, hashed | 0.250 | 0.562 | 0.812 | 0.938 | 1.000 | 1.000 | 0.945 |
+| **GTE-base** | dense semantic | **0.000** | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 | 0.978 |
+| **E5-base-v2** | dense semantic | **0.000** | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 | 0.971 |
+| **Contriever** | dense semantic | **0.000** | 0.625 | 1.000 | 1.000 | 1.000 | 1.000 | 0.943 |
+| **SPLADE** | **sparse, learned** | 0.188 | 0.500 | 0.812 | 1.000 | 1.000 | 1.000 | 0.954 |
 
-On GTE-base **every defense jumps from its static value to complete failure in a single step of perturbation strength** ($\lambda: 0 \to 0.25$), whereas on our own retriever the collapse is gradual and takes until $\lambda = 1$–$2$. Off-manifold filtering is the extreme case: perfect at $\lambda = 0$ (zero adversarial inclusion) and completely defeated at $\lambda = 0.25$.
+The picture is **not** the one we expected when we added these back-ends, and it took all five to see why. Three of the four pretrained encoders (GTE-base, E5-base-v2, Contriever) start at **exactly zero** adversarial inclusion against the static attacker and are effectively defeated after one perturbation step. But "one step" means a *complete* failure immediately for GTE-base and E5-base-v2 (0.000 → 1.000), while Contriever climbs (0.000 → 0.625 → 1.000) and SPLADE, a real trained encoder whose representation is sparse, behaves like our own hashed retriever (0.188 / 0.500 / 0.812 against 0.250 / 0.562 / 0.812). So neither "pretrained versus hashed" nor "dense versus sparse" describes the collapse on its own.
 
-**Finding 1b.** The adaptive robustness of these defenses is **smaller on a real encoder than on our own**, and the failure is abrupt rather than gradual. A defense's static advantage is erased by a perturbation well below what our own retriever required. This strengthens Finding 1 rather than qualifying it: the hash-based sweep, with its gradual collapse, is if anything generous to the defenses.
+Three observations are stable across all five, however, and they are what the finding rests on:
 
-We flag one caveat in the other direction. GTE-base shows a *lower* static `poison@k` for two of the three defenses (0.000 and 0.0625 at $\lambda=0$ versus 0.125 and 0.625), so part of the apparent steepness is that these defenses start from a better static position. The conclusion that survives is the one that matters in practice: **the attacker's required effort is lower on the real encoder, not higher, and no defense retains any measurable benefit beyond the smallest perturbation we tested.**
+1. **Static advantage is largest on the pretrained encoders.** All four start below our hashed retriever's 0.250; three start at 0.000. This is the reverse of the concern that motivated the experiment.
+2. **No defense retains any measurable benefit beyond $\lambda = 1$** on any of the five back-ends, and on three of them none survives $\lambda = 0.25$.
+3. **The attacker pays essentially nothing.** `usage` is ≥ 0.943 at $\lambda = 1$ on every back-end. The injected material is over 94% semantically intact at the point where the defenses have already lost most or all of their advantage, so the collapse cannot be attributed to the attacker degrading its own passages.
+
+**Finding 1b.** Every back-end we tested loses the defense's static advantage within one to two perturbation steps, and the *static* advantage is systematically **larger**, not smaller, on the pretrained encoders that the compared literature actually uses — three of the four are at exactly zero adversarial inclusion before adaptation. The original framing of this subsection, that the collapse is "steeper on a real encoder", is too coarse and we replace it: GTE-base and E5-base-v2 fail in a single step, whereas Contriever and the learned-sparse SPLADE collapse gradually and resemble our own hashed retriever. With five back-ends the honest statement is that **the abruptness varies by encoder in a way we cannot reduce to one property**, and the robust claims are the three listed above. The practical consequence is unchanged and, if anything, sharper: a defense selected on its static advantage is defeated comprehensively, and the static numbers one would use to select it are most optimistic precisely on the back-ends the literature uses.
 
 ### 5.3 The defense's penalty is the attacker's constraint
 
@@ -194,8 +199,8 @@ Point 6 is the one most likely to be overlooked, and in our experiments it is de
 
 1. **Attacker strength.** Our adaptive attacker sweeps a single scalar perturbation direction derived from the mean query. A full bilevel optimisation over the perturbation vector would be at least as strong, so our results are a **lower** bound on adaptive attack effectiveness and the reported failure points are optimistic *for the defenses*. This is the conservative direction for our claims but it means the defences may fail earlier than we measure, not later. Implementing the full bilevel optimisation is worthwhile follow-up, though note that both back-ends already reach complete failure within the sweep, so the headroom for a stronger attacker to change the qualitative conclusion is nil.
 2. **Perturbation budget.** We vary $\lambda$ without an explicit norm budget $\eta$; the two are related but not identical, and a reader wishing to compare against the literal constraint in [4] should note the difference.
-3. **Corpora and back-ends.** A controlled corpus and BBQ; a feature-hashing dense retriever and GTE-base. BBQ is a bias benchmark rather than a retrieval benchmark, and its large pre-existing stance imbalance dominates absolute fairness metrics (see the companion paper for a fuller treatment). On real encoders the R2 gap saturates at its maximum under the projection attack, which leaves no headroom for a fairness constraint to demonstrate benefit — a limitation of what can be measured on those back-ends rather than of the defenses. A neutral retrieval corpus would place the magnitudes on a representative footing, but none exists with the group and stance annotations this analysis needs; see Limitation 1 of the companion paper, where we argue that is the field's binding infrastructure problem rather than a gap in this study.
-4. **Defense and backbone coverage.** Three defenses from two mechanism families, and two vector back-ends (our feature-hashing retriever and GTE-base). Covering the embedder-control [7] and constrained-optimisation [5] families would strengthen the generality of Finding 1; we argue the structural argument of §4 applies to both, since embedder control is also a fixed public map and constrained optimisation has a public objective. On backbones, the companion paper reports that text-attack effectiveness varies nine-fold between two real encoders of the same size class (Contriever 0.5625 versus GTE-base 0.0625), so adaptive robustness should be expected to vary similarly — which is a reason for caution about our own GTE-only alignment, and a reason to expect that single-backbone robustness claims in this literature are not portable. Contriever, E5 and SPLADE remain to be swept.
+3. **Corpora and back-ends.** A controlled corpus and BBQ; five vector back-ends (our feature-hashing dense retriever, GTE-base, E5-base-v2, Contriever and SPLADE). BBQ is a bias benchmark rather than a retrieval benchmark, and its large pre-existing stance imbalance dominates absolute fairness metrics (see the companion paper for a fuller treatment). On the pretrained encoders the R2 gap saturates at its maximum under the projection attack, which leaves no headroom for a fairness constraint to demonstrate benefit — a limitation of what can be measured on those back-ends rather than of the defenses. A neutral retrieval corpus would place the magnitudes on a representative footing, but none exists with the group and stance annotations this analysis needs; see Limitation 1 of the companion paper, where we argue that is the field's binding infrastructure problem rather than a gap in this study.
+4. **Defense and backbone coverage.** Three defenses from two mechanism families. Five vector back-ends are covered (our feature-hashing retriever, GTE-base, E5-base-v2, Contriever and SPLADE), but all are base-size checkpoints and all are English; covering the embedder-control [7] and constrained-optimisation [5] families would strengthen the generality of Finding 1; we argue the structural argument of §4 applies to both, since embedder control is also a fixed public map and constrained optimisation has a public objective. The back-end sweep does establish one negative result that bears on the literature: the *abruptness* of the adaptive collapse is not predictable from the encoder's family, since GTE-base and E5-base-v2 fail in one step while Contriever and the learned-sparse SPLADE do not — and the companion paper reports that static text-attack effectiveness varies nine-fold across the same encoder set (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625). Adaptive robustness should be expected to vary at least as much, which is a reason to expect that single-backbone robustness claims in this literature are not portable. Larger checkpoints remain to be swept.
 5. **No generation-stage evaluation.** As in [19], we evaluate at the retrieval layer for reproducibility on commodity hardware.
 
 ---
@@ -272,7 +277,27 @@ objective $\mathrm{sim} - f$ and reports `poison@k` per $\lambda$.
 Code and results: **https://github.com/luj00133-dev/rag-poison-fairness**
 
 No GPU is required; both corpora complete on CPU in under three minutes.
-Real-encoder runs (the GTE-base sweep of §5.2b) need
-`HF_ENDPOINT=https://hf-mirror.com` on networks where huggingface.co is
-unreachable, and `python -m src.run_experiment --config configs/align_gte_ad.json`
-reproduces the adaptive table.
+The five-back-end adaptive sweep of §5.2b is reproduced by:
+
+```bash
+export HF_ENDPOINT=https://hf-mirror.com   # where huggingface.co is unreachable
+python -m src.run_experiment --config configs/default.json --out results/repro_check
+python -m src.run_experiment --config configs/align_gte_ad.json
+python -m src.run_experiment --config configs/align_e5.json
+python -m src.run_experiment --config configs/contriever_ad.json
+python -m src.run_experiment --config configs/align_splade.json
+```
+
+`analysis/collapse_table.py` prints the collapse table across all five directly
+from the committed CSVs. `paper/compile_papers.py` compiles this manuscript with
+MiKTeX and parses real LaTeX errors, undefined references and overfull boxes out
+of the `.log` (the `make_latex.py` conversion log is not a compile check and
+`pdflatex` is not necessarily on `PATH`).
+
+One reproducibility note, because it affected an earlier version of Table 2 in
+this paper. Run outputs going to a scratch directory that `.gitignore` excludes
+are **not** evidence: a draft table was built from such a run and reported a
+static `poison@k` of 0.125 where the committed configuration yields 0.250.
+Re-running `configs/default.json` reproduces the committed `results/full/`
+adaptive cells exactly (18 of 18 bit-identical), and that is the check we now
+apply before quoting a number.

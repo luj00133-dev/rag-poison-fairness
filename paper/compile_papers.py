@@ -42,12 +42,17 @@ for stem in ('paperA_R1R2', 'paperB_adaptive'):
     undef = re.findall(
         r'LaTeX Warning: (?:Citation|Reference) .*?undefined', raw)
     overfull = re.findall(r'Overfull \\hbox \(([0-9.]+)pt', raw)
-    pages = re.search(r'Output written on .*?\((\d+) pages', raw)
+    # MiKTeX truncates the "Output written on ..." line at max_print_line, so
+    # read the page count straight out of the PDF instead of the log.
+    npages = '?'
+    if os.path.exists(os.path.join(LATEX, stem + '.pdf')):
+        pdf_bytes = open(os.path.join(LATEX, stem + '.pdf'), 'rb').read()
+        npages = str(len(re.findall(rb'/Type\s*/Page[^s]', pdf_bytes)))
     pdf = os.path.join(LATEX, stem + '.pdf')
     emit('  errors=%d  undefined_refs=%d  overfull>20pt=%d  pages=%s  pdf=%d bytes'
          % (len(errs), len(undef),
             len([o for o in overfull if float(o) > 20.0]),
-            pages.group(1) if pages else '?',
+            npages,
             os.path.getsize(pdf) if os.path.exists(pdf) else -1))
     for e in errs[:10]:
         emit('   ' + e[:160])

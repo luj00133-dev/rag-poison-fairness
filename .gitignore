@@ -14,6 +14,10 @@ author_info.txt
 orcid.txt
 probe_reference.py
 
+# Scratch and reproducibility-check run dirs (keep the canonical runs only)
+results/repro_check/
+results/contriever_ad.log
+
 # Smoke-test and scratch result dirs (keep full/ and bbq/)
 results/smoke*/
 results/chk*/

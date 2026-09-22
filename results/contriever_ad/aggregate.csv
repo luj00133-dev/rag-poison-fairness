@@ -1,0 +1,5 @@
+n_queries,drift_tv,drift_js,stance_shift,stance_div,stance_onesided,stance_gap,poison_in_topk,poison_share,in_pool_rate,mean_score,attack,retriever,defense,epsilon,poison_rate,backbone
+48.0,0.0,0.0,0.5,0.31127812445913283,0.5,nan,nan,nan,0.09583333333333333,0.564379470422864,clean,st,vanilla,,,contriever
+48.0,0.11979166666666667,0.08812613369648846,0.4666666666666667,0.2797904986262927,0.4666666666666667,0.11309523809523811,nan,nan,0.08333333333333333,1.2192213734758806,clean,st,multi_query,,,contriever
+48.0,0.0,0.0,0.5,0.31127812445913283,0.5,nan,nan,nan,0.09583333333333333,0.2505574127262964,clean,st,manifold,,,contriever
+48.0,0.0,0.0,0.5,0.31127812445913283,0.5,nan,nan,nan,0.09583333333333333,0.5643794722855091,clean,st,repr_both,1.0,,contriever
