@@ -254,10 +254,12 @@ This is the central empirical claim of the paper, and it applies directly to the
 | Defense | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 |
 |---|---|---|---|---|---|---|
 | multi-query consistency | 0.729 | 0.958 | 1.000 | 1.000 | 1.000 | 1.000 |
-| off-manifold filtering | **0.125** | 0.438 | 0.750 | 0.938 | 1.000 | 1.000 |
+| off-manifold filtering | **0.250** | **0.562** | 0.812 | 0.938 | 1.000 | 1.000 |
 | `repr_both` (R1+R2) | 0.625 | 0.875 | 1.000 | 1.000 | 1.000 | 1.000 |
 
-The adaptive attacker defeats every defense. Off-manifold filtering is by a wide margin the strongest at $\lambda = 0$ (0.125) and **collapses monotonically to 1.000 by $\lambda = 2$** — a clean demonstration that its advantage is specific to the non-adaptive attacker and does not survive an adversary who observes its penalty. The representation-conserving defenses, which never achieve better than 0.625 even non-adaptively, saturate at 1.000 by $\lambda = 0.5$: they are the most fragile under adaptation as well as the least effective without it.
+The adaptive attacker defeats every defense. Off-manifold filtering is by a wide margin the strongest at $\lambda = 0$ (0.250, against 0.750 for no defense) and **collapses monotonically to 1.000 by $\lambda = 2$** — a clean demonstration that its advantage is specific to the non-adaptive attacker and does not survive an adversary who observes its penalty. The representation-conserving defenses, which never achieve better than 0.625 even non-adaptively, saturate at 1.000 by $\lambda = 0.5$: they are the most fragile under adaptation as well as the least effective without it.
+
+*Correction.* An earlier draft of this table reported 0.125 / 0.438 / 0.750 for off-manifold filtering, and described its static advantage as a factor of six over no defense. Those values came from an exploratory run written to a scratch directory excluded from version control, not from the run that produces every other number in this paper; re-running the committed configuration reproduces the values above with **18 of 18 adaptive cells bit-identical** and does not reproduce the scratch values. The qualitative conclusion is unchanged, but the static advantage is a factor of three, not six. The same error appeared in the companion paper's Table 1 and is corrected there as well; we record it here rather than silently overwriting, because a robustness factor is the kind of number a reader may quote.
 
 ### 5.3 The R2 constraint works — on the R2 metric — and does not defend
 
