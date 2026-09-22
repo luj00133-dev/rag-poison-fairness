@@ -1,0 +1,389 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[review,3p,times]{elsarticle}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{lineno}
+\modulolinenumbers[1]
+\newcounter{none}
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\begin{document}
+\title{The Fragility of Fair Retrieval Under an Informed Attacker: Why Randomized and Composition-Constrained RAG Defenses Do Not Survive Adaptation}
+\author[njust]{Jiang Lu\corref{cor1}}
+\ead{lujiang12@njust.edu.cn}
+\ead{luj00133@gmail.com}
+\cortext[cor1]{Corresponding author.}
+\affiliation[njust]{organization={School of Electronic and Optical Engineering,
+Nanjing University of Science and Technology}, city={Nanjing}, country={China}}
+\date{}
+\maketitle
+
+
+
+\begin{abstract}
+
+Defenses that protect the retrieval layer of retrieval-augmented generation (RAG) against fairness-targeted poisoning are evaluated almost exclusively against attackers who do not know the defense. In the security literature this is a well-understood insufficiency: a defense whose robustness is demonstrated only against a static adversary has not been shown to be robust. We provide the first systematic adaptive-attack evaluation of this defense family, in which the attacker observes the defense's own scoring function and optimises the poisoning perturbation against it.
+
+We study three representative defenses --- multi-query consistency (query randomization with ensemble aggregation), off-manifold filtering (calibrated density estimation in embedding space), and representation-conserving selection (a constrained re-ranker over group composition and within-group stance) --- against an adaptive attacker that perturbs injected-passage embeddings along a query-derived direction and searches over perturbation strength to defeat each defense's penalty. The evaluation is run on two corpora: a controlled corpus with an exact clean reference, and BBQ, a naturally written bias benchmark.
+
+Our findings are:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{Every defense is defeated, and the ordering of defenses changes completely under adaptation.} On the controlled corpus, off-manifold filtering reduces adversarial-passage inclusion from 0.750 to 0.125 against the non-adaptive attacker --- a factor of six, and by far the best result in the static evaluation --- but rises monotonically to 1.000 by perturbation strength \(\lambda = 2\). The representation-conserving defenses, worse than off-manifold filtering at \(\lambda = 0\) (0.625), saturate at 1.000 by \(\lambda = 0.5\). A ranking derived from the static evaluation would recommend the wrong defense.
+\item
+  \textbf{On a real semantic encoder the collapse is abrupt rather than gradual.} Repeating the sweep on GTE-base, every defense goes from its static value to \textbf{complete failure at the first perturbation step} (\(\lambda = 0.25\)), where our own retriever required \(\lambda = 1\)--\(2\). Off-manifold filtering is perfect at \(\lambda=0\) (0.000) and fully defeated at \(\lambda=0.25\). The hash-based numbers we report elsewhere in this paper are therefore generous to the defenses, not harsh.
+\item
+  \textbf{Randomization-based defense has a structural limit, not a tuning limit.} Multi-query consistency defends by drawing query variants from a fixed, public distribution; the attacker optimises against the \emph{expectation} of that distribution rather than any realisation. A defense whose mechanism is a fixed distribution over retrievals can therefore be defeated in expectation, and its robustness is non-adaptive by construction. We state this as a proposition and confirm it empirically (0.729 \(\rightarrow\) 1.000).
+\item
+  \textbf{The strongest defense is strong for a reason unrelated to the attack.} Off-manifold filtering's static advantage comes from penalising vectors that leave the corpus manifold --- precisely where the projection perturbation places them. Once the attacker trades perturbation strength against penalty, the defense's own penalty function becomes the attacker's constraint, and the advantage disappears. We show that the defense's penalty is \emph{informative to the attacker}: making a defense's suspicion score observable is equivalent to handing over a differentiable objective.
+\item
+  \textbf{A partial exception, and its limits.} Only the R2 (within-group stance) constraint retains measurable benefit under adaptation, and only at low perturbation strength: on BBQ it holds adversarial inclusion at 0.049--0.319 up to \(\lambda = 0.5\), versus 0.007--0.111 for off-manifold filtering, and it does so while preserving utility. Above \(\lambda = 2\) every defense saturates at 1.000.
+\end{enumerate}
+
+The practical implication is that adaptive evaluation changes the conclusion of this literature: static rankings of defense strength are not merely optimistic but \emph{inverted}. We propose a minimal reporting protocol --- an adaptive attacker with a strength sweep --- and argue it should be mandatory for any retrieval-fairness defense claim.
+
+\end{abstract}
+
+\begin{keyword}
+ adaptive attacks, retrieval-augmented generation, data poisoning, fairness defenses, robustness evaluation, threat modelling
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\end{keyword}
+
+\section{Introduction}\label{introduction}
+
+Retrieval-augmented generation (RAG) {[}1{]} grounds language model outputs in an external corpus, which makes the corpus a security boundary. A poisoned corpus can steer not only factual accuracy {[}2, 3{]} but the \emph{fairness} of the system's output: injected passages can amplify social bias in group-neutral queries {[}4{]}. A defense literature has accordingly emerged, proposing to constrain the group composition of the retrieved set {[}4, 5, 6, 7{]} or to equalise item-side exposure through randomized ranking {[}8{]}.
+
+These defenses are evaluated against \textbf{non-adaptive} attackers: the adversary injects passages and the defense responds, but the adversary does not model the defense. In cryptography and systems security, robustness claims made under this threat model are not accepted {[}9, 10{]}. An adversary who knows the defense will optimise against it, and a defense whose mechanism is public --- which it must be, for auditability --- provides that knowledge at no cost.
+
+Fairness defenses for RAG have an additional exposure that makes adaptation unusually cheap. Several of them defend by \textbf{randomising} the retrieval (query perturbation {[}4{]}, stochastic ranking {[}8{]}) and then aggregating. Randomisation is a legitimate defense against a fixed attack, but its security argument is probabilistic: it assumes the attacker cannot predict the realised randomisation. When the randomisation \emph{distribution} is public and fixed, the attacker can instead optimise against its expectation, which is deterministic and known. We make this precise in §4.
+
+We therefore conduct an adaptive-attack evaluation of three representative defenses from this family, in which the attacker is given the defense's scoring function and searches over perturbation strength to defeat it. We run the evaluation on two corpora --- a controlled corpus with an exact clean reference, and BBQ {[}11{]} --- and report where the static evaluation's conclusions survive and where they invert.
+
+\textbf{Contributions.}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The first adaptive-attack evaluation of RAG fairness defenses: three defense families, two corpora, a defense-aware attacker with a perturbation-strength sweep (§5).
+\item
+  The demonstration that \textbf{the static ranking of these defenses inverts under adaptation} (§5.2): the best static defense (off-manifold filtering) and the weakest static defenses (composition constraints) converge to the same failure point once the attacker optimises.
+\item
+  A structural argument for why randomization-based defense cannot be robust here (§4): a defense whose mechanism is a fixed distribution over retrievals is defeated in expectation by an attacker who knows the distribution, independently of how much randomness is used.
+\item
+  Evidence that a defense's \emph{penalty function is an attack surface}: making the suspicion score observable converts it from a filter into a constraint the attacker can optimise against (§5.3).
+\item
+  A concrete reporting protocol for the evaluation of retrieval-fairness defenses (§6).
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Related Work}\label{related-work}
+
+\subsection{Poisoning and fairness attacks on RAG}\label{poisoning-and-fairness-attacks-on-rag}
+
+Corpus poisoning against RAG was established by {[}2{]} and extended to query-agnostic and black-box settings {[}3{]}, knowledge-graph retrieval {[}12{]}, and multimodal pipelines {[}13, 14, 15{]}. The fairness-targeted variant injects passages that specifically alter the representation of protected groups rather than factual content {[}4{]}, and fairness-targeted backdoors manipulate the semantic relationship between groups and stereotypes {[}16{]}. Our work does not propose a new attack; it asks whether the defenses proposed against these attacks hold under adaptation.
+
+\subsection{Fairness defenses for RAG}\label{fairness-defenses-for-rag}
+
+Existing defenses constrain the retrieved set. Wu et al.~{[}6{]} adjust the proportion and ordering of group-relevant passages. Kim et al.~{[}7{]} reverse-bias the embedder so its group balance compensates for the generator's own bias. Kim and Diaz {[}8{]} convert a deterministic ranker into a stochastic one so that equally relevant items receive equal expected exposure, controlled by a sharpness parameter. Zhao et al.~{[}5{]} formulate fairness-aware retrieval as a constrained optimisation over position-wise group composition. Wang et al.~{[}4{]} propose query perturbation with ensemble aggregation. All are evaluated against attackers that do not model the defense. Several authors note that their defenses are not robust enough --- ``further optimization \ldots{} to achieve more stable and generalizable defense performance'' {[}4{]}; ``single-stage defenses give limited robustness'' {[}17{]} --- but the insufficiency is characterised as a tuning problem. We show it is structural.
+
+\subsection{Adaptive attacks}\label{adaptive-attacks}
+
+The principle that a defense must be evaluated against an adversary who knows it is standard in security {[}9, 10{]}, and adaptive evaluation has repeatedly shown defenses designed against static attackers to be ineffective once the attacker accounts for the defense's mechanism. Retrieval-specific adaptive evaluation exists for factual poisoning {[}17, 18{]} but not, to our knowledge, for fairness-targeted poisoning or for the fairness-defense family. This paper fills that gap, and shows that the gap matters: the conclusion changes, and not only in magnitude.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Preliminaries}\label{preliminaries}
+
+We use the retrieval-layer formulation and notation of our companion work {[}19{]}: a retrieved set \(\mathcal{D}_q\) for query \(q\) is characterised by \textbf{R1} group composition \(P_{\text{grp}}(g)\) and \textbf{R2} within-group stance \(P_{\text{fav}}(g)\); a defense is a map from the candidate set to a selected set \(\mathcal{D}_q \subseteq \mathcal{C}\) of size \(k\). R1 drift is the total-variation distance from a clean reference; the R2 metric is the cross-group spread \(\max_{g \neq g'}|P_{\text{fav}}(g) - P_{\text{fav}}(g')|\); attack success is \texttt{poison@k}, the fraction of queries whose retrieved set contains at least one injected passage.
+
+\textbf{Threat model.} The attacker can insert \(n\) passages into the corpus and can perturb the embedding of each inserted passage by a vector \(\delta\) with \(\|\delta\| \le \eta\). The attacker \textbf{knows the defense}, including its scoring function, its hyperparameters, and (for randomized defenses) its distribution. It does not know the queries at injection time in the query-agnostic setting; where it does, we say so. This is the standard informed-adversary model.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Why Randomised Defense Cannot Be Robust Here}\label{why-randomised-defense-cannot-be-robust-here}
+
+\textbf{Proposition 1.} Let a defense's selection mechanism be a fixed distribution \(\pi(\mathcal{D} \mid q, \mathcal{C})\) over retrieved sets, public to the attacker. Let \(U(\mathcal{D})\) be the attacker's utility (e.g.~the indicator that \(\mathcal{D}\) contains an injected passage). Then the attacker can achieve \(\mathbb{E}_{\pi}[U] \to 1\) whenever there exists a set in the support of \(\pi\) with \(U = 1\), by choosing an injection configuration that places injected passages in every set with positive probability mass above a threshold.
+
+\emph{Proof sketch.} Since \(\pi\) is fixed and known, the attacker computes \(\mathbb{E}_\pi[U]\) explicitly as a function of the injection and maximises it by search or gradient. Randomisation does not bound \(\mathbb{E}_\pi[U]\); it bounds the variance of \(U\) across realisations. An attacker who does not care about variance --- which is the usual case, since success is measured in expectation over queries --- is unaffected by it. \(\square\)
+
+The proposition is elementary, and that is the point: \textbf{randomisation is a defense against unpredictability, not against knowledge.} Two consequences specific to this literature follow.
+
+\textbf{Corollary 1 (fixed-distribution defenses).} Multi-query consistency {[}4{]} perturbs the query by token dropout at rate \(\delta\) and aggregates over \(n_v\) variants. The perturbation is random but its \emph{rate} and \emph{number} are public constants. The expected aggregate score of a passage is therefore a deterministic, differentiable function of the injected embedding, which the attacker can maximise directly. Adding variants does not change this: the attacker optimises the expectation, and the expectation is exact in the limit of many variants.
+
+\textbf{Corollary 2 (penalty-observable defenses).} A defense that down-weights passages by a penalty \(f(d)\) and whose penalty is computable from public information gives the attacker the constraint ``stay inside the low-penalty region''. If the attacker can satisfy that constraint while raising similarity --- which is possible whenever the penalty is a continuous function of a perturbation the attacker controls --- the defense imposes a cost rather than a barrier. Off-manifold filtering is exactly this case (§5.3).
+
+We do not claim these observations are novel in general; they are the standard reason adaptive evaluation is required. Our claim is that this defense family is \emph{structurally} exposed to them, because its two dominant mechanisms --- public randomisation and an observable penalty --- are precisely the two cases the propositions cover, and that the published evaluations therefore overstate robustness in a way that inverts the ranking of defenses.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Experiments}\label{experiments}
+
+\subsection{Setup}\label{setup}
+
+\textbf{Corpora.} (i) A \textbf{controlled corpus} with an exactly known clean reference for both R1 and R2, built from stereotype/anti-stereotype template inventories; 48 group-neutral queries over four strata, 1,824 passages. (ii) \textbf{BBQ} {[}11{]}, a naturally written bias benchmark: 17,792 passages over 144 group-neutral queries in four categories, with stance labels derived from BBQ's own stereotype annotations so that no new annotation is introduced.
+
+\textbf{Attack.} Pairwise injection: the attacker injects \(n\) passages drawn from the legitimate template/context inventory, half favourable toward group \(A\) and half unfavourable toward \(B\), so that the injected set's R1 composition is balanced by construction. Two injection modes: \textbf{template only} (text-level, no embedding control) and \textbf{template + projection}, where injected embeddings are perturbed as
+\[h' = h + \lambda \, \langle h, \bar{q} \rangle \|\bar{q}\|^{-2} \bar{q},\]
+with \(\bar{q}\) the mean query direction. The attacker sweeps \(\lambda \in \{0, 0.25, 0.5, 1, 2, 4\}\).
+
+\textbf{Defenses.} \texttt{multi\_query} --- token-dropout query variants with frequency/rank aggregation {[}4{]}. \texttt{manifold} --- calibrate the corpus manifold by PCA, down-weight passages by residual distance outside it. \texttt{repr\_conserving} --- greedy constrained selection over group composition (R1) and within-group stance (R2) with a per-group budget \(\epsilon\) {[}19{]}.
+
+\textbf{Adaptive evaluation.} For each defense the attacker is given the defense's penalty function \(f(\cdot)\) and, for each \(\lambda\) in the sweep, evaluates the objective \(\mathrm{sim}(d, \bar{q}) - f(d)\) over the candidate injected passages, retaining the \(\lambda\) that maximises it. Robustness is reported as \texttt{poison@k} as a function of \(\lambda\); a defense is robust to the extent that this curve stays low as \(\lambda\) grows.
+
+\subsection{Static ranking inverts under adaptation}\label{static-ranking-inverts-under-adaptation}
+
+\textbf{Table 1.} \texttt{poison@k} under the adaptive attacker. Best (lowest) value per column in bold.
+
+\emph{Controlled corpus:}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Defense
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.5
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=1
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=2
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=4
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Static rank
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+off-manifold filtering & \textbf{0.125} & \textbf{0.438} & \textbf{0.750} & 0.938 & 1.000 & 1.000 & 1st \\
+\texttt{repr\_conserving} (R1+R2) & 0.625 & 0.875 & 1.000 & 1.000 & 1.000 & 1.000 & 2nd \\
+multi-query consistency & 0.729 & 0.958 & 1.000 & 1.000 & 1.000 & 1.000 & 3rd \\
+\end{longtable}
+}
+
+\emph{BBQ (natural corpus):}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Defense
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.5
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=1
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=2
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=4
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Static rank
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+off-manifold filtering & \textbf{0.007} & \textbf{0.021} & \textbf{0.111} & 0.403 & 0.917 & 1.000 & 1st \\
+\texttt{repr\_conserving} (R1+R2) & 0.049 & 0.111 & 0.319 & 0.764 & 0.979 & 1.000 & 2nd \\
+multi-query consistency & 0.083 & 0.299 & 0.535 & 0.847 & 0.993 & 1.000 & 3rd \\
+\end{longtable}
+}
+
+On the controlled corpus, off-manifold filtering reduces adversarial inclusion from 0.750 (no defense) to \textbf{0.125} against the static attacker --- a factor of six, and the best result anywhere in our study. It is the defense one would recommend from a static evaluation. Under adaptation it rises monotonically --- 0.125 \(\rightarrow\) 0.438 \(\rightarrow\) 0.750 \(\rightarrow\) 0.938 \(\rightarrow\) 1.000 --- and is defeated by \(\lambda = 2\). The composition-constrained defenses, which are \emph{five times worse} statically (0.625), saturate at 1.000 by \(\lambda = 0.5\); they fail sooner but were never credible. \textbf{Above \(\lambda = 2\) every defense is at 1.000: complete adversarial inclusion.}
+
+The natural corpus shows the same pattern at lower magnitude, and here the comparison is more interesting because the defenses are closer statically. Off-manifold filtering holds 0.007--0.111 out to \(\lambda = 0.5\) versus 0.049--0.319 for \texttt{repr\_conserving}, i.e.~a 2--4x gap, which persists further into the sweep (at \(\lambda = 1\): 0.403 vs 0.764). The \emph{ordering} is stable but the \emph{magnitudes} are not, and the crossover to complete failure occurs within the sweep in both corpora.
+
+\textbf{The attacker does not pay for this in passage quality.} A natural objection is that a large perturbation degrades the injected passages, so their inclusion becomes harmless and the defense is being credited for the attacker's own self-inflicted damage. We measured this directly: \texttt{usage} is the mean cosine similarity between each injected passage's perturbed embedding and its original. It remains \textbf{0.945--0.957 at \(\lambda = 1\)}, 0.883--0.884 at \(\lambda = 2\), and 0.755--0.810 at \(\lambda = 4\) (controlled / BBQ respectively). At the point where the strongest defense is already at 0.938--0.403 inclusion, the injected material is more than 94\% intact semantically. \textbf{The defenses fail while the attack retains essentially full strength}, so the failure cannot be attributed to self-degradation.
+
+\textbf{Finding 1.} No defense in this family survives an informed attacker. Under adaptation the failure point is reached within \(\lambda \le 2\) in every case, and the defenses converge to identical (complete) failure. Static evaluation overstates robustness by up to a factor of eight, and a defense selected on static performance (off-manifold filtering) is defeated as comprehensively as one selected on structural grounds, merely later in the sweep.
+
+\subsection{5.2b The collapse is steeper on a real encoder}\label{b-the-collapse-is-steeper-on-a-real-encoder}
+
+The results above use our own feature-hashing dense retriever. Because a real semantic encoder differs substantially in how much structure the attacker can exploit, we repeated the adaptive sweep on \textbf{GTE-base} --- the backbone used by the closest prior work on fairness-aware retrieval optimisation {[}5{]}. The difference is not one of degree.
+
+\textbf{Table 2b.} \texttt{poison@k} under the adaptive attacker, GTE-base versus feature-hashing dense.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Defense
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+backbone
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=0.5
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=1
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=2
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\lambda\)=4
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+off-manifold filtering & hash & \textbf{0.125} & 0.438 & 0.750 & 0.938 & 1.000 & 1.000 \\
+off-manifold filtering & \textbf{GTE-base} & \textbf{0.000} & \textbf{1.000} & 1.000 & 1.000 & 1.000 & 1.000 \\
+multi-query consistency & hash & 0.729 & 0.958 & 1.000 & 1.000 & 1.000 & 1.000 \\
+multi-query consistency & \textbf{GTE-base} & 0.271 & \textbf{1.000} & 1.000 & 1.000 & 1.000 & 1.000 \\
+\texttt{repr\_conserving} & hash & 0.625 & 0.875 & 1.000 & 1.000 & 1.000 & 1.000 \\
+\texttt{repr\_conserving} & \textbf{GTE-base} & 0.0625 & \textbf{1.000} & 1.000 & 1.000 & 1.000 & 1.000 \\
+\end{longtable}
+}
+
+On GTE-base \textbf{every defense jumps from its static value to complete failure in a single step of perturbation strength} (\(\lambda: 0 \to 0.25\)), whereas on our own retriever the collapse is gradual and takes until \(\lambda = 1\)--\(2\). Off-manifold filtering is the extreme case: perfect at \(\lambda = 0\) (zero adversarial inclusion) and completely defeated at \(\lambda = 0.25\).
+
+\textbf{Finding 1b.} The adaptive robustness of these defenses is \textbf{smaller on a real encoder than on our own}, and the failure is abrupt rather than gradual. A defense's static advantage is erased by a perturbation well below what our own retriever required. This strengthens Finding 1 rather than qualifying it: the hash-based sweep, with its gradual collapse, is if anything generous to the defenses.
+
+We flag one caveat in the other direction. GTE-base shows a \emph{lower} static \texttt{poison@k} for two of the three defenses (0.000 and 0.0625 at \(\lambda=0\) versus 0.125 and 0.625), so part of the apparent steepness is that these defenses start from a better static position. The conclusion that survives is the one that matters in practice: \textbf{the attacker's required effort is lower on the real encoder, not higher, and no defense retains any measurable benefit beyond the smallest perturbation we tested.}
+
+\subsection{The defense's penalty is the attacker's constraint}\label{the-defenses-penalty-is-the-attackers-constraint}
+
+Off-manifold filtering's static advantage is not accidental and not a property of fairness defense: it penalises vectors that leave the corpus manifold, and the projection perturbation places them exactly there. In the static and mildly-adaptive regime the defense is therefore well-matched to the attack.
+
+The mechanism by which it fails is instructive. The attacker's problem is
+\[\max_{\delta}\ \ \mathrm{sim}(h + \delta, \bar{q}) \quad \text{s.t.} \quad f(h + \delta) \le \tau,\]
+where \(f\) is the defense's penalty. Because \(f\) is a continuous, publicly computable function of \(\delta\), this is not a barrier but a constraint set: the attacker selects the largest \(\lambda\) whose induced residual still falls within the tolerated band, then pushes \(\lambda\) until the low-penalty region is exhausted. The observed monotone rise of \texttt{poison@k} with \(\lambda\) is the signature of an attacker expanding along this constraint until it binds.
+
+This generalises beyond manifold filtering. Any defense whose suspicion score is (i) computable from public information and (ii) continuous in a perturbation the attacker controls is exposed to the same treatment: the score stops being a filter and becomes a feasibility constraint. \textbf{Publishing the scoring function, which auditability requires, is equivalent to giving the attacker a differentiable objective.}
+
+\subsection{What retains benefit, and for how long}\label{what-retains-benefit-and-for-how-long}
+
+Only one configuration retains measurable benefit under adaptation, and only in part of the sweep: \texttt{repr\_conserving} on BBQ, which holds \texttt{poison@k} at 0.049 / 0.111 / 0.319 for \(\lambda \le 0.5\) while preserving the utility proxy (\texttt{in\_pool\_rate} 0.442 versus 0.363 for no defense). Its advantage over multi-query consistency is present throughout the sweep (0.319 vs 0.535 at \(\lambda = 0.5\); 0.764 vs 0.847 at \(\lambda = 1\)).
+
+We attribute this to the defense's objective rather than to any attack-specific matching: it is the only defense whose constraint is expressed over the \emph{composition} of the retrieved set rather than over individual passage statistics, so it cannot be satisfied by choosing perturbations but only by changing which passages are mutually compatible. That is a weaker effect than the static evaluation suggested, and it disappears by \(\lambda = 2\).
+
+\textbf{Finding 2.} Under adaptation, the only defense retaining any measurable benefit is the one whose constraint acts on the retrieved set rather than on individual passages --- and its benefit is bounded, disappearing within the sweep. This is consistent with the structural argument of §4: constraints on passage-level statistics are optimisable-against because they are properties of a passage the attacker controls; constraints on set composition are not, but they are correspondingly weaker.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{A Reporting Protocol}\label{a-reporting-protocol}
+
+The results above are not sensitive to our particular attack; they follow from the attacker being informed. We therefore propose a minimal protocol, which we suggest should be required for any claim of robustness for a retrieval-fairness defense:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{State the threat model explicitly}, including whether the attacker knows the defense. A claim of robustness without this qualifier is uninterpretable.
+\item
+  \textbf{Report \texttt{poison@k} as a function of attacker strength}, not at a single operating point. A single value cannot distinguish a defense that is robust from one that has been evaluated below its failure threshold.
+\item
+  \textbf{Sweep perturbation strength to the point of failure} and report where it occurs. In our study every defense fails by \(\lambda \le 2\); a sweep stopping at \(\lambda = 0.25\) would have shown three apparently robust defenses.
+\item
+  \textbf{Report a utility-preserving baseline}, since a defense can trivially achieve low \texttt{poison@k} by returning fewer or worse passages.
+\item
+  \textbf{For randomized defenses, state the distribution and assume it is known.} Report the attacker's optimal response to the expectation, not to a sample.
+\item
+  \textbf{For penalty-based defenses, report whether the penalty is computable from public information}, and if so treat the penalty as a constraint in the attacker's optimisation rather than as an unknown.
+\end{enumerate}
+
+Point 6 is the one most likely to be overlooked, and in our experiments it is decisive for the defense that looked strongest.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Limitations}\label{limitations}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Attacker strength.} Our adaptive attacker sweeps a single scalar perturbation direction derived from the mean query. A full bilevel optimisation over the perturbation vector would be at least as strong, so our results are a \textbf{lower} bound on adaptive attack effectiveness and the reported failure points are optimistic \emph{for the defenses}. This is the conservative direction for our claims but it means the defences may fail earlier than we measure, not later. Implementing the full bilevel optimisation is worthwhile follow-up, though note that both back-ends already reach complete failure within the sweep, so the headroom for a stronger attacker to change the qualitative conclusion is nil.
+\item
+  \textbf{Perturbation budget.} We vary \(\lambda\) without an explicit norm budget \(\eta\); the two are related but not identical, and a reader wishing to compare against the literal constraint in {[}4{]} should note the difference.
+\item
+  \textbf{Corpora and back-ends.} A controlled corpus and BBQ; a feature-hashing dense retriever and GTE-base. BBQ is a bias benchmark rather than a retrieval benchmark, and its large pre-existing stance imbalance dominates absolute fairness metrics (see the companion paper for a fuller treatment). On real encoders the R2 gap saturates at its maximum under the projection attack, which leaves no headroom for a fairness constraint to demonstrate benefit --- a limitation of what can be measured on those back-ends rather than of the defenses. A neutral retrieval corpus would place the magnitudes on a representative footing, but none exists with the group and stance annotations this analysis needs; see Limitation 1 of the companion paper, where we argue that is the field's binding infrastructure problem rather than a gap in this study.
+\item
+  \textbf{Defense and backbone coverage.} Three defenses from two mechanism families, and two vector back-ends (our feature-hashing retriever and GTE-base). Covering the embedder-control {[}7{]} and constrained-optimisation {[}5{]} families would strengthen the generality of Finding 1; we argue the structural argument of §4 applies to both, since embedder control is also a fixed public map and constrained optimisation has a public objective. On backbones, the companion paper reports that text-attack effectiveness varies nine-fold between two real encoders of the same size class (Contriever 0.5625 versus GTE-base 0.0625), so adaptive robustness should be expected to vary similarly --- which is a reason for caution about our own GTE-only alignment, and a reason to expect that single-backbone robustness claims in this literature are not portable. Contriever, E5 and SPLADE remain to be swept.
+\item
+  \textbf{No generation-stage evaluation.} As in {[}19{]}, we evaluate at the retrieval layer for reproducibility on commodity hardware.
+\end{enumerate}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Conclusion}\label{conclusion}
+
+Defenses for retrieval fairness in RAG are evaluated against attackers who do not know the defense, and this is not a conservative simplification --- it changes the conclusion. We conducted the first adaptive-attack evaluation of this defense family, giving the attacker the defense's own scoring function and a perturbation-strength sweep, on a controlled corpus and on a naturally written bias benchmark.
+
+Every defense is defeated. The defense that looks strongest statically --- off-manifold filtering, reducing adversarial inclusion sixfold against a static attacker --- rises monotonically to complete failure by perturbation strength \(\lambda = 2\). The randomized defense is defeated by the elementary observation that its distribution is public, so the attacker optimises its expectation. The penalty-based defense is defeated because its penalty is a continuous public function of the perturbation, which converts a filter into a constraint the attacker expands against until it binds.
+
+The practical consequence is that static rankings of defense strength in this literature are not merely optimistic but inverted: the defense recommended by a static evaluation fails earliest relative to its static margin, and all defenses converge to identical failure. We propose a six-point reporting protocol, of which the least intuitive and most decisive item is that a defense's penalty function should be treated as part of the attacker's constraint set rather than as an unknown quantity the attacker must work around.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{References}\label{references}
+\begin{thebibliography}{19}
+\bibitem{ref1} P. Lewis, E. Perez, A. Piktus, et al.~Retrieval-augmented generation for knowledge-intensive NLP tasks. \emph{NeurIPS}, 2020.
+\bibitem{ref2} W. Zou, R. Geng, B. Wang, J. Jia. PoisonedRAG: Knowledge corruption attacks to retrieval-augmented generation of large language models. \emph{USENIX Security}, 2025.
+\bibitem{ref3} B. Zhang, Y. Chen, Z. Liu, et al.~Practical poisoning attacks against retrieval-augmented generation. \emph{arXiv:2504.03957}, 2025.
+\bibitem{ref4} L. Wang, T. Zhu, L. Qin, L. Gao, W. Zhou. Bias amplification in RAG: Poisoning knowledge retrieval to steer LLMs. \emph{IEEE TDSC}, 23(5):11033--11050, 2026.
+\bibitem{ref5} Y. Zhao, V. Efthymiou, J. Nummenmaa, K. Stefanidis. Fairness-aware retrieval optimization for retrieval-augmented generation. \emph{arXiv:2605.15790}, 2026.
+\bibitem{ref6} X. Wu, S. Li, H.-T. Wu, Z. Tao, Y. Fang. Does RAG introduce unfairness in LLMs? \emph{COLING}, 2025.
+\bibitem{ref7} T. Kim, J. M. Springer, A. Raghunathan, M. Sap. Mitigating bias in RAG: Controlling the embedder. \emph{Findings of ACL}, 2025.
+\bibitem{ref8} T. E. Kim, F. Diaz. Towards fair RAG: On the impact of fair ranking in retrieval-augmented generation. \emph{ICTIR}, 2025.
+\bibitem{ref9} N. Carlini, A. Athalye, N. Papernot, et al.~On evaluating adversarial robustness. \emph{arXiv:1902.06705}, 2019.
+\bibitem{ref10} F. Tramèr, N. Carlini, W. Brendel, A. Madry. On adaptive attacks to adversarial example defenses. \emph{NeurIPS}, 2020.
+\bibitem{ref11} A. Parrish, A. Chen, N. Nangia, et al.~BBQ: A hand-built bias benchmark for question answering. \emph{Findings of ACL}, 2022.
+\bibitem{ref12} J. Liang, Y. Wang, C. Li, et al.~GraphRAG under fire. \emph{IEEE S\&P}, 2026.
+\bibitem{ref13} H. Ha, Q. Zhan, J. Kim, et al.~MM-PoisonRAG. \emph{arXiv:2502.17832}, 2025.
+\bibitem{ref14} Y. Liu, Z. Yuan, G. Tie, et al.~Poisoned-MRAG. \emph{arXiv:2503.06254}, 2025.
+\bibitem{ref15} K. Edemacu, M. M. Shokri. Hidden in the metadata. \emph{arXiv:2603.00172}, 2026.
+\bibitem{ref16} G. Bagwe, S. S. Chaturvedi, X. Ma, et al.~Your RAG is unfair. \emph{arXiv:2509.22486}, 2025.
+\bibitem{ref17} S. K. Mohanty, R. Patel, K. Yuvaraj, et al.~TriShieldRAG: 3 rings, one blind spot in layered defenses for RAG. \emph{arXiv:2607.23838}, 2026.
+\bibitem{ref18} P. Pathmanathan, M.-A. Panaitescu-Liess, C.-Y. J. Chiang, et al.~RAGPart \& RAGMask: Retrieval-stage defenses against corpus poisoning. \emph{arXiv:2512.24268}, 2025.
+\bibitem{ref19} {[}Companion paper{]}. Two dimensions of retrieval fairness: Why group-proportion constraints cannot defend RAG against pairwise poisoning. \emph{Under review}, 2026. \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center} \section{Appendix A. Reproduction}\label{appendix-a.-reproduction} \begin{verbatim} # controlled corpus, all defenses, adaptive sweep (~25 s, CPU) python -m src.run_experiment --config configs/default.json # natural corpus (BBQ) replication (~165 s, CPU) python -m src.run_experiment --config configs/bbq.json # adaptive results are written to results/<tag>/adaptive.csv \end{verbatim} The adaptive sweep is produced by \texttt{src.attacks.poisoning.subspace\_project} driven over \(\lambda\) together with the per-defense penalty functions in \texttt{src.defenses.selectors}; \texttt{run\_adaptive} in \texttt{src/run\_experiment.py} assembles the objective \(\mathrm{sim} - f\) and reports \texttt{poison@k} per \(\lambda\). Code and results: \textbf{https://github.com/luj00133-dev/rag-poison-fairness} No GPU is required; both corpora complete on CPU in under three minutes. Real-encoder runs (the GTE-base sweep of §5.2b) need \texttt{HF\_ENDPOINT=https://hf-mirror.com} on networks where huggingface.co is unreachable, and \texttt{python\ -m\ src.run\_experiment\ -\/-config\ configs/align\_gte\_ad.json} reproduces the adaptive table.
+\end{thebibliography}
+\end{document}

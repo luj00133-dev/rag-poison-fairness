@@ -35,3 +35,11 @@ test_deepseek.py
 
 # Run logs (regenerable; keep the CSV results, not the console output)
 results/*.log
+
+# LaTeX build artefacts (the .tex source is tracked; these are not)
+paper/latex/*.aux
+paper/latex/*.log
+paper/latex/*.out
+paper/latex/*.pass*.log
+paper/latex/*.body.md
+paper/.texbin

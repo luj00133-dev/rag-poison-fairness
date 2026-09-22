@@ -64,6 +64,45 @@ repository — see `data/README.md`.
 
 ---
 
+## Building the manuscripts
+
+The manuscripts are written in Markdown, which is the source; `.tex`, `.docx`
+and `.pdf` are derived.
+
+```bash
+# Word (needs python-docx)
+python paper/make_docx.py
+
+# LaTeX source for the two candidate venues
+python paper/make_latex.py --class elsevier    # Computers & Security (elsarticle)
+python paper/make_latex.py --class ieee        # TDSC / TIFS (IEEEtran)
+
+# compile (any TeX distribution; MiKTeX on Windows)
+cd paper/latex
+pdflatex -interaction=nonstopmode paperA_R1R2.tex
+pdflatex -interaction=nonstopmode paperA_R1R2.tex     # twice, for references
+```
+
+Both papers currently compile with **zero LaTeX errors** — Paper A 29 pages,
+Paper B 11 pages. `paper/check_latex.py` reports the generated structure
+(sections, tables, bibliography entries).
+
+Four conversion problems are handled in `make_latex.py`; each produces a hard
+LaTeX error if left alone:
+
+| Problem | Fix |
+|---|---|
+| Unicode math typed literally in Markdown (`ε`, `λ`, `≈`) | mapped to `$\varepsilon$` etc., outside existing math spans |
+| pandoc's `\real{}` column widths | `calc` package |
+| pandoc's `\def\LTcaptype{none}` on uncaptioned tables | declare a `none` counter |
+| pandoc's syntax-highlighting macros (`\NormalTok` …) | `--no-highlight` |
+
+The reference list is also rewritten into a `thebibliography` block: pandoc
+renders `[1] Title` lines as prose with *escaped* brackets (`{[}1{]}`), so the
+rewrite matches that form rather than the original.
+
+---
+
 ## Layout
 
 | Path | Purpose |

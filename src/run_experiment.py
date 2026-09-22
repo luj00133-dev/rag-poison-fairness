@@ -277,6 +277,20 @@ def build_retriever(kind: str, docs: Sequence[Document], cfg: Optional[Dict[str,
         )
         r.index(docs)
         return r
+    if kind == "splade":
+        # Learned sparse retrieval, included to test whether text-attack
+        # susceptibility tracks *sparse* representations (like BM25) or learned
+        # semantic ones (like E5/GTE). See Finding 7.
+        from .retrieval.splade import SpladeRetriever
+
+        r = SpladeRetriever(
+            str(cfg.get("splade_model", "splade-v2-distil")),
+            batch_size=int(cfg.get("splade_batch_size", 32)),
+            max_length=int(cfg.get("splade_max_length", 256)),
+            device=cfg.get("st_device") or None,
+        )
+        r.index(docs)
+        return r
     raise ValueError(f"unknown retriever {kind!r}")
 
 
@@ -504,6 +518,11 @@ def run_adaptive(
     # adaptive evaluation perturbs embeddings, so it needs a vector back-end
     if retriever_kind == "bm25":
         retriever_kind = "st" if cfg.get("backbone") else "dense"
+    # prefer whichever perturbable back-end the run is actually configured with
+    if "splade" in cfg.get("retrievers", []) and retriever_kind not in ("st", "splade"):
+        retriever_kind = "splade"
+    if retriever_kind == "st" and "st" not in cfg.get("retrievers", []):
+        retriever_kind = "splade" if "splade" in cfg.get("retrievers", []) else "dense"
 
     # a reference retriever over the CLEAN corpus only, so the R1 reference is
     # never itself contaminated by the attack under test
@@ -699,14 +718,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     print("\n-- adaptive attacker " + "-" * 55)
     # the adaptive evaluation perturbs embeddings, so it runs on a vector
-    # back-end: the configured real encoder when one is selected, else the
-    # self-contained dense retriever
-    adaptive_rows = run_adaptive(
-        bundle=bundle,
-        cfg=cfg,
-        retriever_kind="st" if cfg.get("backbone") and "st" in cfg["retrievers"]
-        else "dense",
-    )
+    # back-end: a real encoder when one is selected, else SPLADE if that is what
+    # the run uses, else the self-contained dense retriever
+    if cfg.get("backbone") and "st" in cfg["retrievers"]:
+        _adaptive_kind = "st"
+    elif "splade" in cfg["retrievers"]:
+        _adaptive_kind = "splade"
+    else:
+        _adaptive_kind = "dense"
+    adaptive_rows = run_adaptive(bundle=bundle, cfg=cfg, retriever_kind=_adaptive_kind)
 
     # ---- write outputs ---------------------------------------------------- #
     def _write(path: str, rows: List[Dict[str, object]]) -> None:
