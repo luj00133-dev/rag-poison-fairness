@@ -53,3 +53,15 @@ paper/patch_*.py
 paper/build_*.log
 paper/compile_papers.ps1
 results/*_final.txt
+
+# Generation-stage run artefacts (caches are regenerable and large)
+results/**/generation_cache.json
+results/gen_smoke/
+results/gen_control_cache.json
+results/gen_inspect_cache.json
+results/bbq_control_cache.json
+results/bbq_contexts_cache.pkl
+results/generation_contexts.pkl
+results/attribution_cache.json
+results/*.log
+results/time_*.log

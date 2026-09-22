@@ -54,7 +54,7 @@ We formalise both dimensions, construct the pairwise attack, and re-implement fi
 
 Finding (2) is a \textbf{negative result about a class of defenses}, and we argue it is the paper's central contribution. We prove it (§6): under a relevance-overlap assumption, a distribution-constrained defense faces a \textbf{trilemma} --- it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Violating an \(\varepsilon\)-constraint costs the attacker at most \(k\) replacements once its passages are retrieved; whether they are retrieved is a separate, corpus- and encoder-dependent question, and our six-retriever comparison shows it varies by more than an order of magnitude. We also show by backbone alignment that the inertness does not depend on the attack leaving R1 undisturbed: on the dense encoders the attack moves R1 by 0.37--0.47, more than three times as much as on BM25, and the R1 constraint remains inert at every budget setting --- \(\Delta\) = 0.000 in all twelve constrained configurations measured against six retrievers.
 
-The retrieval-layer skew also \textbf{propagates to the generated output} (§5.7): with a fixed generator and only the retrieved context varying, the generation-layer stance gap rises 46\% under poisoning (0.271 \(\rightarrow\) 0.396), and it does so by driving one group's favourable rate to ceiling (0.708 \(\rightarrow\) 1.000) while the other stays flat --- a more specific failure than a uniform shift. Neither constraint repairs this.
+The retrieval-layer skew also \textbf{propagates to the generated output} (§5.7), and we report this with a corrected instrument. Using a continuous entailment-based stance metric across three generators from two model families, injection shifts the suppressed group's stance by \textbf{\$-\$0.13 to \$-\$0.18} and the favoured group's by \textbf{+0.13}, in every generator, at \(p \le 0.0035\). The absolute cross-group gap --- the metric we first used --- moves by less than 0.002 for two of the three generators, so it is blind to the effect: the attack relocates both groups rather than opening a gap between them. This is the same failure mode we identify in the retrieval-layer R2 metrics, reproduced one level up, and it is why we report per-group shifts as the primary generation-layer evidence.
 
 A methodological by-product is relevant to anyone building monitoring for this threat: of three plausible R2 statistics we tested, two are silently blind to the attack, and on a bias benchmark the third is confounded by a pre-existing corpus imbalance. We report all three to document the failure modes.
 
@@ -924,7 +924,7 @@ Every result above is measured at the retrieval layer. That is deliberate --- it
 
 Generator: DeepSeek (\texttt{deepseek-chat} at temperature 0), selected because it is reachable without a proxy from the network this work used. 207 API calls, 49.2k prompt tokens, 125 s of model time.
 
-\textbf{Table 14.} Generation-layer stance by condition. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
+\textbf{Table 14.} The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 15; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -956,15 +956,62 @@ poisoned & 0.583 & 0.979 & \textbf{0.3958} & \textbf{+46\%} \\
 \end{longtable}
 }
 
-\textbf{Finding 8. The retrieval-layer skew propagates to the generated output.} The generation-layer stance gap rises from 0.2708 to 0.3958 under poisoning --- a 46\% increase on a fixed generator with only the context changed. The retrieval-layer failure we document is therefore not an artefact of how we measure retrieval: it changes what the system says.
+Read Table 14 and Table 15 together: the same experiment, on the same corpus at the same injection rate, yields a 46\% rise in the absolute gap under one instrument and a rise of 0.0008--0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
-\textbf{Finding 9. The skew does not appear as a uniform shift; it saturates one group.} The favourable rate for the second group rises monotonically across conditions (\textbf{0.708 \(\rightarrow\) 0.979 \(\rightarrow\) 1.000 \(\rightarrow\) 1.000}) while the first group's rate is essentially flat (0.562 \(\rightarrow\) 0.583 \(\rightarrow\) 0.604 \(\rightarrow\) 0.583). The attack does not make the generator ``more biased'' in a diffuse sense; it drives one group's favourable judgement to ceiling. This is a more specific --- and more concerning --- failure mode than a uniform shift, and it is visible only because we measure the two groups separately.
+\textbf{Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent generators --- but only when the two groups are measured separately.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across three generators from two model families. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-\textbf{Finding 10. Neither constraint improves the generation layer, and one makes it slightly worse.} \texttt{r1only} leaves the gap identical to no defence (0.3958); \texttt{r2both} leaves it slightly higher (0.4167). This is consistent with the retrieval-layer result on this backbone, where the R2 gap is already saturated and the R1 constraint is inert (§5.5): the input to the generator is unchanged, so the output is unchanged. We report it because it closes the loop honestly --- the constraints we proposed, evaluated here, do not repair the downstream harm.
+\textbf{Table 15.} Generation-layer stance, entailment-scored, three generators. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
 
-\textbf{A metric that failed, reported because it is the natural one to reach for.} We implemented the expected-attributed-exposure (EAE-D) statistic of Kim \& Diaz {[}8{]} by asking the generator, per retrieved passage, whether its answer relied on that passage. It returns \textbf{1.000 in every condition}, with no discrimination. The reason is structural rather than a coding error: the answer is generated \emph{from} the context, so a ``did you rely on this?'' probe admits YES for essentially any passage present. Proper attribution --- ``which passages did you rely on?'' --- is what {[}8{]} measures by entailment rather than by self-report, and our self-report implementation does not replicate it. We report the failure because EAE-D is the obvious metric at this interface and a reader should know that its cheap version is uninformative here.
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Generator
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\Delta\) gap (absolute)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{\(\Delta\) group 1}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{\(\Delta\) group 2}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} \\
+\midrule\noalign{}
 
-\textbf{Scope.} One generator, one retrieval backbone (GTE-base), one injection rate, 48 queries. The direction and the saturation pattern are clear; the magnitudes should not be extrapolated.
+\bottomrule\noalign{}
+
+qwen-turbo & +0.0008 & 0.32 & \textbf{\$-\(0.1297** | **<0.0001** | **+0.1305** | **<0.0001** |
+| qwen-plus | +0.0018 | 0.042 | **\)-\$0.1280} & \textbf{0.0035} & \textbf{+0.1298} & \textbf{0.0015} \\
+qwen-max & \$-\(0.0491 | 0.18 | **\)-\$0.1785** & \textbf{0.0001} & \textbf{+0.1294} & \textbf{0.0029} & & \\
+\end{longtable}
+}
+
+\textbf{The absolute cross-group gap --- the metric we originally used --- is blind to this effect, and we had reproduced one level up the exact error we criticise in §5.3.} Under injection group 1's stance collapses (\$-\$0.13 to \$-\$0.18) while group 2's rises (+0.13), in every generator, at p \(\leq\) 0.0035. Because the corpus carries a pre-existing stance asymmetry, \texttt{\textbar{}stance(g1)\ \$-\$\ stance(g2)\textbar{}} moves by less than 0.002 for two of the three generators and by \$-\$0.05 (the wrong sign) for the third. Taking an absolute difference between two groups destroys precisely the signal, for the same reason it does at the retrieval layer: the attack does not make the system uniformly more skewed, it suppresses one group and elevates the other, and the gap between them is dominated by a corpus-level constant that the attack does not touch.
+
+This vindicates the qualitative claim in Finding 9 --- the skew saturates one group rather than shifting everything --- while changing the evidence for it. Findings 8 and 9 as originally stated rested on a forced-choice probe whose original numbers (gap 0.2708 \(\rightarrow\) 0.3958, a 46\% rise) do \textbf{not} reproduce under entailment scoring: the gap delta is +0.0008 / +0.0018 / \$-\$0.0491 across the three generators. The forced-choice probe is not wrong so much as compressed: it forces a binary selection between two maximally opposed statements, which pushes both groups' rates toward ceiling (the original table showed group 2 at 0.979 \(\rightarrow\) 1.000), whereas a continuous entailment score can register the collapse of the suppressed group at 0.132 \(\rightarrow\) 0.002, which is the larger and more consistent effect. \textbf{We therefore report the per-group entailment shifts as the primary generation-layer evidence, and we demote the absolute gap to a control that fails.}
+
+\textbf{Finding 9. The skew does not appear as a uniform shift; it suppresses one group and elevates the other.} Under injection the suppressed group's stance falls by 0.13--0.18 and the favoured group's rises by 0.13, in all three generators. The magnitude of the two shifts is nearly equal, which is why the absolute difference between them is nearly unchanged: the attack relocates both groups rather than opening a gap between them. This is visible only because we measure the two groups separately, and it is the generation-layer counterpart of the R1/R2 distinction the paper is built on.
+
+\textbf{Finding 10. Neither constraint improves the generation layer.} \texttt{r1only} leaves both per-group shifts identical to no defence to four decimal places (\(\Delta\)g1 = \$-\$0.1297, \(\Delta\)g2 = +0.1305 for qwen-turbo, identical values), and \texttt{r2both} moves them by less than 0.002. This is consistent with the retrieval-layer result: the input to the generator is unchanged, so the output is unchanged. \textbf{The constraints we proposed, evaluated here, do not repair the downstream harm.}
+
+\textbf{5.7.1 Two metric failures, and what they were caused by.} Both are worth recording because each cost us a wrong result before being found.
+
+\emph{Stance direction.} The first implementation scored stance as \texttt{P(entail\ \textbar{}\ statement,\ answer)}. Calibrated against the correct convention on the same data, the reversed form returns ±0.002 for a favourable answer, an unfavourable answer, an unrelated answer and a vacuous one alike: it cannot separate anything, and it fails silently by returning zeros rather than an obvious error. The correct direction, \texttt{P(entail\ \textbar{}\ answer,\ statement)}, returns +0.997 and \$-\$0.997 for the two extremes. The convention is not interchangeable and the failure mode is indistinguishable from a genuine null result --- a mistake worth flagging for anyone building this measurement.
+
+\emph{Attribution direction.} The expected-attributed-exposure (EAE-D) statistic of Kim \& Diaz {[}8{]} was implemented by asking the generator, per retrieved passage, whether its answer relied on that passage. It returned \textbf{1.000 in every condition}, which we previously reported as a failed metric. The cause is again direction: attribution must ask whether the \textbf{passage entails the answer}, not the reverse. A passage the answer used scores 0.996 in the correct direction and 0.008 in the reversed one; an unused passage scores 0.000 in both. With the direction fixed the statistic discriminates properly --- 0.798--0.828 clean, rising to 0.831--0.968 under injection, since poisoned contexts are engineered to be the passages the answer leans on. The earlier self-report probe measured the judge's agreeableness, not the answer's provenance.
+
+\textbf{Scope.} Three generators from two model families, one retrieval backbone (GTE-base), one injection rate, and 48 retrieval slots that correspond to only 16 distinct question texts (§8, Limitation 6). The per-group shifts are consistent in sign and significance across all three generators, which is stronger evidence than the single-generator version this section previously reported; the magnitudes, however, should not be extrapolated to generators we did not run.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -992,9 +1039,9 @@ A distribution-constrained defense accepts exactly \(\mathcal{R}_\varepsilon\). 
 
 \textbf{Consequence.} A defense whose acceptance test is membership in \(\mathcal{R}_\varepsilon\) admits a \textbf{fully adversarial} selection at any tolerance, including \(\varepsilon = 0\). Tightening the budget does not exclude the injection; it constrains the attacker's \emph{composition}, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical \texttt{poison@k} is \emph{identical} to no defense at every \(\varepsilon\) rather than merely close to it: the injected selection is not near the boundary of \(\mathcal{R}_\varepsilon\), it is at the reference point.
 
-\textbf{Empirical check.} Table 12 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion \emph{exactly} unchanged at every tolerance.
+\textbf{Empirical check.} Table 16 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion \emph{exactly} unchanged at every tolerance.
 
-\textbf{Table 15.} Prop. 1 prediction vs.~measurement. R1-only constraint (\texttt{repr\_group}), strongest attack, largest injection rate per corpus; \(\Delta\) = constrained minus no defense.
+\textbf{Table 16.} Prop. 1 prediction vs.~measurement. R1-only constraint (\texttt{repr\_group}), strongest attack, largest injection rate per corpus; \(\Delta\) = constrained minus no defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -1189,7 +1236,6 @@ We report the signal because it is the direction Proposition 1 points to, and be
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
   \textbf{The measurement requires group- and stance-annotated passages, and natural retrieval corpora do not have them.} This is the binding constraint on this line of work, and it is worth stating plainly rather than as a data-collection to-do. R1 needs a group label per passage; R2 needs a stance label per passage. NQ and MS MARCO --- the standard neutral retrieval corpora --- carry neither, and stance toward a social group is not a property that can be inferred from a neutral passage, because a neutral passage does not express one. We therefore could not substitute a neutral corpus for BBQ, and neither can the defenses we evaluate: an R1-constraining defense needs the same group labels, and an R2-constraining defense needs labels that no existing neutral corpus provides. The framework's applicability is thus bounded by annotation, not by computation, and constructing a neutral, group- and stance-annotated retrieval benchmark is the field's outstanding infrastructure problem. Our two corpora bound the behaviour from the two sides available today: a template-controlled corpus with an exactly known reference, and a naturally written bias benchmark. We flag this as an open problem rather than a gap in the present study.
 \item
@@ -1201,7 +1247,15 @@ We report the signal because it is the direction Proposition 1 points to, and be
 \item
   \textbf{Retrieval back-ends, and what the scale check changed.} Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders --- GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as ``to be added'' and \emph{predicted} that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since \textbf{GTE-base \(\rightarrow\) GTE-large moves from 0.0625 to 0.5000 --- an eight-fold increase in susceptibility within a single encoder family and training recipe.} That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies \textbf{nine-fold across the base dense encoders alone} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. Third, and most importantly, \textbf{even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively} --- so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M \(\rightarrow\) 335M for GTE and E5; 66M \(\rightarrow\) 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a ``large SPLADE is no more robust'' conclusion carries correspondingly less weight.
 \item
-  \textbf{No generation-stage evaluation \emph{beyond §5.7}.} We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.7 adds a first generation-stage check on a single generator and backbone; it establishes that the skew propagates and that it saturates one group, but not the magnitude. A multi-generator evaluation, and proper entailment-based attribution rather than the self-report probe that failed in §5.7, remain to be done. We do not otherwise report attributed exposure {[}8{]} or generator bias {[}4, 7{]}.
+  \textbf{The generation-stage evaluation is preliminary, and we now know specifically why.} We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.7 adds a first generation-stage check on a single generator and one backbone; it establishes that the retrieval skew reaches the output and that it saturates one group, but not the magnitude. Three concrete limits, all uncovered while building a larger evaluation:
+
+  \emph{Query diversity.} The controlled corpus's 48 retrieval slots correspond to only \textbf{16 distinct question texts} (each repeated 3\(\times\), once per paraphrase variant). Any statistic aggregated over the 48 is therefore aggregated over 16 questions, and the effective sample size is a third of what the table suggests. The natural-corpus evaluation does not have this problem (BBQ supplies 144 distinct, naturally written questions), which is an additional reason to prefer it for output-level measurement rather than treating it as a replication check.
+
+  \emph{The generator does not follow an inverted context on this corpus.} We ran a negative control that flips the stance of every retrieved passage while holding the question fixed. On the controlled corpus the answer was \textbf{unchanged in 6 of 6 cases under inversion}, but \textbf{changed in 6 of 6 cases when the context was replaced by unrelated passages} or removed entirely. The generator is therefore reading the context at the level of \emph{topic} --- it knows a question about an engineering evaluation calls for naming an engineer --- but not at the level of \emph{stance}, and the answers are determined by the question's framing rather than by the evidence on trial. This is a property of a template corpus whose questions presuppose their own answer, and it means a null propagation result on that corpus would have been uninformative. The forced-choice probe reported in §5.7 avoids the problem by construction, which is why it is the primary measurement; we now report the control because the free-form probe alone cannot distinguish ``no propagation'' from ``generator ignores stance''.
+
+  \emph{A metric we reported as failed is now fixed, and the fix is not cosmetic.} The per-passage attribution probe asked the generator itself whether its answer relied on a given passage; the judge answered YES almost always and the resulting EAE-D was a constant 1.000 in every condition. The cause is direction: an NLI model must be asked whether the \textbf{passage entails the answer}, not the reverse. Calibrated on this corpus, a passage the answer used scores 0.996 in the correct direction and 0.008 in the reversed one, and an unused passage scores 0.000 in both --- so the reversed form returns noise rather than an obviously wrong value. §5.7's EAE-D figures should be read as produced by the probe we have now replaced.
+
+  A multi-generator evaluation with entailment-based attribution is in progress and is not reported here; we do not otherwise report attributed exposure {[}8{]} or generator bias {[}4, 7{]}.
 \item
   \textbf{Binary groups.} Following {[}6, 7, 8{]}, we use two groups per stratum. Extension to \(|\mathcal{G}| > 2\) is mechanical for R1 and R2 but is not evaluated here. We note that the race/ethnicity category of BBQ is markedly imbalanced in our corpus build (960 passages about the protected group versus 88 about the non-protected group), which is itself a property of the benchmark worth flagging for anyone reusing it.
 \end{enumerate}

@@ -178,6 +178,9 @@ rewrite matches that form rather than the original.
 | `src/attacks/poisoning.py` | pairwise injection, subspace projection, adaptive attacker |
 | `src/defenses/selectors.py` | multi-query, manifold filter, representation-conserving selector |
 | `src/eval/metrics.py` | R1 drift, R2 stance gap, attack-success and utility metrics |
+| `src/eval/attribution.py` | generation-stage probes: grounded answers, forced choice, judging |
+| `src/eval/generation.py` | multi-provider chat client + local NLI scorer (stance, attribution) |
+| `src/run_generation.py` | multi-generator generation-stage evaluation with bootstrap CIs and paired tests |
 | `src/run_experiment.py` | driver: sweeps injection rate × defense × retriever |
 | `analysis/compare_six_backbones.py` | the six-retriever comparison behind §5.5 |
 | `analysis/compare_corpora.py` | controlled corpus vs BBQ |
