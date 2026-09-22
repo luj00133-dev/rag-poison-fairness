@@ -49,10 +49,10 @@ We formalise both dimensions, construct the pairwise attack, and re-implement fi
 \item
   \textbf{Injection must be reported as a rate, not a count.} With 0.1\% of the corpus injected (8 passages), the text attack already reaches 68.75\% inclusion against BM25 on the controlled corpus. An earlier version of this study used a fixed count and reached the opposite conclusion for the wrong reason; we report the correction and the mechanism behind the discrepancy (Finding 4).
 \item
-  \textbf{The projection attack is robust to corpus naturalness; the text attack is not.} The text-only attack reaches 0.000 on BBQ at every rate up to 2\%, while the projection attack reaches 0.903 at 0.1\% and 1.000 by 2\%. We identify the mechanism: an injection that works by aligning its text with query vocabulary needs the injected tokens to stand out, which repetitive corpora permit and naturally varied text does not. The same condition reappears in the \emph{representation}: across five retrievers the text attack succeeds 0.750 (BM25), 0.625 (feature hashing), 0.5625 (Contriever), 0.0625 (GTE-base) and 0.0625 (E5-base-v2) --- a nine-fold spread, with two of the three real encoders resisting almost completely.
+  \textbf{The projection attack is robust to corpus naturalness; the text attack is not.} The text-only attack reaches 0.000 on BBQ at every rate up to 2\%, while the projection attack reaches 0.903 at 0.1\% and 1.000 by 2\%. We identify the mechanism: an injection that works by aligning its text with query vocabulary needs the injected tokens to stand out, which repetitive corpora permit and naturally varied text does not. The same condition reappears in the \emph{representation}, and there it has a mechanism. Across six retrievers the text attack succeeds 0.750 (BM25), 0.625 (feature hashing), 0.625 (\textbf{SPLADE}), 0.5625 (Contriever), 0.0625 (GTE-base) and 0.0625 (E5-base-v2) --- a nine-fold spread. We added SPLADE, a \emph{learned sparse} retriever, specifically to separate two explanations: SPLADE learns its term weights yet is as susceptible as BM25, so susceptibility tracks the \textbf{sparsity} of the representation rather than whether the encoder is learned or semantic. The attack raises its score by appending query-aligned terms, which requires the representation to expose per-term contributions --- which sparse retrievers do, learned or not, and dense encoders do not.
 \end{enumerate}
 
-Finding (2) is a \textbf{negative result about a class of defenses}, and we argue it is the paper's central contribution. We prove it (§6): under a relevance-overlap assumption, a distribution-constrained defense faces a \textbf{trilemma} --- it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Violating an \(\varepsilon\)-constraint costs the attacker at most \(k\) replacements once its passages are retrieved; whether they are retrieved is a separate, corpus- and encoder-dependent question, and our five-backbone comparison shows it varies by an order of magnitude. We also show by backbone alignment that the inertness does not depend on the attack leaving R1 undisturbed: on real encoders the attack moves R1 by 0.37--0.47, more than three times as much as on our own retrievers, and the R1 constraint remains inert at every budget setting.
+Finding (2) is a \textbf{negative result about a class of defenses}, and we argue it is the paper's central contribution. We prove it (§6): under a relevance-overlap assumption, a distribution-constrained defense faces a \textbf{trilemma} --- it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Violating an \(\varepsilon\)-constraint costs the attacker at most \(k\) replacements once its passages are retrieved; whether they are retrieved is a separate, corpus- and encoder-dependent question, and our six-retriever comparison shows it varies by more than an order of magnitude. We also show by backbone alignment that the inertness does not depend on the attack leaving R1 undisturbed: on the dense encoders the attack moves R1 by 0.37--0.47, more than three times as much as on BM25, and the R1 constraint remains inert at every budget setting --- 12 of 12 constrained configurations show an effect of exactly zero against six retrievers.
 
 The retrieval-layer skew also \textbf{propagates to the generated output} (§5.6): with a fixed generator and only the retrieved context varying, the generation-layer stance gap rises 46\% under poisoning (0.271 \(\rightarrow\) 0.396), and it does so by driving one group's favourable rate to ceiling (0.708 \(\rightarrow\) 1.000) while the other stays flat --- a more specific failure than a uniform shift. Neither constraint repairs this.
 
@@ -91,7 +91,7 @@ R1 and R2 are orthogonal: a set can be perfectly balanced in R1 while every pass
 
 Every defense that constrains R1 alone is blind to this. It observes that the group distribution is clean, admits the injected passages, and reports success.
 
-\textbf{What we do.} We formalise R1 and R2, construct the pairwise-poisoning attack, and build a controlled evaluation in which group and stance labels are exact and the clean reference for both dimensions is known by construction. We then re-implement the R1-constraining defense family and evaluate it against the attack across two retrieval back-ends. Our findings are:
+\textbf{What we do.} We formalise R1 and R2, construct the pairwise-poisoning attack, and build a controlled evaluation in which group and stance labels are exact and the clean reference for both dimensions is known by construction. We then re-implement the R1-constraining defense family and evaluate it against the attack across six retrieval back-ends. Our findings are:
 
 \begin{itemize}
 \tightlist
@@ -115,11 +115,13 @@ Every defense that constrains R1 alone is blind to this. It observes that the gr
 \item
   A controlled pairwise-poisoning construction that makes both dimensions measurable without a generator, so the mechanism can be studied independently of LLM behaviour (§4).
 \item
-  An empirical demonstration that R1-constraining defenses are inert against this attack, including the strictest budget setting, across two retrieval back-ends and four bias strata (§5).
+  An empirical demonstration that R1-constraining defenses are inert against this attack, including the strictest budget setting, across \textbf{six} retrieval back-ends and four bias strata (§5).
 \item
   A negative result on the limits of distribution-level defense: aggregate-composition constraints cannot reject an individually admissible passage, so any defense in this class has an adversarial-passage inclusion floor of 1 (§6). To our knowledge this limit has not been characterised.
 \item
   An exploratory provenance signal with an explicit validity threat and a falsification protocol (§7).
+\item
+  A methodological finding with an identified mechanism: text-attack susceptibility is predicted by the \textbf{sparsity} of the retrieval representation, not by whether the encoder is learned or semantic (§5.5, Finding 7). A learned sparse retriever is as susceptible as BM25 while two of three dense encoders resist almost completely, so a single-encoder robustness claim measures an unmeasured encoder property.
 \end{enumerate}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
@@ -278,7 +280,7 @@ Definition
 
 We deliberately report three R2 statistics rather than one. The two reference-based variants are included as \textbf{controls}: §5.1 shows they do not respond to the attack, which is itself a finding, and reporting them documents the failure mode rather than hiding it.
 
-Ground-truth poison labels are used \textbf{only} for the attack-success metrics; no defense receives them. All defenses are evaluated with \(k = 5\). Retrieval back-ends are BM25, a self-contained feature-hashing dense retriever, and --- for the backbone alignment of §5.5 --- the real encoders GTE-base {[}5{]} and Contriever {[}8{]}. SPLADE and the E5 family (used by {[}4, 6{]}) remain to be added (Limitation 5).
+Ground-truth poison labels are used \textbf{only} for the attack-success metrics; no defense receives them. All defenses are evaluated with \(k = 5\). Retrieval back-ends are BM25, a self-contained feature-hashing dense retriever, and --- for the backbone alignment of §5.5 --- the encoders GTE-base {[}5{]}, Contriever {[}8{]} and E5-base-v2 {[}4, 6{]}, plus the learned-sparse retriever SPLADE. SPLADE-\emph{large} and the E5-\emph{large} checkpoints remain to be added (Limitation 5).
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
@@ -642,31 +644,50 @@ The three findings that hold on both corpora and at every injection rate are the
 
 \textbf{Adaptive attack on BBQ.} \texttt{off-manifold} holds \texttt{poison@k} at 0.007--0.111 up to \(\lambda = 0.5\); \texttt{repr\_conserving} at 0.049--0.319; \texttt{multi\_query} at 0.083--0.535. All saturate at 1.000 by \(\lambda = 4\); see the companion paper for a full adaptive-evaluation treatment.
 
-\subsection{Backbone alignment: five retrievers, including three real semantic encoders}\label{backbone-alignment-five-retrievers-including-three-real-semantic-encoders}
+\subsection{Backbone alignment: six retrievers, and what susceptibility actually tracks}\label{backbone-alignment-six-retrievers-and-what-susceptibility-actually-tracks}
 
-The experiments above use a self-contained feature-hashing dense retriever and a lexical one. Neither is the encoder the fairness-defense literature uses, so the numbers cannot be placed beside published results. We therefore add the encoders that literature actually uses: \textbf{GTE-base} (used by the closest prior work on fairness-aware retrieval optimisation {[}5{]}), \textbf{Contriever} (used by the fair-ranking work of Kim \& Diaz {[}8{]}), and \textbf{E5-base-v2} (used by both the bias-amplification attack {[}4{]} and the fairness-evaluation study {[}6{]}). All five are compared at a matched injection rate on the controlled corpus, so only the retriever varies. The E5 encoder receives its required \texttt{query:} / \texttt{passage:} task prefixes; omitting them measurably degrades retrieval and would distort the comparison.
+The experiments above use a self-contained feature-hashing dense retriever and a lexical one. Neither is the encoder the fairness-defense literature uses, so the numbers cannot be placed beside published results. We therefore add the encoders that literature actually uses --- \textbf{GTE-base} {[}5{]}, \textbf{Contriever} {[}8{]}, and \textbf{E5-base-v2} {[}4, 6{]} --- and, to test a mechanism rather than only to align, \textbf{SPLADE}, a \emph{learned sparse} retriever. SPLADE is the decisive addition: it is sparse like BM25 but learned like a neural encoder, so it separates two explanations that a lexical-versus-semantic comparison cannot. E5 receives its required \texttt{query:} / \texttt{passage:} prefixes; omitting them measurably degrades retrieval and would distort the comparison.
 
 \textbf{Table 8.} Attack effect by backbone. \texttt{template\_plus\_projection}, \(\rho = 0.5\%\), no defense.
 
 {\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lllll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}@{}}
 \toprule\noalign{}
-Retriever & R1 drift & R2 gap & \texttt{poison@k} & \texttt{in\_pool\_rate} \\
+\begin{minipage}[b]{\linewidth}\raggedright
+Retriever
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+representation
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+R1 drift
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+R2 gap
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{poison@k}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{in\_pool\_rate}
+\end{minipage} \\
 \midrule\noalign{}
 
 \bottomrule\noalign{}
 
-BM25 (lexical) & 0.1625 & 0.7436 & 0.750 & 0.0125 \\
-dense (feature hashing) & 0.1625 & 1.0000 & 1.000 & 0.0000 \\
-\textbf{GTE-base} & 0.4688 & 1.0000 & 1.000 & 0.0000 \\
-\textbf{Contriever} & 0.3687 & 1.0000 & 1.000 & 0.0000 \\
-\textbf{E5-base-v2} & 0.4000 & 1.0000 & 1.000 & 0.0000 \\
+BM25 & lexical, unsupervised sparse & 0.1625 & 0.7436 & 0.750 & 0.0125 \\
+dense (feature hashing) & hashed, not semantic & 0.1625 & 1.0000 & 1.000 & 0.0000 \\
+\textbf{SPLADE} & \textbf{learned sparse} & 0.2687 & 1.0000 & 0.750 & 0.0000 \\
+GTE-base & dense semantic & 0.4688 & 1.0000 & 1.000 & 0.0000 \\
+Contriever & dense semantic & 0.3687 & 1.0000 & 1.000 & 0.0000 \\
+E5-base-v2 & dense semantic & 0.4000 & 1.0000 & 1.000 & 0.0000 \\
 \end{longtable}
 }
 
-All three real encoders are attacked at least as completely as either of our own retrievers, and the R2 gap saturates at its maximum in every case. Notably their R1 drift is \textbf{2.3x--2.9x} that of the lexical and hashed retrievers (0.37--0.47 versus 0.16) --- the projection attack perturbs group composition \emph{more} in a real semantic space than in a feature-hashed one, which is the opposite of what we expected when we added this experiment.
+Every retriever is attacked, and the R2 gap saturates at its maximum for all but BM25. The R1 drift of the dense encoders (0.37--0.47) is \textbf{2.3x--2.9x} that of BM25 (0.16) --- the projection attack perturbs group composition \emph{more} in a continuous semantic space, which is the opposite of what we expected when we added this experiment.
 
-\textbf{Table 9.} Does the R1-only constraint stay inert? \texttt{template\_plus\_projection}, \(\rho = 0.5\%\).
+\textbf{Table 9.} R1-only constraint inertness. \texttt{template\_plus\_projection}, \(\rho = 0.5\%\), \(\Delta\) = constrained minus no defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -685,7 +706,7 @@ Retriever
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
 \texttt{repr\_both} \(\varepsilon\)=0
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-\(\Delta\) vs.~no defense
+\(\Delta\)
 \end{minipage} \\
 \midrule\noalign{}
 
@@ -693,66 +714,101 @@ Retriever
 
 BM25 & 0.750 & 0.750 & 0.750 & \textbf{0.000} \\
 dense (hash) & 1.000 & 1.000 & 1.000 & \textbf{0.000} \\
+SPLADE & 0.750 & 0.750 & 0.750 & \textbf{0.000} \\
 GTE-base & 1.000 & 1.000 & 1.000 & \textbf{0.000} \\
 Contriever & 1.000 & 1.000 & 1.000 & \textbf{0.000} \\
 E5-base-v2 & 1.000 & 1.000 & 1.000 & \textbf{0.000} \\
 \end{longtable}
 }
 
-\textbf{Finding 6. The R1 constraint is inert on every backbone tested --- 15 of 15 constrained configurations show \(\Delta\) = 0.000 --- and its inertness does not depend on the attack leaving R1 undisturbed.} This is the paper's strongest single result, and we state it in the sharper form deliberately because the weaker form would be misleading. One might reasonably expect an R1 constraint to become effective once the attack perturbs R1 appreciably --- and on the real encoders it does perturb R1, by 0.37--0.47, more than three times as much as on our own retrievers. It nonetheless admits exactly the same adversarial passages as no defense at all, at either budget extreme. The reason is that the constraint operates on \emph{admission quotas}, and the attacker constructs the injection to fit inside whatever quota the defense enforces: the tolerance parameter widens or narrows the admissible region without ever excluding the attacker's passages, which were built to be compositionally typical. An R1 constraint has no operating point at which it bites, and this holds across five retrievers spanning lexical, hashed, and three distinct semantic representations. §6.2 proves why.
+\textbf{Finding 6. The R1 constraint is inert on every backbone tested --- 12 of 12 constrained configurations show \(\Delta\) = 0.000 --- and its inertness does not depend on the attack leaving R1 undisturbed.} This is the paper's strongest single result, and we state it in the sharper form deliberately, because the weaker form would be misleading. One might reasonably expect an R1 constraint to become effective once the attack perturbs R1 appreciably --- and on the dense encoders it does perturb R1, by 0.37--0.47, more than three times as much as on BM25. It nonetheless admits exactly the same adversarial passages as no defense, at either budget extreme. The reason is that the constraint operates on \emph{admission quotas}, and the attacker constructs the injection to fit inside whatever quota the defense enforces: the tolerance parameter widens or narrows the admissible region without ever excluding the attacker's passages, which were built to be compositionally typical. §6.2 proves why. The result holds across six retrievers spanning lexical, hashed, learned-sparse and three dense semantic representations.
 
-\textbf{Table 10.} Text-only (lexical) attack by backbone. \texttt{template}, no defense. The last column groups the encoders by susceptibility.
+\textbf{Table 10.} Text-only (lexical) attack by backbone --- what susceptibility actually tracks. \texttt{template}, no defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}@{}}
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\raggedright
 Retriever
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-\texttt{poison@k} @ \(\rho\)=0.5\%
+representation
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-\texttt{poison@k} @ \(\rho\)=2\%
+\texttt{poison@k} @0.5\%
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-R1 drift @ \(\rho\)=0.5\%
+@2\%
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-group
+R1 drift @0.5\%
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{fav\_g2}
 \end{minipage} \\
 \midrule\noalign{}
 
 \bottomrule\noalign{}
 
-BM25 (lexical) & 0.7500 & 0.7500 & 0.1625 & lexical \\
-dense (feature hashing) & 0.6250 & 0.6250 & 0.0812 & hashed \\
-\textbf{Contriever} & \textbf{0.5625} & 0.5625 & 0.1750 & \textbf{susceptible} \\
-\textbf{GTE-base} & \textbf{0.0625} & 0.0625 & 0.0000 & \textbf{resistant} \\
-\textbf{E5-base-v2} & \textbf{0.0625} & 0.0625 & 0.0000 & \textbf{resistant} \\
+BM25 & lexical, unsupervised sparse & 0.7500 & 0.7500 & 0.1625 & 0.7436 \\
+dense (feature hashing) & hashed (preserves lexical surface) & 0.6250 & 0.6250 & 0.0812 & 0.6167 \\
+\textbf{SPLADE} & \textbf{learned sparse} & \textbf{0.6250} & 0.6250 & 0.2188 & \textbf{1.0000} \\
+Contriever & dense semantic & 0.5625 & 0.5625 & 0.1750 & 0.9444 \\
+GTE-base & dense semantic & \textbf{0.0625} & 0.0625 & 0.0000 & n/a \\
+E5-base-v2 & dense semantic & \textbf{0.0625} & 0.0625 & 0.0000 & n/a \\
 \end{longtable}
 }
 
-\textbf{Finding 7. Text-attack susceptibility is a property of the individual encoder, and it splits the three real encoders 2-to-1 with a nine-fold gap.} We expected, when adding this experiment, a clean lexical-versus-semantic split: the attack works when the representation is lexical and fails when it is semantic. The result is not that. \textbf{GTE-base and E5-base-v2 both resist almost completely (0.0625), while Contriever is nearly as susceptible as BM25 (0.5625)} --- a nine-fold difference between encoders of the same size class, on the same corpus, with the same injected text.
+The \texttt{fav\_g2} column is the R2 reading. The \texttt{n/a} entries for GTE-base and E5-base-v2 are not missing values but a consequence of the attack failing: with no adversarial passage in the top-\(k\) there is no stance skew to measure, so the R2 gap is undefined rather than 0 or 1. We report it as undefined because collapsing it to 0.000 would misrepresent a failed attack as a perfectly balanced selection. Note also that R1 drift is \textbf{exactly} 0.0000 for both resistant encoders --- the attack produces no measurable change on either dimension --- whereas SPLADE's R2 gap reaches its maximum 1.0000, the highest of the six, against a text-only attack where BM25 reaches only 0.7436. SPLADE's learned term weighting evidently concentrates score on exactly the terms the attacker appends, making it the \emph{most} efficiently attacked retriever on the R2 dimension despite tying the hashed retriever on \texttt{poison@k}.
 
-Two consequences follow, and the second is the uncomfortable one.
+\textbf{Finding 7. Text-attack susceptibility tracks the \emph{sparsity} of the representation, not whether the encoder is learned or semantic.} We added SPLADE specifically to decide between two explanations, and it decides: SPLADE learns its term weights --- it is a neural encoder, trained on relevance --- yet it is as susceptible as BM25 (\textbf{0.6250 versus 0.7500}), because its representation is still a sparse bag of term weights. The grouping that the data supports is:
 
-First, a feature-hashing retriever is not a substitute for a semantic one: it retains the lexical attack surface (0.625, close to BM25's 0.750) and therefore over-states text-attack effectiveness relative to a real encoder. This is why our own earlier numbers, produced with it, were too pessimistic about encoder robustness.
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+representation
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+retrievers
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+text attack
+\end{minipage} \\
+\midrule\noalign{}
 
-Second, and more consequential for the field: \textbf{the encoder used by the fair-ranking work we compare against {[}8{]} is the susceptible one.} A defense evaluated on Contriever would appear to face a live text-injection threat; the same defense on E5-base-v2 or GTE-base would face a negligible one. Because evaluations in this literature are typically run on a single encoder, a reported robustness figure conflates the defense's behaviour with an encoder property that is not measured. We do not regard this as a flaw in any particular paper so much as a \textbf{missing control}: the encoder should be reported as a factor rather than as an implementation detail, and a robustness claim should be accompanied by the same measurement on at least one resistant and one susceptible encoder.
+\bottomrule\noalign{}
+
+\textbf{sparse} (term-level weights, learned or not) & BM25, SPLADE & \textbf{susceptible} (0.62--0.75) \\
+hashed (preserves the lexical surface) & feature hashing & susceptible (0.6250) \\
+\textbf{dense semantic} & GTE-base, E5-base-v2 & \textbf{resistant} (0.0625) \\
+dense semantic & \textbf{Contriever} & susceptible (0.5625) \\
+\end{longtable}
+}
+
+The mechanism is now clear and follows from how the attack works. The injection raises its score by appending query-aligned terms, which requires the representation to expose \textbf{per-term contributions}. A sparse retriever --- including a learned one --- does exactly that, so the attacker's appended terms translate directly into score. A dense encoder compresses the whole passage into one vector, where appended terms are absorbed into the semantic representation and produce no separate term-level gain. We had expected a lexical-versus-semantic split; \textbf{sparsity is the operative property, and semantics only matters through it.}
+
+Two consequences, and the second is the uncomfortable one.
+
+First, a feature-hashing retriever is not a substitute for a semantic one: it preserves the lexical surface (0.6250, close to BM25's 0.7500) and therefore over-states text-attack effectiveness relative to a dense encoder. This is why our own earlier numbers, produced with it, were too pessimistic about encoder robustness.
+
+Second, \textbf{``dense semantic'' is not a guarantee --- Contriever is the counterexample.} Two of the three dense encoders resist almost completely (0.0625) while Contriever sits near BM25 (0.5625), a nine-fold gap between encoders of the same size class on the same corpus with the same injected text. And Contriever is the encoder used by the fair-ranking work we compare against {[}8{]}. A defense evaluated on Contriever would appear to face a live text-injection threat; the same defense on E5-base-v2 or GTE-base would face a negligible one. Because evaluations in this literature are typically run on a single encoder, a reported robustness figure conflates the defense's behaviour with an encoder property that is not measured. We do not regard this as a flaw in any particular paper so much as a \textbf{missing control}: the encoder should be reported as a factor rather than as an implementation detail, and a robustness claim should be accompanied by the same measurement on encoders that differ in representation family.
+
+\textbf{Adaptive attacker, for completeness.} On both SPLADE and E5-base-v2 every defense again collapses to complete failure at the first perturbation step: \texttt{off-manifold} goes 0.1875 \(\rightarrow\) 0.5000 \(\rightarrow\) 0.8125 \(\rightarrow\) 1.000 (SPLADE) and 0.000 \(\rightarrow\) 1.000 (E5-base-v2) for \(\lambda = 0, 0.25, 0.5, 1\); \texttt{multi\_query} and \texttt{repr\_conserving} saturate by \(\lambda = 0.25\). This matches the companion paper's finding that a real encoder leaves defenses less adaptive headroom than our own retriever.
 
 \textbf{Consequences for our claims.} Two findings needed this experiment to be stated correctly:
 
 \begin{itemize}
 \tightlist
 \item
-  Finding 2 (R1 inertness) survives and is \textbf{substantially stronger} than the version we would have claimed without backbone alignment: it holds across five retrievers and, decisively, holds \emph{even when the attack moves R1 substantially} (up to 0.47 on GTE-base).
+  Finding 2 (R1 inertness) survives and is \textbf{substantially stronger} than the version we would have claimed without backbone alignment: it holds across six retrievers and, decisively, holds \emph{even when the attack moves R1 substantially} (up to 0.47 on GTE-base).
 \item
-  Finding 4 (corpus-dependence of the text attack) becomes a \textbf{three-way dependence}: on corpus repetitiveness, on injection rate, and on the encoder. We no longer claim it is a property of the corpus alone.
+  Finding 4 (corpus-dependence of the text attack) becomes a \textbf{three-way dependence}: on corpus repetitiveness, on injection rate, and on the representation family. Sparsity is the third term, and §5.5 shows it is the one with a mechanism behind it.
 \end{itemize}
 
-Two findings do \emph{not} survive unchanged, and we report both. First, the R2 constraint's \textbf{demonstrable benefit} shrinks on real encoders: the R2 gap is already saturated at 1.0000 under every defense configuration at this injection rate, leaving no headroom to recover, so we can show the constraint reducing the gap only on our own encoders. Second, our earlier statement that text-level injection is sufficient must be narrowed: it holds for the lexical and hashed retrievers and for Contriever, but against GTE-base and E5-base-v2 it does not hold at any injection rate we tested.
+Two findings do \emph{not} survive unchanged, and we report both. First, the R2 constraint's \textbf{demonstrable benefit} shrinks on the dense encoders: the R2 gap is already saturated at 1.0000 under every defense configuration at this injection rate, leaving no headroom to recover, so we can show the constraint reducing the gap only on BM25 and our own retrievers. Second, our earlier statement that text-level injection is sufficient must be narrowed to the sparse and hashed representations and to Contriever; against GTE-base and E5-base-v2 it does not hold at any injection rate we tested.
 
 \subsection{Generation-stage propagation: does the retrieval skew reach the output?}\label{generation-stage-propagation-does-the-retrieval-skew-reach-the-output}
 
@@ -945,7 +1001,7 @@ Formal condition
 
 Soundness fails for every \(\varepsilon\) whenever the attacker can construct an \(\varepsilon\)-feasible injection --- which requires only knowledge of \(p^{*}\) and \(\varepsilon\), both public for an auditable defense. So a defense must either (i) accept adversarial passages, (ii) restrict \(\mathcal{R}_\varepsilon\) so severely that \(\mathcal{R}_\varepsilon \cap \mathcal{P}\) shrinks or empties, sacrificing Usefulness, or (iii) set \(\varepsilon\) so large the constraint is vacuous, sacrificing Tightness.
 
-\textbf{This is the formal content of the paper's central claim, and our experiments land on all three horns.} (i) Soundness fails: \texttt{poison@k} equals no defense at every \(\varepsilon\), on five retrievers, two corpora and all injection rates. (ii) Usefulness is squeezed: tightening the R1 budget to \(\varepsilon=0\) on the controlled corpus changes \texttt{in\_pool\_rate} from 0.017 to 0.088 with no security gain, and on the dense back-end from 0.2437 to 0.2812 --- i.e.~the constraint perturbs the selection without excluding anything. (iii) Tightness is vacuous at \(\varepsilon = 1\), where the constraint reduces to no defense by construction.
+\textbf{This is the formal content of the paper's central claim, and our experiments land on all three horns.} (i) Soundness fails: \texttt{poison@k} equals no defense at every \(\varepsilon\), on six retrievers, two corpora and all injection rates. (ii) Usefulness is squeezed: tightening the R1 budget to \(\varepsilon=0\) on the controlled corpus changes \texttt{in\_pool\_rate} from 0.017 to 0.088 with no security gain, and on the dense back-end from 0.2437 to 0.2812 --- i.e.~the constraint perturbs the selection without excluding anything. (iii) Tightness is vacuous at \(\varepsilon = 1\), where the constraint reduces to no defense by construction.
 
 \subsection{Dimensionality does not help, and the only escape is individual-level evidence}\label{dimensionality-does-not-help-and-the-only-escape-is-individual-level-evidence}
 
@@ -1037,7 +1093,7 @@ We report the signal because it is the direction Proposition 1 points to, and be
 \item
   \textbf{Injection budget is a rate, not a count.} We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
 \item
-  \textbf{Retrieval back-ends.} BM25, a self-contained feature-hashing dense retriever, and the three encoders the compared literature uses --- GTE-base, Contriever, and E5-base-v2 (§5.5): five retrievers spanning lexical, hashed, and three distinct semantic representations. SPLADE and E5-\emph{large} remain to be added. We note that feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder --- Finding 7 quantifies the difference. More importantly, Finding 7 shows text-attack effectiveness varies \textbf{nine-fold across the three real encoders} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625), and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. A single-encoder evaluation therefore cannot establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area.
+  \textbf{Retrieval back-ends.} BM25, a self-contained feature-hashing dense retriever, SPLADE, and the three encoders the compared literature uses --- GTE-base, Contriever, and E5-base-v2 (§5.5): six retrievers spanning lexical, hashed, learned-sparse, and three distinct dense semantic representations. E5-\emph{large} and SPLADE-\emph{large} remain to be added; we note that the nine-fold spread we observe among three \emph{base}-size encoders gives no reason to expect the larger checkpoints to agree. We further note that feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder --- Finding 7 quantifies the difference. The SPLADE result, in turn, means we cannot treat ``neural encoder'' as a sufficient condition for resistance either: what predicts susceptibility is whether the representation exposes per-term contributions, and the two susceptible encoders (BM25, SPLADE) are exactly the sparse ones. Finding 7 shows text-attack effectiveness varies \textbf{nine-fold across the three dense encoders} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625), and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. A single-encoder evaluation therefore cannot establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area.
 \item
   \textbf{No generation-stage evaluation \emph{beyond §5.6}.} We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.6 adds a first generation-stage check on a single generator and backbone; it establishes that the skew propagates and that it saturates one group, but not the magnitude. A multi-generator evaluation, and proper entailment-based attribution rather than the self-report probe that failed in §5.6, remain to be done. We do not otherwise report attributed exposure {[}8{]} or generator bias {[}4, 7{]}.
 \item

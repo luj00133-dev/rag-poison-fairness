@@ -43,3 +43,9 @@ paper/latex/*.out
 paper/latex/*.pass*.log
 paper/latex/*.body.md
 paper/.texbin
+
+# One-off patch/build scripts and console output (regenerable)
+paper/patch_*.py
+paper/build_*.log
+paper/compile_papers.ps1
+results/*_final.txt

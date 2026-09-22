@@ -108,12 +108,17 @@ rewrite matches that form rather than the original.
 | Path | Purpose |
 |---|---|
 | `src/retrieval/base.py` | `Document`/`Query` schema, vectorised BM25 |
+| `src/retrieval/dense.py` | dense retrievers: feature hashing, GTE-base, Contriever, E5-base-v2 |
+| `src/retrieval/splade.py` | learned-sparse retriever (SPLADE) |
 | `src/data/corpus.py` | controlled corpus: exact known clean reference |
 | `src/data/bbq_loader.py` | BBQ loader; stance labels derived from BBQ's own annotations |
 | `src/attacks/poisoning.py` | pairwise injection, subspace projection, adaptive attacker |
 | `src/defenses/selectors.py` | multi-query, manifold filter, representation-conserving selector |
 | `src/eval/metrics.py` | R1 drift, R2 stance gap, attack-success and utility metrics |
 | `src/run_experiment.py` | driver: sweeps injection rate × defense × retriever |
+| `analysis/compare_six_backbones.py` | the six-retriever comparison behind §5.5 |
+| `analysis/compare_corpora.py` | controlled corpus vs BBQ |
+| `paper/compile_papers.py` | compiles both papers with MiKTeX and parses **real** LaTeX errors |
 | `src/probe_overgeneralisation.py` | exploratory provenance signal (with its validity caveat) |
 | `paper/` | manuscripts (Markdown + Word), docx renderer |
 | `results/` | all raw results backing the published tables |
@@ -138,6 +143,24 @@ deviation-based metric measures topic conditioning rather than group skew, and
 pairwise poisoning preserves topic conditioning by construction. `stance_gap`
 (the spread of favourable rate *across* groups) is the metric that works, and it
 is exactly 0.0000 on a balanced corpus before any attack.
+
+**3. Text-attack susceptibility tracks sparsity, not "neuralness".** We added
+SPLADE specifically to decide between two explanations, and it decides: SPLADE
+learns its term weights and is still as susceptible as BM25 (0.6250 vs 0.7500),
+because its representation is sparse. The attack raises a passage's score by
+appending query-aligned terms, which requires the representation to expose
+**per-term contributions**; a sparse retriever does that whether or not its
+weights are learned, and a dense encoder absorbs the appended text into one
+vector. Two of the three dense encoders resist almost completely (GTE-base,
+E5-base-v2 at 0.0625) while Contriever does not (0.5625), so a single-encoder
+robustness claim conflates the defense with an unmeasured encoder property.
+
+**4. Compile the paper, do not trust the conversion log.** `make_latex.py`
+reports conversion diagnostics, not LaTeX errors, and `pdflatex` is not
+necessarily on `PATH`. `paper/compile_papers.py` runs MiKTeX twice per paper and
+parses `^!` lines and undefined references out of the real `.log`. This
+distinction caught a claim in our own history that had been asserted on the
+strength of the conversion log alone.
 
 ---
 
