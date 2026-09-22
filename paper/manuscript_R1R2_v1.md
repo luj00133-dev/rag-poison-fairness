@@ -20,11 +20,11 @@ We formalise both dimensions, construct the pairwise attack, and re-implement fi
 2. **The R1-only defense is inert, not merely weak.** On both corpora, and at **every injection rate we swept**, it attains exactly the same adversarial-passage inclusion rate as no defense, and does so at every value of its budget parameter — including the strictest. The budget parameter acts on a quantity the attack does not perturb.
 3. **The R2 dimension is the only axis along which anything moves.** On the controlled corpus the R2 constraint improves its own metric by 77%; on BBQ it roughly halves the stance gap (0.970 → 0.525) while the R1 constraint leaves it unchanged (0.952). The direction of the result — R1 inert, R2 effective — is invariant across corpora and injection rates; the magnitude is not, and we report both.
 4. **Injection must be reported as a rate, not a count.** With 0.1% of the corpus injected (8 passages), the text attack already reaches 68.75% inclusion against BM25 on the controlled corpus. An earlier version of this study used a fixed count and reached the opposite conclusion for the wrong reason; we report the correction and the mechanism behind the discrepancy (Finding 4).
-5. **The projection attack is robust to corpus naturalness; the text attack is not.** The text-only attack reaches 0.000 on BBQ at every rate up to 2%, while the projection attack reaches 0.903 at 0.1% and 1.000 by 2%. We identify the mechanism: an injection that works by aligning its text with query vocabulary needs the injected tokens to stand out, which repetitive corpora permit and naturally varied text does not. The same condition reappears in the *representation*, and there it has a mechanism. Across six retrievers the text attack succeeds 0.750 (BM25), 0.625 (feature hashing), 0.625 (**SPLADE**), 0.5625 (Contriever), 0.0625 (GTE-base) and 0.0625 (E5-base-v2) — a nine-fold spread. We added SPLADE, a *learned sparse* retriever, specifically to separate two explanations: SPLADE learns its term weights yet is as susceptible as BM25, so susceptibility tracks the **sparsity** of the representation rather than whether the encoder is learned or semantic. The attack raises its score by appending query-aligned terms, which requires the representation to expose per-term contributions — which sparse retrievers do, learned or not, and dense encoders do not.
+5. **The projection attack is robust to corpus naturalness; the text attack is not.** The text-only attack reaches 0.000 on BBQ at every rate up to 2%, while the projection attack reaches 0.903 at 0.1% and 1.000 by 2%. We identify the mechanism: an injection that works by aligning its text with query vocabulary needs the injected tokens to stand out, which repetitive corpora permit and naturally varied text does not. The same condition reappears in the *representation*, and there it has a mechanism. Across six retrievers at base size the text attack succeeds 0.750 (BM25), 0.625 (feature hashing), 0.625 (**SPLADE**), 0.5625 (Contriever), 0.0625 (GTE-base) and 0.0625 (E5-base-v2) — a nine-fold spread. We added SPLADE, a *learned sparse* retriever, specifically to separate two explanations: SPLADE learns its term weights yet is as susceptible as BM25, so susceptibility tracks the **sparsity** of the representation rather than whether the encoder is learned or semantic. The attack raises its score by appending query-aligned terms, which requires the representation to expose per-term contributions — which sparse retrievers do, learned or not, and dense encoders do not. **The spread does not close with scale, and sparsity is a correlate rather than a law.** Pairing each encoder with its larger sibling from the same family, E5-base-v2 → E5-large-v2 becomes *more* resistant (0.0625 → 0.0000) while **GTE-base → GTE-large becomes eight times more susceptible (0.0625 → 0.5000)**, on identical data and with the only variable being the checkpoint. Text-attack susceptibility is therefore a per-checkpoint property that is not monotone in encoder size and must be measured, not inferred.
 
 Finding (2) is a **negative result about a class of defenses**, and we argue it is the paper's central contribution. We prove it (§6): under a relevance-overlap assumption, a distribution-constrained defense faces a **trilemma** — it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Violating an ε-constraint costs the attacker at most $k$ replacements once its passages are retrieved; whether they are retrieved is a separate, corpus- and encoder-dependent question, and our six-retriever comparison shows it varies by more than an order of magnitude. We also show by backbone alignment that the inertness does not depend on the attack leaving R1 undisturbed: on the dense encoders the attack moves R1 by 0.37–0.47, more than three times as much as on BM25, and the R1 constraint remains inert at every budget setting — Δ = 0.000 in all twelve constrained configurations measured against six retrievers.
 
-The retrieval-layer skew also **propagates to the generated output** (§5.6): with a fixed generator and only the retrieved context varying, the generation-layer stance gap rises 46% under poisoning (0.271 → 0.396), and it does so by driving one group's favourable rate to ceiling (0.708 → 1.000) while the other stays flat — a more specific failure than a uniform shift. Neither constraint repairs this.
+The retrieval-layer skew also **propagates to the generated output** (§5.7): with a fixed generator and only the retrieved context varying, the generation-layer stance gap rises 46% under poisoning (0.271 → 0.396), and it does so by driving one group's favourable rate to ceiling (0.708 → 1.000) while the other stays flat — a more specific failure than a uniform shift. Neither constraint repairs this.
 
 A methodological by-product is relevant to anyone building monitoring for this threat: of three plausible R2 statistics we tested, two are silently blind to the attack, and on a bias benchmark the third is confounded by a pre-existing corpus imbalance. We report all three to document the failure modes.
 
@@ -66,6 +66,7 @@ Every defense that constrains R1 alone is blind to this. It observes that the gr
 4. A negative result on the limits of distribution-level defense: aggregate-composition constraints cannot reject an individually admissible passage, so any defense in this class has an adversarial-passage inclusion floor of 1 (§6). To our knowledge this limit has not been characterised.
 5. An exploratory provenance signal with an explicit validity threat and a falsification protocol (§7).
 6. A methodological finding with an identified mechanism: text-attack susceptibility is predicted by the **sparsity** of the retrieval representation, not by whether the encoder is learned or semantic (§5.5, Finding 7). A learned sparse retriever is as susceptible as BM25 while two of three dense encoders resist almost completely, so a single-encoder robustness claim measures an unmeasured encoder property.
+7. A scale check that bounds contribution 6 and is itself the sharper result (§5.6): susceptibility is **not monotone in encoder size**. E5 becomes more resistant when enlarged while GTE becomes eight times more susceptible within the same family and training recipe, so susceptibility is a per-checkpoint property that must be measured rather than inferred from architecture, size, or sparsity.
 
 ---
 
@@ -194,13 +195,13 @@ The two-sided R2 constraint is deliberate. An upper bound alone stops an attacke
 
 We deliberately report three R2 statistics rather than one. The two reference-based variants are included as **controls**: §5.1 shows they do not respond to the attack, which is itself a finding, and reporting them documents the failure mode rather than hiding it.
 
-Ground-truth poison labels are used **only** for the attack-success metrics; no defense receives them. All defenses are evaluated with $k = 5$. Retrieval back-ends are BM25, a self-contained feature-hashing dense retriever, and — for the backbone alignment of §5.5 — the encoders GTE-base [5], Contriever [8] and E5-base-v2 [4, 6], plus the learned-sparse retriever SPLADE. SPLADE-*large* and the E5-*large* checkpoints remain to be added (Limitation 5).
+Ground-truth poison labels are used **only** for the attack-success metrics; no defense receives them. All defenses are evaluated with $k = 5$. Retrieval back-ends are BM25, a self-contained feature-hashing dense retriever, and — for the backbone alignment of §5.5 and the scale check of §5.6 — the encoders GTE-base [5], GTE-large, Contriever [8], E5-base-v2 and E5-large-v2 [4, 6], plus the learned-sparse retrievers SPLADE (distil) and SPLADE-efficient-large. Multilingual and instruction-tuned embedders remain to be swept (Limitation 5).
 
 ---
 
 ## 5. Results
 
-> **Status of this section.** All numbers reported below were produced by the released implementation and are reproducible with the commands in Appendix A. Two corpora are used: a controlled corpus with an exactly known clean reference (§5.1–§5.3) and the natural BBQ corpus (§5.4), each swept over injection rate $\rho \in \{0.1\%, \dots, 2\%\}$ of corpus size; §5.5 adds the backbone alignment against two real semantic encoders, and §5.6 the generation-stage propagation check. The controlled suite completes in ~25 s, the BBQ replication in ~180 s, and the multi-backbone sweep in ~12 min, all on CPU with no GPU.
+> **Status of this section.** All numbers reported below were produced by the released implementation and are reproducible with the commands in Appendix A. Two corpora are used: a controlled corpus with an exactly known clean reference (§5.1–§5.3) and the natural BBQ corpus (§5.4), each swept over injection rate $\rho \in \{0.1\%, \dots, 2\%\}$ of corpus size; §5.5 adds the backbone alignment against five further retrievers, §5.6 the encoder-scale check, and §5.7 the generation-stage propagation check. The controlled suite completes in ~25 s, the BBQ replication in ~180 s, and the multi-backbone sweep in ~12 min, all on CPU with no GPU.
 
 ### 5.1 Pairwise poisoning is an R2 attack, not an R1 attack
 
@@ -406,7 +407,9 @@ The `fav_g2` column is the R2 reading. The `n/a` entries for GTE-base and E5-bas
 
 The mechanism is now clear and follows from how the attack works. The injection raises its score by appending query-aligned terms, which requires the representation to expose **per-term contributions**. A sparse retriever — including a learned one — does exactly that, so the attacker's appended terms translate directly into score. A dense encoder compresses the whole passage into one vector, where appended terms are absorbed into the semantic representation and produce no separate term-level gain. We had expected a lexical-versus-semantic split; **sparsity is the operative property, and semantics only matters through it.**
 
-Two consequences, and the second is the uncomfortable one.
+**This finding has a measured boundary, and we state it here rather than burying it in the limitations.** §5.6 pairs each of these encoders with its larger sibling from the same family and finds that sparsity predicts susceptibility *at a fixed scale* but does not determine it: GTE-large is dense and semantic, yet is eight times more susceptible than GTE-base. Sparsity is therefore a strong correlate and a useful heuristic for choosing a back-end, not a law. The version of Finding 7 we are prepared to defend is the weaker one — **susceptibility is a property of the specific checkpoint and must be measured** — with sparsity the best available predictor among the axes we varied.
+
+Two consequences, and the second is the uncomfortable one. One observation is worth recording first because it surprised us: SPLADE is the *most* efficiently attacked of the six on the R2 dimension, reaching the maximum stance gap 1.0000 against a text-only attack where BM25 reaches only 0.7436 — its learned term weighting evidently concentrates score on exactly the terms the attacker appends.
 
 First, a feature-hashing retriever is not a substitute for a semantic one: it preserves the lexical surface (0.6250, close to BM25's 0.7500) and therefore over-states text-attack effectiveness relative to a dense encoder. This is why our own earlier numbers, produced with it, were too pessimistic about encoder robustness.
 
@@ -421,7 +424,62 @@ Second, **"dense semantic" is not a guarantee — Contriever is the counterexamp
 
 Two findings do *not* survive unchanged, and we report both. First, the R2 constraint's **demonstrable benefit** shrinks on the dense encoders: the R2 gap is already saturated at 1.0000 under every defense configuration at this injection rate, leaving no headroom to recover, so we can show the constraint reducing the gap only on BM25 and our own retrievers. Second, our earlier statement that text-level injection is sufficient must be narrowed to the sparse and hashed representations and to Contriever; against GTE-base and E5-base-v2 it does not hold at any injection rate we tested.
 
-### 5.6 Generation-stage propagation: does the retrieval skew reach the output?
+### 5.6 Encoder scale: susceptibility is not a smooth function of size
+
+The backbone comparison above covers six retrievers at *base* size. A natural objection is that encoder choice is a nuisance parameter of the implementation rather than a finding — that a larger checkpoint, being better trained, would simply be more robust, and that the spread would narrow. An earlier draft of this paper asserted as much, predicting that larger checkpoints "give no reason to expect agreement" without measuring it. We have now measured it, and **the prediction was right in direction but far too weak in magnitude: scaling up flips one encoder family from resistant to susceptible.**
+
+We pair each base encoder with its larger sibling from the *same* family and training recipe, holding corpus, injection rate, attack and defenses fixed: GTE-base → **GTE-large**, E5-base-v2 → **E5-large-v2**, and SPLADE (distil) → **SPLADE-efficient-large** (the published large SPLADE, which splits into separately fine-tuned query and document encoders).
+
+**Table 11.** Text-only (lexical) attack, $\rho = 0.5\%$, no defense. Base/large pairs from the same family.
+
+| Retriever | params | `poison@k` | R1 drift | R2 gap |
+|---|---|---|---|---|
+| GTE-base | 110M | **0.0625** | 0.0000 | n/a |
+| **GTE-large** | 335M | **0.5000** | 0.1313 | 0.9444 |
+| E5-base-v2 | 110M | **0.0625** | 0.0000 | n/a |
+| **E5-large-v2** | 335M | **0.0000** | 0.0000 | n/a |
+| SPLADE distil | 66M | 0.6250 | 0.2188 | 1.0000 |
+| **SPLADE large** | 110M | 0.5625 | 0.1875 | 0.8810 |
+
+**Finding 11. Text-attack susceptibility is a per-checkpoint property that is not monotone in encoder scale, and scaling can destroy resistance entirely.** GTE-base and E5-base-v2 are equally resistant at base size — both at 0.0625, i.e. the attack succeeds on three of 48 queries. Enlarging both by the same factor of three moves them in *opposite* directions: **E5-large-v2 becomes more resistant (0.0625 → 0.0000, the attack now fails on every query), while GTE-large becomes eight times more susceptible (0.0625 → 0.5000, succeeding on 24 of 48 queries).** SPLADE is susceptible at both scales with little change (0.6250 → 0.5625), so the learned-sparse result is stable under scaling even though its own size increase is modest.
+
+Two things make this more than a curiosity. First, it is a same-family, same-recipe comparison on identical data, so it cannot be attributed to corpus, rate, or attack construction — the only variable is the checkpoint. Second, the per-query distribution is discrete: adversarial inclusion is 0 or 1 per query with nothing in between, so the change from 3 to 24 affected queries is a shift in *how many* queries are compromised, not a drift in a continuous score. A system whose retrieval robustness was validated on GTE-base would become substantially more attackable by the routine act of upgrading the embedder.
+
+**Mechanism.** We tested the obvious explanation and it is wrong, which makes the result more informative rather than less. If GTE-large's embedding space were more *anisotropic* — vectors collapsed into a narrower cone — then a fixed textual nudge would move rank further, and the finding would reduce to a known geometric property. We measured it: GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), in effective dimensionality (13.2 in both, against 768 and 1024 nominal dimensions), and in the spread of query similarity (top-decile spread 0.0860 vs 0.0895). The same holds for the E5 pair (0.8291 / 0.8375 anisotropy, 13.9 / 14.8 effective dimensions). **Embedding geometry does not explain the scale effect.**
+
+What does explain it is the size of the gain the attack buys. Measuring the injected passages directly against the clean corpus, for the same queries:
+
+**Table 12.** Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, $\rho = 0.5\%$.
+
+| Quantity | GTE-base | GTE-large |
+|---|---|---|
+| mean cosine gain of poison over clean (`poison − clean`) | **+0.0115** | **+0.0200** |
+| mean best-poison cosine | 0.8907 | 0.8975 |
+| mean top-5 clean threshold | 0.8982 | 0.8988 |
+| mean margin (best poison − threshold) | **−0.0075** | **−0.0013** |
+| `poison@k` | 0.0625 | 0.5000 |
+
+The two encoders place the same injected text at almost the same distance from the query (best-poison cosine 0.8907 vs 0.8975), and the legitimate competition sits at the same threshold (0.8982 vs 0.8988). The difference is that **the identical appended vocabulary buys 74% more similarity on GTE-large (+0.0200 vs +0.0115)**. Because the mean margin is only about −0.007, a gain difference of +0.0085 is enough to carry a large fraction of queries across the threshold — which is exactly the 3-to-24 shift in affected queries. Susceptibility here is not a property of the space but of *how much a fixed lexical perturbation moves a passage within it*, and that quantity is not predictable from architecture, dimensionality, size, or geometry. This is what we mean by saying the property must be measured: it is the interaction between the attack's vocabulary and the encoder's learned weighting of it, and no coarse descriptor of the encoder we have tried predicts it.
+
+**Finding 6b. The R1 constraint remains inert at large scale.** Table 13 extends the §5.2 inertness check to the large checkpoints.
+
+**Table 13.** R1-only constraint inertness on large back-ends. `template_plus_projection`, $\rho = 0.5\%$; Δ = adversarial-passage inclusion minus no defense.
+
+| Retriever | `repr_group` ε=0 | `repr_both` ε=0 | Δ |
+|---|---|---|---|
+| hash-dense (own) | 1.0000 | 1.0000 | **0.0000** |
+| GTE-large | 1.0000 | 1.0000 | **0.0000** |
+| E5-base-v2 | 1.0000 | 1.0000 | **0.0000** |
+| E5-large-v2 | 1.0000 | 1.0000 | **0.0000** |
+| SPLADE distil | 0.7500 | 0.7500 | **0.0000** |
+| SPLADE large | 1.0000 | 1.0000 | **0.0000** |
+| BM25 (lexical) | 0.7500 | 0.7500 | **0.0000** |
+
+Across all eight back-ends and both constraint configurations, the difference is exactly zero. This is now the fourth independent setting in which the inertness holds — two corpora, six base retrievers, and the large checkpoints — and it remains the paper's most robust result. Note that the projection attack reaches complete inclusion (1.0000) on GTE-large, on E5-large-v2 and on SPLADE-large, so the constraint is inert in the worst case rather than in a marginal one.
+
+**Consequences for Finding 7.** Finding 7 identified sparsity as the operative property behind the base-size spread. The scale check bounds that claim rather than refuting it: sparsity still predicts susceptibility *at a fixed scale* (both sparse retrievers susceptible, and the one resistant-at-both-scales encoder is dense), but it is not sufficient, because GTE-large is dense and semantic yet susceptible. The honest form of Finding 7 is therefore that **the sparse/dense split is a strong correlate at base size and a heuristic, not a law**, and the only fully reliable statement is the weaker one: susceptibility is a property of the specific checkpoint, and it must be measured rather than inferred from architecture or size.
+
+### 5.7 Generation-stage propagation: does the retrieval skew reach the output?
 
 Every result above is measured at the retrieval layer. That is deliberate — it makes the mechanism measurable without a generator and reproducible on commodity hardware — but it leaves the question a reviewer will ask: **does a retrieval-layer stance skew change what the system says?** We answer it with a fixed generator, varying only the retrieved context, so that any difference between conditions is attributable to retrieval.
 
@@ -429,7 +487,7 @@ Every result above is measured at the retrieval layer. That is deliberate — it
 
 Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is reachable without a proxy from the network this work used. 207 API calls, 49.2k prompt tokens, 125 s of model time.
 
-**Table 11.** Generation-layer stance by condition. Controlled corpus, GTE-base retrieval, $\rho = 2\%$.
+**Table 14.** Generation-layer stance by condition. Controlled corpus, GTE-base retrieval, $\rho = 2\%$.
 
 | Condition | fav. rate (g1) | fav. rate (g2) | **stance gap** | Δ vs clean |
 |---|---|---|---|---|
@@ -476,7 +534,7 @@ A distribution-constrained defense accepts exactly $\mathcal{R}_\varepsilon$. Al
 
 **Empirical check.** Table 12 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
 
-**Table 12.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
+**Table 15.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
 
 | Corpus / retriever | ε=1.0 | ε=0.5 | ε=0.25 | ε=0.1 | ε=0.0 |
 |---|---|---|---|---|---|
@@ -590,8 +648,8 @@ We report the signal because it is the direction Proposition 1 points to, and be
 2. **Neither corpus is a neutral retrieval benchmark, and they disagree in two respects.** The text-only template attack is effective only on the controlled corpus (Finding 4), and the R2 constraint reduces adversarial inclusion only on BBQ. We report both conditions rather than selecting the favourable one. The mechanism behind the first disagreement is identified (lexical room depends on corpus repetitiveness), which we regard as a finding rather than a gap; the second is a smaller effect whose magnitude we expect to depend on the corpus's pre-existing stance imbalance.
 3. **The absolute R2 metric does not transfer.** `stance_gap` is exactly 0 on the balanced controlled corpus and near its maximum (0.9326) on BBQ *before any attack*, where it is dominated by the benchmark's own stereotyped construction. On such a corpus only the change from the clean baseline is informative. A corpus-relative normalisation of $\Delta_{\text{R2}}$ would be preferable and we leave it open.
 4. **Injection budget is a rate, not a count.** We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
-5. **Retrieval back-ends.** BM25, a self-contained feature-hashing dense retriever, SPLADE, and the three encoders the compared literature uses — GTE-base, Contriever, and E5-base-v2 (§5.5): six retrievers spanning lexical, hashed, learned-sparse, and three distinct dense semantic representations. E5-*large* and SPLADE-*large* remain to be added; we note that the nine-fold spread we observe among three *base*-size encoders gives no reason to expect the larger checkpoints to agree. We further note that feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder — Finding 7 quantifies the difference. The SPLADE result, in turn, means we cannot treat "neural encoder" as a sufficient condition for resistance either: what predicts susceptibility is whether the representation exposes per-term contributions, and the two susceptible encoders (BM25, SPLADE) are exactly the sparse ones. Finding 7 shows text-attack effectiveness varies **nine-fold across the three dense encoders** (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625), and the susceptible one is the encoder used by the fair-ranking work we compare against [8]. A single-encoder evaluation therefore cannot establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area.
-6. **No generation-stage evaluation *beyond §5.6*.** We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.6 adds a first generation-stage check on a single generator and backbone; it establishes that the skew propagates and that it saturates one group, but not the magnitude. A multi-generator evaluation, and proper entailment-based attribution rather than the self-report probe that failed in §5.6, remain to be done. We do not otherwise report attributed exposure [8] or generator bias [4, 7].
+5. **Retrieval back-ends, and what the scale check changed.** Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders — GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as "to be added" and *predicted* that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since **GTE-base → GTE-large moves from 0.0625 to 0.5000 — an eight-fold increase in susceptibility within a single encoder family and training recipe.** That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies **nine-fold across the base dense encoders alone** (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against [8]. Third, and most importantly, **even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively** — so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M → 335M for GTE and E5; 66M → 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a "large SPLADE is no more robust" conclusion carries correspondingly less weight.
+6. **No generation-stage evaluation *beyond §5.7*.** We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.7 adds a first generation-stage check on a single generator and backbone; it establishes that the skew propagates and that it saturates one group, but not the magnitude. A multi-generator evaluation, and proper entailment-based attribution rather than the self-report probe that failed in §5.7, remain to be done. We do not otherwise report attributed exposure [8] or generator bias [4, 7].
 7. **Binary groups.** Following [6, 7, 8], we use two groups per stratum. Extension to $|\mathcal{G}| > 2$ is mechanical for R1 and R2 but is not evaluated here. We note that the race/ethnicity category of BBQ is markedly imbalanced in our corpus build (960 passages about the protected group versus 88 about the non-protected group), which is itself a property of the benchmark worth flagging for anyone reusing it.
 
 ---
@@ -608,7 +666,7 @@ We have reported an exploratory provenance signal in that direction, together wi
 
 ## Data and Code Availability
 
-The implementation, configuration files, and the scripts that regenerate every number in §5 are released at **https://github.com/luj00133-dev/rag-poison-fairness**. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.6 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
+The implementation, configuration files, and the scripts that regenerate every number in §5 are released at **https://github.com/luj00133-dev/rag-poison-fairness**. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.7 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
 
 **How to regenerate.**
 
@@ -616,7 +674,21 @@ The implementation, configuration files, and the scripts that regenerate every n
 # retrieval layer (CPU only, no API key)
 python -m src.run_experiment --config configs/default.json      # ~25 s
 python -m src.run_experiment --config configs/bbq.json          # ~180 s
-python -m src.run_experiment --config configs/align_multi.json  # GTE + Contriever, ~12 min
+python -m src.run_experiment --config configs/align_gte_ad.json # GTE-base, ~12 min
+python -m src.run_experiment --config configs/align_e5.json     # E5-base, ~10 min
+python -m src.run_experiment --config configs/contriever_ad.json # Contriever, ~3 min
+python -m src.run_experiment --config configs/align_splade.json # SPLADE distil, ~4 min
+
+# encoder-scale check of §5.6 (large checkpoints, CPU only)
+python -m src.run_experiment --config configs/align_gte_large.json      # ~23 min
+python -m src.run_experiment --config configs/align_e5_large.json       # ~10 min
+python -m src.run_experiment --config configs/align_splade_large.json   # ~12 min
+
+# the analyses behind §5.5 and §5.6
+python analysis/compare_six_backbones.py
+python analysis/compare_scale.py
+python analysis/diagnose_gte_large.py     # embedding geometry
+python analysis/diagnose_poison_scores.py # the mechanism behind Table 12
 
 # generation layer (requires DEEPSEEK_API_KEY)
 python -m src.run_attribution --config configs/attribution.json
@@ -624,7 +696,7 @@ python -m src.run_attribution --config configs/attribution.json
 
 Real-encoder runs require `HF_ENDPOINT=https://hf-mirror.com` on networks where huggingface.co is unreachable.
 
-**API key.** The key used for the §5.6 runs is rotated and revoked before publication; the repository contains no credentials, and `results/attribution_cache.json` (a prompt→reply cache) is regenerated locally rather than shipped.
+**API key.** The key used for the §5.7 runs is rotated and revoked before publication; the repository contains no credentials, and `results/attribution_cache.json` (a prompt→reply cache) is regenerated locally rather than shipped.
 
 ---
 
@@ -660,8 +732,10 @@ Outputs: `results/<run_tag>/{per_query,aggregate,by_stratum,adaptive}.csv` and `
 
 The full retrieval-layer study runs on CPU: the controlled suite completes in
 25 s and the BBQ replication in 165 s on a desktop CPU, with no GPU required.
-Embedding and reranking models, when added for the comparisons in §8, fit within
-8 GB of VRAM.
+The backbone alignment of §5.5 and §5.6 adds roughly 75 minutes of CPU time
+across eight encoder checkpoints, the slowest single run being GTE-large at
+23 minutes; the largest model loaded is a 335M-parameter encoder, which needs
+under 2 GB in fp32. No GPU is used anywhere in this paper.
 
 ---
 

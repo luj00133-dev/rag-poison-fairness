@@ -50,9 +50,23 @@ from .base import Document, Query, RetrievalResult
 
 #: SPLADE checkpoints. ``splade_v2_distil`` is the smaller distilled variant;
 #: ``splade-cocondenser-ensembledistil`` is the standard DistilBERT ensemble.
-SPLADE_MODELS: Dict[str, str] = {
+#:
+#: The published ``efficient-splade-*`` family splits the encoder in two: a
+#: query-side model and a document-side model, each fine-tuned separately. Both
+#: halves are needed, so entries whose value is a ``(query_id, doc_id)`` pair are
+#: handled by :class:`SpladeRetriever` with two loaded models. Two documented
+#: hazards of that family are handled explicitly: the checkpoints carry 30522
+#: *tokenizer* rows but the model's MLM head is sized to 30000, so the logits
+#: must be sliced to the model's own vocab size; and the queries must be encoded
+#: with the query half or the retrieval quality collapses.
+SPLADE_MODELS: Dict[str, object] = {
     "splade-v2-distil": "naver/splade_v2_distil",
     "splade-cocondenser": "naver/splade-cocondenser-ensembledistil",
+    # large-scale, split query/doc encoders (for the scale check)
+    "splade-large": (
+        "naver/efficient-splade-VI-BT-large-query",
+        "naver/efficient-splade-VI-BT-large-doc",
+    ),
 }
 
 
@@ -114,8 +128,16 @@ class SpladeRetriever:
             ) from exc
 
         self._torch = torch
-        model_id = SPLADE_MODELS.get(backbone, backbone)
-        self.model_id = model_id
+        spec = SPLADE_MODELS.get(backbone, backbone)
+        # a split checkpoint is a (query_id, doc_id) pair; a single checkpoint
+        # encodes both sides
+        if isinstance(spec, tuple):
+            query_id, doc_id = spec
+        else:
+            query_id = doc_id = spec
+        self.model_id = doc_id
+        self.query_model_id = query_id
+        self.split_encoder = query_id != doc_id
         self.backbone = backbone
         self.name = f"splade:{backbone}"
         self.batch_size = batch_size
@@ -126,11 +148,31 @@ class SpladeRetriever:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        self.model = AutoModelForMaskedLM.from_pretrained(model_id)
+        self.tokenizer = AutoTokenizer.from_pretrained(doc_id)
+        self.model = AutoModelForMaskedLM.from_pretrained(doc_id)
         self.model.eval()
         self.model.to(device)
-        self.vocab_size = int(self.model.config.vocab_size)
+        # The efficient-splade checkpoints ship a tokenizer with 30522 rows but
+        # an MLM head of 30000. Term ids are tokenizer ids, so the vector width
+        # must be the tokenizer's; the head is sliced to match at encode time.
+        self.model_vocab_size = int(self.model.config.vocab_size)
+        self.vocab_size = int(self.tokenizer.vocab_size)
+
+        if self.split_encoder:
+            self.query_tokenizer = AutoTokenizer.from_pretrained(query_id)
+            self.query_model = AutoModelForMaskedLM.from_pretrained(query_id)
+            self.query_model.eval()
+            self.query_model.to(device)
+            # guard the tokenizer/model vocab mismatch on the query half too
+            self.query_model_vocab_size = int(
+                self.query_model.config.vocab_size
+            )
+            self.query_vocab_size = int(self.query_tokenizer.vocab_size)
+        else:
+            self.query_tokenizer = self.tokenizer
+            self.query_model = self.model
+            self.query_vocab_size = self.vocab_size
+            self.query_model_vocab_size = self.model_vocab_size
 
         self.docs: List[Document] = []
         #: per-document sparse vectors, so retrieval never re-encodes the corpus
@@ -140,18 +182,30 @@ class SpladeRetriever:
 
     # -- encoding ---------------------------------------------------------- #
 
-    def _encode_sparse(self, texts: Sequence[str]) -> List[SparseVector]:
+    def _encode_sparse(
+        self, texts: Sequence[str], *, side: str = "doc"
+    ) -> List[SparseVector]:
         """SPLADE term weights: ``max_i log(1 + ReLU(logit_i))`` per term.
+
+        ``side`` selects which model encodes the batch. It is ignored for a
+        single-encoder checkpoint (where both sides are the same model) and is
+        essential for the split ``efficient-splade`` checkpoints, whose query
+        and document halves were fine-tuned separately: encoding queries with
+        the document model, or vice versa, silently degrades retrieval.
 
         Uses a process-wide content cache: only uncached texts reach the model,
         so re-indexing an already-seen corpus costs a dict lookup per passage
-        instead of a forward pass.
+        instead of a forward pass. The cache key includes the side, so the two
+        halves never share entries.
         """
         texts = list(texts)
-        keys = [(self.model_id, t) for t in texts]
+        model_id = self.query_model_id if side == "query" else self.model_id
+        keys = [(model_id, t) for t in texts]
         missing = [i for i, k in enumerate(keys) if k not in self._CACHE]
         if missing:
-            fresh = self._encode_sparse_uncached([texts[i] for i in missing])
+            fresh = self._encode_sparse_uncached(
+                [texts[i] for i in missing], side=side
+            )
             for slot, i in enumerate(missing):
                 self._CACHE[keys[i]] = fresh[slot]
             type(self)._CACHE_MISSES += len(missing)
@@ -174,13 +228,21 @@ class SpladeRetriever:
         cls._CACHE_HITS = 0
         cls._CACHE_MISSES = 0
 
-    def _encode_sparse_uncached(self, texts: Sequence[str]) -> List[SparseVector]:
+    def _encode_sparse_uncached(
+        self, texts: Sequence[str], *, side: str = "doc"
+    ) -> List[SparseVector]:
         torch = self._torch
+        if side == "query":
+            tokenizer, model = self.query_tokenizer, self.query_model
+            keep = min(self.query_vocab_size, self.query_model_vocab_size)
+        else:
+            tokenizer, model = self.tokenizer, self.model
+            keep = min(self.vocab_size, self.model_vocab_size)
         out: List[SparseVector] = []
         with torch.no_grad():
             for start in range(0, len(texts), self.batch_size):
                 batch = list(texts[start:start + self.batch_size])
-                enc = self.tokenizer(
+                enc = tokenizer(
                     batch,
                     return_tensors="pt",
                     padding=True,
@@ -188,9 +250,19 @@ class SpladeRetriever:
                     max_length=self.max_length,
                 )
                 enc = {k: v.to(self.device) for k, v in enc.items()}
-                logits = self.model(**enc).logits  # (B, T, V)
+                # pad the head out to the tokenizer width when the head is
+                # narrower, so every returned vector is .vocab_size wide
+                raw = model(**enc).logits  # (B, T, head_vocab)
+                if raw.shape[-1] < self.vocab_size:
+                    pad = torch.zeros(
+                        *raw.shape[:-1], self.vocab_size - raw.shape[-1],
+                        dtype=raw.dtype, device=raw.device,
+                    )
+                    raw = torch.cat([raw, pad], dim=-1)
+                elif raw.shape[-1] > self.vocab_size:
+                    raw = raw[..., : self.vocab_size]
                 # ReLU then log1p, then max over token positions
-                act = torch.log1p(torch.relu(logits))
+                act = torch.log1p(torch.relu(raw))
                 # ignore padding positions so they cannot contribute
                 mask = enc["attention_mask"].unsqueeze(-1).float()
                 act = act * mask
@@ -302,7 +374,14 @@ class SpladeRetriever:
         return results
 
     def _dense_doc_matrix(self) -> np.ndarray:
-        """Cached (n_docs, V) term-weight matrix used for scoring."""
+        """Cached (n_docs, V) term-weight matrix used for scoring.
+
+        ``V`` is the **tokenizer's** vocabulary width, not the MLM head's. The
+        split ``efficient-splade`` checkpoints ship a 30522-row tokenizer against
+        a 30000-wide head, so the head is sliced to the tokenizer width during
+        encoding (see ``_encode_sparse_uncached``): the two must agree or the
+        scatter below writes out of bounds or scores misaligned dimensions.
+        """
         if self._matrix is None or self._matrix.shape[0] != len(self._doc_vecs):
             m = np.zeros((len(self._doc_vecs), self.vocab_size), dtype=np.float32)
             for i, dv in enumerate(self._doc_vecs):

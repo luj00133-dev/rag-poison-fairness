@@ -24,7 +24,9 @@ on commodity hardware and isolates the mechanism from generator behaviour.
 | The projection attack transfers to naturally written text | both | retained |
 | The text-only attack is **corpus- and representation-dependent** | controlled only | Finding 4 + 7 |
 | Text-attack susceptibility tracks **sparsity**, not "neuralness" (SPLADE ≈ BM25; GTE/E5 resistant, Contriever not) | controlled | Finding 7 |
-| No defense survives a defense-aware attacker, on any of 5 back-ends | both | Paper B |
+| Susceptibility is **not monotone in encoder size**: GTE-base 0.0625 → GTE-large 0.5000 while E5-base 0.0625 → E5-large 0.0000 | controlled | §5.6, Finding 11 |
+| The scale effect is **not geometric**: identical anisotropy and effective dimensionality, but the same injected text buys 74% more similarity on GTE-large | controlled | §5.6, Table 12 |
+| No defense survives a defense-aware attacker, on any of 6 back-ends | both | Paper B |
 
 Key numbers: 0.1% injection (8 passages) reaches 68.75% adversarial inclusion on
 the controlled corpus; R1-only defense gives `poison@k` *identical* to no
@@ -61,6 +63,16 @@ cross-checking papers against committed data:
 4. **Injection budget must be a rate, not a count** (see the methodological
    notes below) — a fixed count produced a spurious "attack does not transfer"
    conclusion in an earlier version.
+5. **Limitation 5 predicted, and the measurement contradicted it.** An earlier
+   draft asserted that larger checkpoints "give no reason to expect agreement"
+   with the base-size spread. Measured, the effect is an order of magnitude
+   larger than the prediction implied: GTE-base 0.0625 → GTE-large 0.5000 within
+   one family and training recipe, while E5 moves the other way. The limitation
+   now reports the measurement and the mechanism (Table 12) instead of the
+   guess. We also removed a planned `contriever-large` comparison after checking
+   that Meta never released a Contriever above BERT-base — `contriever-msmarco`
+   is the same size with a different recipe, and labelling it "large" would have
+   been a misrepresentation.
 
 ---
 
@@ -78,15 +90,21 @@ python -m src.run_experiment --config configs/bbq.json
 # development-scale smoke run                              (~5 s)
 python -m src.run_experiment --config configs/default.json --quick
 
-# five-back-end adaptive sweep (Paper B 5.2b; needs HF_ENDPOINT, ~6 min total)
+# six-back-end adaptive sweep (Paper B 5.2b; needs HF_ENDPOINT)
 export HF_ENDPOINT=https://hf-mirror.com
 python -m src.run_experiment --config configs/align_gte_ad.json
 python -m src.run_experiment --config configs/align_e5.json
 python -m src.run_experiment --config configs/contriever_ad.json
 python -m src.run_experiment --config configs/align_splade.json
 
+# encoder-scale check (Paper A 5.6; large checkpoints take ~12-25 min each on CPU)
+python -m src.run_experiment --config configs/align_e5_large.json
+python -m src.run_experiment --config configs/align_gte_large.json
+python -m src.run_experiment --config configs/align_splade_large.json
+
 # analyses
 python analysis/compare_six_backbones.py    # Paper A 5.5
+python analysis/compare_scale.py            # Paper A 5.6, from committed CSVs
 python analysis/collapse_table.py           # Paper B 5.2b, from committed CSVs
 python analysis/dump_rate.py                # Paper A injection-rate tables
 python analysis/compare_corpora.py          # controlled vs BBQ

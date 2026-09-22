@@ -1,7 +1,14 @@
 {
-  "run_tag": "align_gte_ad",
+  "run_tag": "align_gte_large",
   "seed": 20260101,
+  "corpus": "controlled",
   "top_k": 5,
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [
+    0.005,
+    0.02
+  ],
   "n_poison": 6,
   "n_queries_per_stratum": 12,
   "strata": [
@@ -16,11 +23,22 @@
     "template_plus_projection"
   ],
   "retrievers": [
-    "bm25",
     "st"
   ],
+  "backbone": "gte-large",
+  "backbones": [
+    "gte-large"
+  ],
+  "st_batch_size": 16,
+  "st_max_length": 512,
+  "dense_dim": 512,
   "epsilons": [
-    1.0
+    1.0,
+    0.0
+  ],
+  "budget_modes": [
+    "group",
+    "both"
   ],
   "subspace_lambda": 1.0,
   "adaptive_lambdas": [
@@ -30,19 +48,5 @@
     1.0,
     2.0,
     4.0
-  ],
-  "backbone": "gte-base",
-  "st_batch_size": 32,
-  "poison_rates": [
-    0.005,
-    0.02
-  ],
-  "budget_modes": [
-    "both"
-  ],
-  "backbones": [
-    "gte-base"
-  ],
-  "poison_budget": "rate",
-  "poison_rate": 0.005
+  ]
 }

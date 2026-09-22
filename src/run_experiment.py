@@ -712,6 +712,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     )
                     for row in pq + ag:
                         row["poison_rate"] = "" if rate is None else float(rate)
+                        # Only ``st`` rows carry a backbone label in the
+                        # committed results. SPLADE rows leave it blank, but that
+                        # is not ambiguous within a run: ``retriever == "splade"``
+                        # already identifies them, and ``retriever == "dense"``
+                        # identifies the hashed retriever. We deliberately do NOT
+                        # start filling this column now, because doing so would
+                        # make the committed result files inconsistent with what
+                        # the current code produces. Analyses must disambiguate on
+                        # ``retriever`` -- see analysis/compare_scale.py, which
+                        # matches on (attack, rate, retriever, backbone).
                         row["backbone"] = bb if rk == "st" else ""
                     per_query_rows.extend(pq)
                     agg_rows.extend(ag)

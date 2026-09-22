@@ -46,6 +46,13 @@ import numpy as np
 from .base import Document, Query, RetrievalResult
 
 #: Encoder registry: name -> HuggingFace model id.
+#:
+#: Coverage note for the scale check (Paper A Limitation 5, §5.6): only GTE, E5
+#: and SPLADE have a genuinely larger sibling to compare against. Meta never
+#: released a Contriever larger than BERT-base -- ``contriever-msmarco`` is a
+#: different *recipe* at the same size, not a larger checkpoint -- so Contriever's
+#: susceptibility is unmeasured at scale and we say so rather than substituting a
+#: same-size model and labelling it "large".
 BACKBONES: Dict[str, str] = {
     # FARO baseline encoder
     "gte-base": "thenlper/gte-base",
@@ -53,6 +60,9 @@ BACKBONES: Dict[str, str] = {
     "contriever": "facebook/contriever",
     # BRRA / Wu et al. baseline encoder
     "e5-base-v2": "intfloat/e5-base-v2",
+    # larger checkpoints, for the same-family scale check
+    "e5-large-v2": "intfloat/e5-large-v2",
+    "gte-large": "thenlper/gte-large",
     # stronger multilingual option
     "bge-m3": "BAAI/bge-m3",
 }

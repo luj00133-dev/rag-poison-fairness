@@ -1,16 +1,42 @@
 Retrieval Poisoning / Group-Representation Drift -- summary
-run_tag=align_gte_ad  elapsed=398.7s
+run_tag=align_gte_ad  elapsed=721.1s
 
 TABLE 1  Attack effect (no defense), by retriever
                     attack retriever  drift_tv  drift_js stance_sh stance_dv  poison@k    util
                      clean      bm25    0.0000    0.0000    0.4667    0.2859       nan   0.083
                      clean        st    0.0000    0.0000    0.5000    0.3113       nan   0.096
+                  template      bm25    0.1625    0.0806    0.5000    0.3113     0.750   0.012
+                  template        st    0.0000    0.0000    0.5000    0.3113     0.062   0.096
+                  template      bm25    0.1188    0.0373    0.5000    0.3113     0.750   0.000
+                  template        st    0.0000    0.0000    0.5000    0.3113     0.062   0.096
+  template_plus_projection      bm25    0.1625    0.0806    0.5000    0.3113     0.750   0.012
+  template_plus_projection        st    0.4688    0.3881    0.5000    0.3113     1.000   0.000
+  template_plus_projection      bm25    0.1188    0.0373    0.5000    0.3113     0.750   0.000
+  template_plus_projection        st    0.3687    0.4012    0.5000    0.3113     1.000   0.000
 
 TABLE 2  Defense comparison under the strongest attack
 retriever      defense   eps  drift_tv stance_dv  poison@k    util mean_score
+     bm25      vanilla          0.1625    0.3113     0.750   0.012     6.9587
+     bm25  multi_query          0.1670    0.3113     0.750   0.017     1.3478
+     bm25    repr_both   1.0    0.3250    0.2696     0.750   0.017     6.6803
+       st      vanilla          0.4688    0.3113     1.000   0.000     1.7181
+       st  multi_query          0.4646    0.3113     1.000   0.000     1.4169
+       st     manifold          0.3750    0.3113     1.000   0.000    -2.7076
+       st    repr_both   1.0    0.4438    0.3113     1.000   0.000     1.7047
+     bm25      vanilla          0.1188    0.3113     0.750   0.000     6.3938
+     bm25  multi_query          0.1260    0.3113     0.750   0.012     1.3467
+     bm25    repr_both   1.0    0.4062    0.3113     0.750   0.000     6.3684
+       st      vanilla          0.3687    0.3113     1.000   0.000     1.7336
+       st  multi_query          0.3750    0.3113     1.000   0.000     1.4049
+       st     manifold          0.4187    0.3113     1.000   0.000    -3.2848
+       st    repr_both   1.0    0.4062    0.3113     1.000   0.000     1.7329
 
 TABLE 3  Epsilon sweep (representation budget) -- the frontier
 retriever      defense   eps  drift_tv   stance  poison@k    util
+     bm25    repr_both   1.0    0.3250   0.4538     0.750   0.017
+       st    repr_both   1.0    0.4438   0.5000     1.000   0.000
+     bm25    repr_both   1.0    0.4062   0.5000     0.750   0.000
+       st    repr_both   1.0    0.4062   0.5000     1.000   0.000
 
 TABLE 4  Adaptive attacker (knows the defense)
            defense  lambda  poison@k  drift_tv stance_dv
