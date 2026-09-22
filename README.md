@@ -19,16 +19,48 @@ on commodity hardware and isolates the mechanism from generator behaviour.
 | Finding | Corpus | Status |
 |---|---|---|
 | R1 composition drift is small and non-diagnostic under attack | both | retained |
-| The R1-only defense is **inert** — identical to no defense at every ε and every injection rate | both | retained |
+| The R1-only defense is **inert** — identical to no defense at every ε, every injection rate, all 6 retrievers | both | retained, 12/12 cells Δ = 0.000 |
 | The R2 constraint is the only dimension that moves either metric | both | retained |
 | The projection attack transfers to naturally written text | both | retained |
-| The text-only attack is **corpus-dependent** (needs lexical room) | controlled only | Finding 4 |
-| No defense survives a defense-aware attacker | both | Paper B |
+| The text-only attack is **corpus- and representation-dependent** | controlled only | Finding 4 + 7 |
+| Text-attack susceptibility tracks **sparsity**, not "neuralness" (SPLADE ≈ BM25; GTE/E5 resistant, Contriever not) | controlled | Finding 7 |
+| No defense survives a defense-aware attacker, on any of 5 back-ends | both | Paper B |
 
 Key numbers: 0.1% injection (8 passages) reaches 68.75% adversarial inclusion on
 the controlled corpus; R1-only defense gives `poison@k` *identical* to no
 defense at every setting; the cross-group stance gap is exactly 0.0000 clean and
-0.6250–1.0000 under attack.
+0.6250–1.0000 under attack. Text-attack `poison@k` spans 0.0625–0.7500 across six
+retrievers, and the two susceptible ones (BM25, SPLADE) are exactly the sparse
+ones.
+
+Both manuscripts compile to PDF with **zero LaTeX errors and zero undefined
+references** (Paper A ~30 pp, Paper B ~12 pp) via `paper/compile_papers.py`.
+That script parses real `pdflatex` logs; the conversion log from
+`paper/make_latex.py` is *not* a compile check.
+
+### Corrections we made to our own results
+
+We record these rather than quietly fixing them, because both were found by
+cross-checking papers against committed data:
+
+1. **Paper B Table 1** was built from a scratch run in `results/verify/`, which
+   `.gitignore` excludes, instead of the canonical `results/full/`. The static
+   `poison@k` for off-manifold filtering is **0.250, not 0.125**. Re-running
+   `configs/default.json` reproduces `results/full/adaptive.csv` exactly
+   (18/18 cells bit-identical); the scratch values reproduce from no committed
+   configuration.
+2. **Paper B Finding 1b** claimed the adaptive collapse is "steeper on a real
+   encoder", generalising from GTE-base. Adding Contriever, E5-base-v2 and
+   SPLADE showed the abruptness does not reduce to one property — GTE-base and
+   E5-base-v2 fail in one step (0.000 → 1.000) while Contriever and the
+   learned-sparse SPLADE collapse gradually, like our own hashed retriever. The
+   claim was replaced with the three statements that hold on all five.
+3. **An earlier claim of "zero LaTeX errors"** rested on the pandoc conversion
+   log while `pdflatex` was not on `PATH`. `paper/compile_papers.py` now does a
+   real two-pass compile and parses `^!` lines.
+4. **Injection budget must be a rate, not a count** (see the methodological
+   notes below) — a fixed count produced a spurious "attack does not transfer"
+   conclusion in an earlier version.
 
 ---
 
@@ -46,14 +78,24 @@ python -m src.run_experiment --config configs/bbq.json
 # development-scale smoke run                              (~5 s)
 python -m src.run_experiment --config configs/default.json --quick
 
-# Paper B's adaptive-attack numbers
-python dump_usage.py
+# five-back-end adaptive sweep (Paper B 5.2b; needs HF_ENDPOINT, ~6 min total)
+export HF_ENDPOINT=https://hf-mirror.com
+python -m src.run_experiment --config configs/align_gte_ad.json
+python -m src.run_experiment --config configs/align_e5.json
+python -m src.run_experiment --config configs/contriever_ad.json
+python -m src.run_experiment --config configs/align_splade.json
 
-# Paper A's injection-rate tables
-python dump_rate.py
+# analyses
+python analysis/compare_six_backbones.py    # Paper A 5.5
+python analysis/collapse_table.py           # Paper B 5.2b, from committed CSVs
+python analysis/dump_rate.py                # Paper A injection-rate tables
+python analysis/compare_corpora.py          # controlled vs BBQ
+python analysis/find_table1_source.py       # traces a quoted number back to its run dir
 
-# side-by-side corpus comparison
-python compare_corpora.py
+# build the papers and verify they actually compile
+python paper/make_docx.py
+python paper/make_latex.py --class elsevier
+python paper/compile_papers.py              # real pdflatex errors, not the conversion log
 ```
 
 Outputs land in `results/<run_tag>/`:
@@ -83,9 +125,12 @@ pdflatex -interaction=nonstopmode paperA_R1R2.tex
 pdflatex -interaction=nonstopmode paperA_R1R2.tex     # twice, for references
 ```
 
-Both papers currently compile with **zero LaTeX errors** — Paper A 29 pages,
-Paper B 11 pages. `paper/check_latex.py` reports the generated structure
-(sections, tables, bibliography entries).
+Both papers currently compile with **zero LaTeX errors and zero undefined
+references** — Paper A 30 pages, Paper B 12 pages, verified by
+`paper/compile_papers.py` (a real two-pass `pdflatex` whose `.log` is parsed for
+`^!` errors, undefined citations/references and overfull boxes).
+`paper/make_latex.py` only converts Markdown to `.tex` and does not compile
+anything; its log is not a compile check.
 
 Four conversion problems are handled in `make_latex.py`; each produces a hard
 LaTeX error if left alone:
