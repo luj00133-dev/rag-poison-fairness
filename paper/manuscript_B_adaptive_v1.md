@@ -269,4 +269,10 @@ over $\lambda$ together with the per-defense penalty functions in
 `src.defenses.selectors`; `run_adaptive` in `src/run_experiment.py` assembles the
 objective $\mathrm{sim} - f$ and reports `poison@k` per $\lambda$.
 
+Code and results: **https://github.com/luj00133-dev/rag-poison-fairness**
+
 No GPU is required; both corpora complete on CPU in under three minutes.
+Real-encoder runs (the GTE-base sweep of §5.2b) need
+`HF_ENDPOINT=https://hf-mirror.com` on networks where huggingface.co is
+unreachable, and `python -m src.run_experiment --config configs/align_gte_ad.json`
+reproduces the adaptive table.

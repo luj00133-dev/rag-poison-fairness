@@ -512,7 +512,7 @@ We have reported an exploratory provenance signal in that direction, together wi
 
 ## Data and Code Availability
 
-The implementation, configuration files, and the scripts that regenerate every number in §5 are released at `[repository URL]`. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.6 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
+The implementation, configuration files, and the scripts that regenerate every number in §5 are released at **https://github.com/luj00133-dev/rag-poison-fairness**. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.6 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
 
 **How to regenerate.**
 
