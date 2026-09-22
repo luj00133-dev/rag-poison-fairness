@@ -26,3 +26,9 @@ Thumbs.db
 .vscode/
 .idea/
 ~$*
+
+# API credentials and caches (never commit)
+.env
+*.env
+results/attribution_cache.json
+test_deepseek.py

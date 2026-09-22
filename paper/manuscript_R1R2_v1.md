@@ -399,6 +399,33 @@ The practical implication is uncomfortable for the evaluation of any RAG retriev
 
 Two findings do *not* survive unchanged, and we report both. First, the R2 constraint's **demonstrable benefit** shrinks on real encoders: the R2 gap is already saturated at 1.0000 under every defence configuration at this injection rate, leaving no headroom to recover, so we can show the constraint reducing the gap only on our own encoders. Second, our earlier statement that text-level injection is sufficient must be narrowed to the lexical and hashed retrievers; against GTE-base it is not sufficient at any injection rate we tested.
 
+### 5.6 Generation-stage propagation: does the retrieval skew reach the output?
+
+Every result above is measured at the retrieval layer. That is deliberate — it makes the mechanism measurable without a generator and reproducible on commodity hardware — but it leaves the question a reviewer will ask: **does a retrieval-layer stance skew change what the system says?** We answer it with a fixed generator, varying only the retrieved context, so that any difference between conditions is attributable to retrieval.
+
+**Protocol.** For each query we generate under four conditions, holding model, prompt, decoding (temperature 0) and question text fixed: `clean` (unpoisoned retrieval), `poisoned` (pairwise injection, no defence), `r1only` (R1 constraint), `r2both` (R1+R2 constraint). The primary probe is **forced choice**: the generator must select between a favourable and an unfavourable statement about a group — the generation-layer analogue of the R2 dimension, and the same form of measurement used for attack success in the poisoning literature. Option order is randomised per (query, condition, group) so that a position bias cannot masquerade as a stance effect. We additionally collect free-form answers and a per-passage attribution probe.
+
+Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is reachable without a proxy from the network this work used. 207 API calls, 49.2k prompt tokens, 125 s of model time.
+
+**Table 11.** Generation-layer stance by condition. Controlled corpus, GTE-base retrieval, $\rho = 2\%$.
+
+| Condition | fav. rate (g1) | fav. rate (g2) | **stance gap** | Δ vs clean |
+|---|---|---|---|---|
+| clean | 0.562 | 0.708 | **0.2708** | — |
+| poisoned | 0.583 | 0.979 | **0.3958** | **+46%** |
+| `r1only` (R1) | 0.604 | 1.000 | **0.3958** | +46% |
+| `r2both` (R1+R2) | 0.583 | 1.000 | **0.4167** | +54% |
+
+**Finding 8. The retrieval-layer skew propagates to the generated output.** The generation-layer stance gap rises from 0.2708 to 0.3958 under poisoning — a 46% increase on a fixed generator with only the context changed. The retrieval-layer failure we document is therefore not an artefact of how we measure retrieval: it changes what the system says.
+
+**Finding 9. The skew does not appear as a uniform shift; it saturates one group.** The favourable rate for the second group rises monotonically across conditions (**0.708 → 0.979 → 1.000 → 1.000**) while the first group's rate is essentially flat (0.562 → 0.583 → 0.604 → 0.583). The attack does not make the generator "more biased" in a diffuse sense; it drives one group's favourable judgement to ceiling. This is a more specific — and more concerning — failure mode than a uniform shift, and it is visible only because we measure the two groups separately.
+
+**Finding 10. Neither constraint improves the generation layer, and one makes it slightly worse.** `r1only` leaves the gap identical to no defence (0.3958); `r2both` leaves it slightly higher (0.4167). This is consistent with the retrieval-layer result on this backbone, where the R2 gap is already saturated and the R1 constraint is inert (§5.5): the input to the generator is unchanged, so the output is unchanged. We report it because it closes the loop honestly — the constraints we proposed, evaluated here, do not repair the downstream harm.
+
+**A metric that failed, reported because it is the natural one to reach for.** We implemented the expected-attributed-exposure (EAE-D) statistic of Kim & Diaz [8] by asking the generator, per retrieved passage, whether its answer relied on that passage. It returns **1.000 in every condition**, with no discrimination. The reason is structural rather than a coding error: the answer is generated *from* the context, so a "did you rely on this?" probe admits YES for essentially any passage present. Proper attribution — "which passages did you rely on?" — is what [8] measures by entailment rather than by self-report, and our self-report implementation does not replicate it. We report the failure because EAE-D is the obvious metric at this interface and a reader should know that its cheap version is uninformative here.
+
+**Scope.** One generator, one retrieval backbone (GTE-base), one injection rate, 48 queries. The direction and the saturation pattern are clear; the magnitudes should not be extrapolated.
+
 ---
 
 ## 6. Why Distribution-Level Defense Has a Limit
@@ -468,7 +495,7 @@ We report the signal because it is the direction Proposition 1 points to, and be
 3. **The absolute R2 metric does not transfer.** `stance_gap` is exactly 0 on the balanced controlled corpus and near its maximum (0.9326) on BBQ *before any attack*, where it is dominated by the benchmark's own stereotyped construction. On such a corpus only the change from the clean baseline is informative. A corpus-relative normalisation of $\Delta_{\text{R2}}$ would be preferable and we leave it open.
 4. **Injection budget is a rate, not a count.** We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
 5. **Retrieval back-ends.** BM25, a self-contained feature-hashing dense retriever, GTE-base, and Contriever (§5.5) — four retrievers spanning lexical, hashed, and two distinct semantic representations. GTE-base matches the backbone of the closest prior work [5] and Contriever that of [8]; E5-base/E5-large (as in [4, 6]) and SPLADE remain to be added. We note that feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder — Finding 7 quantifies the difference. More importantly, Finding 7 shows that text-attack effectiveness varies **nine-fold between two real encoders of the same size class** (Contriever 0.5625 versus GTE-base 0.0625), so a single-encoder evaluation cannot establish how robust a defence is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area.
-6. **No generation-stage evaluation.** We deliberately evaluate at the retrieval layer, so that the R1/R2 mechanism is measurable without a generator and the study is reproducible on commodity hardware (the full suite runs on CPU in under three minutes). This means we do not report attributed exposure [8] or generator bias [4, 7]. Since the retrieval-layer failure we document is a precondition for the downstream harm, we consider the two complementary, and we report generator-stage attribution as planned work. [FILL]
+6. **No generation-stage evaluation *beyond §5.6*.** We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.6 adds a first generation-stage check on a single generator and backbone; it establishes that the skew propagates and that it saturates one group, but not the magnitude. A multi-generator evaluation, and proper entailment-based attribution rather than the self-report probe that failed in §5.6, remain to be done. We do not otherwise report attributed exposure [8] or generator bias [4, 7].
 7. **Binary groups.** Following [6, 7, 8], we use two groups per stratum. Extension to $|\mathcal{G}| > 2$ is mechanical for R1 and R2 but is not evaluated here. We note that the race/ethnicity category of BBQ is markedly imbalanced in our corpus build (960 passages about the protected group versus 88 about the non-protected group), which is itself a property of the benchmark worth flagging for anyone reusing it.
 
 ---
@@ -485,7 +512,23 @@ We have reported an exploratory provenance signal in that direction, together wi
 
 ## Data and Code Availability
 
-The implementation, configuration files, and the scripts that regenerate every number in §5 are released at `[repository URL]`. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations.
+The implementation, configuration files, and the scripts that regenerate every number in §5 are released at `[repository URL]`. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.6 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
+
+**How to regenerate.**
+
+```bash
+# retrieval layer (CPU only, no API key)
+python -m src.run_experiment --config configs/default.json      # ~25 s
+python -m src.run_experiment --config configs/bbq.json          # ~180 s
+python -m src.run_experiment --config configs/align_multi.json  # GTE + Contriever, ~12 min
+
+# generation layer (requires DEEPSEEK_API_KEY)
+python -m src.run_attribution --config configs/attribution.json
+```
+
+Real-encoder runs require `HF_ENDPOINT=https://hf-mirror.com` on networks where huggingface.co is unreachable.
+
+**API key.** The key used for the §5.6 runs is rotated and revoked before publication; the repository contains no credentials, and `results/attribution_cache.json` (a prompt→reply cache) is regenerated locally rather than shipped.
 
 ---
 
