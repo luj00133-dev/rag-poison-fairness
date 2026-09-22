@@ -450,6 +450,23 @@ A distribution-constrained defense accepts exactly $\mathcal{R}_\varepsilon$. Al
 
 **Consequence.** A defense whose acceptance test is membership in $\mathcal{R}_\varepsilon$ admits a **fully adversarial** selection at any tolerance, including $\varepsilon = 0$. Tightening the budget does not exclude the injection; it constrains the attacker's *composition*, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical `poison@k` is *identical* to no defense at every $\varepsilon$ rather than merely close to it: the injected selection is not near the boundary of $\mathcal{R}_\varepsilon$, it is at the reference point.
 
+**Empirical check.** Table 12 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
+
+**Table 12.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
+
+| Corpus / retriever | ε=1.0 | ε=0.5 | ε=0.25 | ε=0.1 | ε=0.0 |
+|---|---|---|---|---|---|
+| controlled / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| controlled / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| BBQ / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| BBQ / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| controlled / GTE-base | 0.000 | — | — | — | 0.000 |
+| controlled / Contriever | 0.000 | — | — | — | 0.000 |
+
+*(entries are Δ`poison@k`; 0.000 in all 24 measured cells)*
+
+Prop. 1 predicts Δ = 0 exactly, and Δ = 0 exactly in every one of the 24 cells measured — not approximately, which a tuning-failure explanation would predict. The equivalence is reproduced by `analysis/verify_theory.py`. We state the count explicitly because the exactness is the point: the constrained selection is not *near* the reference composition, it *is* the reference composition.
+
 ### 6.3 Proposition 2 — the minimum injection for an ε-shift
 
 Proposition 1 shows the attacker *can* be admissible; we now give the budget at which it becomes *effective*.
