@@ -246,7 +246,7 @@ Three observations.
 
 **Finding 2. The R1-only defense is not weak but inert.** `repr_group` attains *exactly* the same `poison@k` as `vanilla` — 0.750 on BM25, 1.000 on dense — at **every** budget setting, including $\epsilon = 0$, the strictest possible constraint. The inclusion rate is not merely unchanged at the default setting; across a sweep of five values spanning the entire range of the budget parameter it does not vary at all. Tightening the budget does change R1 drift (0.1500 → 0.1812, i.e. it can make R1 *worse*, by forcing the selection away from the natural ranking) while leaving both the R2 gap and adversarial inclusion untouched. This is the signature of a constraint acting on quantities the attack does not perturb: the budget has no purchase on the attack.
 
-**This is a null result, so we state its strength rather than leaving a reader to guess.** A point estimate of zero can mean "no effect" or "not enough data", and the distinction matters here because the claim is that a published defense family does nothing. We therefore report paired tests on the per-query data (Table 16) instead of aggregate means:
+**This is a null result, so we state its strength rather than leaving a reader to guess.** A point estimate of zero can mean "no effect" or "not enough data", and the distinction matters here because the claim is that a published defense family does nothing. We therefore report paired tests on the per-query data (Table B1) instead of aggregate means:
 
 - For every R1-constrained configuration, the **per-query difference vector is identically zero** — not small, zero. The paired bootstrap CI collapses to [0, 0] and the permutation test is degenerate by construction. The informative statistic is the equivalence bound: because the differences are exactly zero rather than approximately zero, **these cells exclude any effect on adversarial-passage inclusion, not merely an effect above a threshold.**
 - The reason is a **ceiling**, and this is stronger than a failure to detect an effect. The unconstrained baseline already admits adversarial passages on every query it can — 1.000 for the dense retriever, 0.750 for BM25 — so there is no headroom for a constraint to demonstrate a reduction even in principle.
@@ -256,13 +256,7 @@ We give the full paired-test table, including the equivalence bounds and the con
 
 This is the central empirical claim of the paper, and it applies directly to the published defense family: [5] optimises R1 composition under a fairness constraint, [6] adjusts R1 proportions and ordering, [7] controls embedder group balance, [8] equalises item-side exposure. Each constrains aggregate composition along axes the attack leaves clean, so each inherits this insensitivity. We note that multi-query consistency [4], which operates on retrieval stability rather than composition, is also inert here (0.750).
 
-**Table 3.** Adaptive attacker (defense-aware), `poison@k`.
-
-| Defense | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 |
-|---|---|---|---|---|---|---|
-| multi-query consistency | 0.729 | 0.958 | 1.000 | 1.000 | 1.000 | 1.000 |
-| off-manifold filtering | **0.250** | **0.562** | 0.812 | 0.938 | 1.000 | 1.000 |
-| `repr_both` (R1+R2) | 0.625 | 0.875 | 1.000 | 1.000 | 1.000 | 1.000 |
+The adaptive sweep is in Appendix C, Table C1; the ranking inverts as described below.
 
 The adaptive attacker defeats every defense. Off-manifold filtering is by a wide margin the strongest at $\lambda = 0$ (0.250, against 0.750 for no defense) and **collapses monotonically to 1.000 by $\lambda = 2$** — a clean demonstration that its advantage is specific to the non-adaptive attacker and does not survive an adversary who observes its penalty. The representation-conserving defenses, which never achieve better than 0.625 even non-adaptively, saturate at 1.000 by $\lambda = 0.5$: they are the most fragile under adaptation as well as the least effective without it.
 
@@ -272,7 +266,7 @@ The adaptive attacker defeats every defense. Off-manifold filtering is by a wide
 
 Adding the cross-group R2 constraint substantially improves the R2 statistic. On BM25 the `stance_gap` falls from 0.6250 (no defense, and R1-only defense) to **0.1429** under `repr_both` at $\epsilon = 1.0$ — a **77% reduction**, and to 0.3542 at $\epsilon = 0.25$. The constraint is doing exactly what it was designed to do.
 
-**Table 4.** R2 constraint effect vs. adversarial inclusion (BM25, template + projection).
+**Table 3.** R2 constraint effect vs. adversarial inclusion (BM25, template + projection).
 
 | Defense | ε | `stance_gap` (R2, lower is better) | `poison@k` (security, lower is better) |
 |---|---|---|---|
@@ -296,7 +290,7 @@ The results above use a controlled corpus whose passages are template-instantiat
 
 **A note on the injection parameter, because our first attempt was wrong.** An earlier version of this experiment injected a fixed six passages per stratum and concluded that the text-only attack "does not transfer" to natural data. That conclusion was an artefact of the parameter, not a property of the corpus: six passages is roughly 10% of a small candidate pool but ~0.03% of an 18k-passage corpus, so a fixed count measures corpus size rather than attack strength. Poisoning studies standardly report an *injection rate*; we now do the same, sweeping $\rho \in \{0.1\%, 0.25\%, 0.5\%, 1\%, 2\%\}$ of corpus size. All results below are at matched $\rho$.
 
-**Table 5.** Attack effect vs. injection rate $\rho$; no defense; `poison@k`.
+**Table 4.** Attack effect vs. injection rate $\rho$; no defense; `poison@k`.
 
 *Controlled corpus (1,824 passages):*
 
@@ -323,7 +317,7 @@ The results above use a controlled corpus whose passages are template-instantiat
 
 **Finding 5. The projection attack is robust to corpus naturalness.** On the dense back-end, `poison@k` reaches **0.903 at 0.1%** on BBQ and 1.000 by 2%, with the utility proxy falling from 0.557 to 0.011. The projection operates in embedding space, where the perturbation's advantage does not depend on lexical distinctiveness, so it transfers where the text attack does not. Across both corpora and both injection modes, the projection attack is the only one that is consistently effective.
 
-**Table 6.** Defense comparison on BBQ under template + projection (dense), by injection rate. `poison@k`.
+**Table 5.** Defense comparison on BBQ under template + projection (dense), by injection rate. `poison@k`.
 
 | ρ | vanilla | `repr_group` (R1 only) ε=0 | `repr_both` (R1+R2) ε=1.0 |
 |---|---|---|---|
@@ -335,7 +329,7 @@ The results above use a controlled corpus whose passages are template-instantiat
 
 **The R2 constraint reduces adversarial inclusion on BBQ while the R1 constraint does not, and the pattern holds across the whole rate sweep.** `repr_group` is identical to no defense at every rate (0.903 / 0.972 / 0.986 / 0.993 / 1.000), whereas `repr_both` is weakly better at every rate, with its absolute advantage growing as the attack strengthens (0.021 at 0.5%, 0.007 at 2%) while its R2 advantage is much larger. The effect sizes here are smaller than the fixed-count run reported, and the reason is now clear: that run's comparison was confounded by the injection budget.
 
-**Table 7.** R2 constraint effect on BBQ (dense, template + projection, $\rho = 0.5\%$).
+**Table 6.** R2 constraint effect on BBQ (dense, template + projection, $\rho = 0.5\%$).
 
 | Defense | ε | `stance_gap` (R2) | `poison@k` |
 |---|---|---|---|
@@ -362,133 +356,91 @@ The three findings that hold on both corpora and at every injection rate are the
 
 **Adaptive attack on BBQ.** `off-manifold` holds `poison@k` at 0.007–0.111 up to $\lambda = 0.5$; `repr_conserving` at 0.049–0.319; `multi_query` at 0.083–0.535. All saturate at 1.000 by $\lambda = 4$; see the companion paper for a full adaptive-evaluation treatment.
 
-### 5.5 Backbone alignment: six retrievers, and what susceptibility actually tracks
+### 5.5 Encoder robustness: a per-checkpoint property, not a family property
 
-The experiments above use a self-contained feature-hashing dense retriever and a lexical one. Neither is the encoder the fairness-defense literature uses, so the numbers cannot be placed beside published results. We therefore add the encoders that literature actually uses — **GTE-base** [5], **Contriever** [8], and **E5-base-v2** [4, 6] — and, to test a mechanism rather than only to align, **SPLADE**, a *learned sparse* retriever. SPLADE is the decisive addition: it is sparse like BM25 but learned like a neural encoder, so it separates two explanations that a lexical-versus-semantic comparison cannot. E5 receives its required `query:` / `passage:` prefixes; omitting them measurably degrades retrieval and would distort the comparison.
+The results so far are measured on our own retrievers. The encoders this literature actually uses differ substantially in how much structure an attacker can exploit, so we evaluate the attack across nine retrieval back-ends: BM25 and a self-contained feature-hashing dense retriever; the learned-sparse retriever SPLADE at two sizes; and the dense semantic encoders the compared work uses — GTE-base [5] and its larger sibling GTE-large, Contriever [8], and E5-base-v2 [4, 6] with E5-large-v2. We include SPLADE specifically because it separates two explanations a lexical-versus-semantic comparison cannot: it is sparse like BM25 but learned like a neural encoder. E5 receives its required `query:` / `passage:` prefixes; omitting them degrades retrieval and would distort the comparison.
 
-**Table 8.** Attack effect by backbone. `template_plus_projection`, $\rho = 0.5\%$, no defense.
+**Table 7.** Projection attack (`template_plus_projection`), $\rho = 0.5\%$, no defense. The scale column pairs each encoder with its larger sibling from the same family and training recipe.
 
-| Retriever | representation | R1 drift | R2 gap | `poison@k` | `in_pool_rate` |
+| Retriever | representation | size | R1 drift | R2 gap | `poison@k` |
 |---|---|---|---|---|---|
-| BM25 | lexical, unsupervised sparse | 0.1625 | 0.7436 | 0.750 | 0.0125 |
-| dense (feature hashing) | hashed, not semantic | 0.1625 | 1.0000 | 1.000 | 0.0000 |
-| **SPLADE** | **learned sparse** | 0.2687 | 1.0000 | 0.750 | 0.0000 |
-| GTE-base | dense semantic | 0.4688 | 1.0000 | 1.000 | 0.0000 |
-| Contriever | dense semantic | 0.3687 | 1.0000 | 1.000 | 0.0000 |
-| E5-base-v2 | dense semantic | 0.4000 | 1.0000 | 1.000 | 0.0000 |
+| BM25 | lexical, unsupervised sparse | — | 0.1625 | 0.7436 | 0.750 |
+| dense (feature hashing) | hashed, not semantic | — | 0.1625 | 1.0000 | 1.000 |
+| SPLADE | learned sparse | 66M | 0.2687 | 1.0000 | 0.750 |
+| SPLADE large | learned sparse | 110M | 0.2687 | 1.0000 | 1.000 |
+| GTE-base | dense semantic | 110M | 0.4688 | 1.0000 | 1.000 |
+| **GTE-large** | dense semantic | 335M | 0.4188 | 1.0000 | 1.000 |
+| Contriever | dense semantic | 110M | 0.3687 | 1.0000 | 1.000 |
+| E5-base-v2 | dense semantic | 110M | 0.4000 | 1.0000 | 1.000 |
+| **E5-large-v2** | dense semantic | 335M | 0.3750 | 1.0000 | 1.000 |
 
-Every retriever is attacked, and the R2 gap saturates at its maximum for all but BM25. The R1 drift of the dense encoders (0.37–0.47) is **2.3x–2.9x** that of BM25 (0.16) — the projection attack perturbs group composition *more* in a continuous semantic space, which is the opposite of what we expected when we added this experiment.
+Every back-end is attacked, and the R2 gap saturates at its maximum for all but BM25. The dense encoders' R1 drift (0.37–0.47) is **2.3×–2.9×** that of BM25 (0.16): the projection attack perturbs group composition *more* in a continuous semantic space, the opposite of what we expected when adding this experiment.
 
-**Table 9.** R1-only constraint inertness. `template_plus_projection`, $\rho = 0.5\%$, Δ = constrained minus no defense.
+**Table 8.** Text-only (lexical) attack, $\rho = 0.5\%$ and $2\%$, no defense. This is where the back-ends separate.
 
-| Retriever | `repr_group` ε=0 | ε=1.0 | `repr_both` ε=0 | Δ |
-|---|---|---|---|---|
-| BM25 | 0.750 | 0.750 | 0.750 | **0.000** |
-| dense (hash) | 1.000 | 1.000 | 1.000 | **0.000** |
-| SPLADE | 0.750 | 0.750 | 0.750 | **0.000** |
-| GTE-base | 1.000 | 1.000 | 1.000 | **0.000** |
-| Contriever | 1.000 | 1.000 | 1.000 | **0.000** |
-| E5-base-v2 | 1.000 | 1.000 | 1.000 | **0.000** |
-
-**Finding 6. The R1 constraint is inert on every backbone tested — all 12 constrained configurations in Table 9 show Δ = 0.000, where Δ is the change in adversarial-passage inclusion (`poison@k`) versus no defense — and its inertness does not depend on the attack leaving R1 undisturbed.** This is the paper's strongest single result, and we state it in the sharper form deliberately, because the weaker form would be misleading. One might reasonably expect an R1 constraint to become effective once the attack perturbs R1 appreciably — and on the dense encoders it does perturb R1, by 0.37–0.47, more than three times as much as on BM25. It nonetheless admits exactly the same adversarial passages as no defense, at either budget extreme. The reason is that the constraint operates on *admission quotas*, and the attacker constructs the injection to fit inside whatever quota the defense enforces: the tolerance parameter widens or narrows the admissible region without ever excluding the attacker's passages, which were built to be compositionally typical. §6.2 proves why. The result holds across six retrievers spanning lexical, hashed, learned-sparse and three dense semantic representations.
-
-**Table 10.** Text-only (lexical) attack by backbone — what susceptibility actually tracks. `template`, no defense.
-
-| Retriever | representation | `poison@k` @0.5% | @2% | R1 drift @0.5% | `fav_g2` |
+| Retriever | representation | `poison@k` @0.5% | @2% | R1 drift | `fav_g2` |
 |---|---|---|---|---|---|
 | BM25 | lexical, unsupervised sparse | 0.7500 | 0.7500 | 0.1625 | 0.7436 |
-| dense (feature hashing) | hashed (preserves lexical surface) | 0.6250 | 0.6250 | 0.0812 | 0.6167 |
+| dense (feature hashing) | hashed (keeps lexical surface) | 0.6250 | 0.6250 | 0.0812 | 0.6167 |
 | **SPLADE** | **learned sparse** | **0.6250** | 0.6250 | 0.2188 | **1.0000** |
+| **SPLADE large** | learned sparse | **0.5625** | 0.5625 | 0.1875 | 0.8810 |
 | Contriever | dense semantic | 0.5625 | 0.5625 | 0.1750 | 0.9444 |
 | GTE-base | dense semantic | **0.0625** | 0.0625 | 0.0000 | n/a |
+| **GTE-large** | dense semantic | **0.5000** | 0.5000 | 0.1313 | 0.9444 |
 | E5-base-v2 | dense semantic | **0.0625** | 0.0625 | 0.0000 | n/a |
+| **E5-large-v2** | dense semantic | **0.0000** | 0.0000 | 0.0000 | n/a |
 
-The `fav_g2` column is the R2 reading. The `n/a` entries for GTE-base and E5-base-v2 are not missing values but a consequence of the attack failing: with no adversarial passage in the top-$k$ there is no stance skew to measure, so the R2 gap is undefined rather than 0 or 1. We report it as undefined because collapsing it to 0.000 would misrepresent a failed attack as a perfectly balanced selection. Note also that R1 drift is **exactly** 0.0000 for both resistant encoders — the attack produces no measurable change on either dimension — whereas SPLADE's R2 gap reaches its maximum 1.0000, the highest of the six, against a text-only attack where BM25 reaches only 0.7436. SPLADE's learned term weighting evidently concentrates score on exactly the terms the attacker appends, making it the *most* efficiently attacked retriever on the R2 dimension despite tying the hashed retriever on `poison@k`.
+Three observations, and they are the finding.
 
-**Finding 7. Text-attack susceptibility tracks the *sparsity* of the representation, not whether the encoder is learned or semantic.** We added SPLADE specifically to decide between two explanations, and it decides: SPLADE learns its term weights — it is a neural encoder, trained on relevance — yet it is as susceptible as BM25 (**0.6250 versus 0.7500**), because its representation is still a sparse bag of term weights. The grouping that the data supports is:
+**Finding 7. Sparsity, not "neuralness", predicts susceptibility at a fixed size, but it is a correlate rather than a law.** SPLADE learns its term weights — it is a neural encoder trained on relevance — yet it is as susceptible as BM25 (0.6250 versus 0.7500), because its representation is still a sparse bag of term weights. The attack raises a passage's score by appending query-aligned terms, which requires the representation to expose **per-term contributions**: a sparse retriever does that whether or not its weights are learned, and a dense encoder absorbs the appended text into a single vector. SPLADE is in fact the *most* efficiently attacked of the nine on the R2 dimension, reaching the maximum stance gap 1.0000 where BM25 reaches 0.7436 — its learned weighting evidently concentrates score on exactly the terms the attacker appends. But sparsity is a correlate, not a law, and two cases bound it: Contriever is dense and semantic yet nearly as susceptible as BM25 (0.5625), and GTE-large is dense and semantic yet eight times more susceptible than its own base checkpoint.
 
-| representation | retrievers | text attack |
-|---|---|---|
-| **sparse** (term-level weights, learned or not) | BM25, SPLADE | **susceptible** (0.62–0.75) |
-| hashed (preserves the lexical surface) | feature hashing | susceptible (0.6250) |
-| **dense semantic** | GTE-base, E5-base-v2 | **resistant** (0.0625) |
-| dense semantic | **Contriever** | susceptible (0.5625) |
+**Finding 11. Susceptibility is not monotone in encoder scale, and scaling can destroy resistance entirely.** Table 8's clearest result is unexpected: GTE-base and E5-base-v2 are equally resistant at base size (both 0.0625 — the attack succeeds on three of 48 queries), and enlarging both by the same factor of three moves them in *opposite* directions. **E5-large-v2 becomes more resistant (0.0625 → 0.0000, the attack now fails on every query); GTE-large becomes eight times more susceptible (0.0625 → 0.5000, succeeding on 24 of 48).** SPLADE is susceptible at both sizes with little change (0.6250 → 0.5625). Per-query inclusion is binary, so this is a shift in *how many* queries are compromised, not a drift in a continuous score.
 
-The mechanism is now clear and follows from how the attack works. The injection raises its score by appending query-aligned terms, which requires the representation to expose **per-term contributions**. A sparse retriever — including a learned one — does exactly that, so the attacker's appended terms translate directly into score. A dense encoder compresses the whole passage into one vector, where appended terms are absorbed into the semantic representation and produce no separate term-level gain. We had expected a lexical-versus-semantic split; **sparsity is the operative property, and semantics only matters through it.**
+**The mechanism is not geometry.** We tested the obvious explanation and it is wrong, which makes the result more informative. If GTE-large's space were more anisotropic — vectors collapsed into a narrower cone — a fixed textual nudge would move rank further, and the finding would reduce to a known property. Measured, GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), effective dimensionality (13.2 both, against 768 and 1024 nominal), and spread of query similarity (0.0860 vs 0.0895); the E5 pair behaves the same (0.8291 / 0.8375; 13.9 / 14.8). What differs is the gain the attack buys:
 
-**This finding has a measured boundary, and we state it here rather than burying it in the limitations.** §5.6 pairs each of these encoders with its larger sibling from the same family and finds that sparsity predicts susceptibility *at a fixed scale* but does not determine it: GTE-large is dense and semantic, yet is eight times more susceptible than GTE-base. Sparsity is therefore a strong correlate and a useful heuristic for choosing a back-end, not a law. The version of Finding 7 we are prepared to defend is the weaker one — **susceptibility is a property of the specific checkpoint and must be measured** — with sparsity the best available predictor among the axes we varied.
-
-Two consequences, and the second is the uncomfortable one. One observation is worth recording first because it surprised us: SPLADE is the *most* efficiently attacked of the six on the R2 dimension, reaching the maximum stance gap 1.0000 against a text-only attack where BM25 reaches only 0.7436 — its learned term weighting evidently concentrates score on exactly the terms the attacker appends.
-
-First, a feature-hashing retriever is not a substitute for a semantic one: it preserves the lexical surface (0.6250, close to BM25's 0.7500) and therefore over-states text-attack effectiveness relative to a dense encoder. This is why our own earlier numbers, produced with it, were too pessimistic about encoder robustness.
-
-Second, **"dense semantic" is not a guarantee — Contriever is the counterexample.** Two of the three dense encoders resist almost completely (0.0625) while Contriever sits near BM25 (0.5625), a nine-fold gap between encoders of the same size class on the same corpus with the same injected text. And Contriever is the encoder used by the fair-ranking work we compare against [8]. A defense evaluated on Contriever would appear to face a live text-injection threat; the same defense on E5-base-v2 or GTE-base would face a negligible one. Because evaluations in this literature are typically run on a single encoder, a reported robustness figure conflates the defense's behaviour with an encoder property that is not measured. We do not regard this as a flaw in any particular paper so much as a **missing control**: the encoder should be reported as a factor rather than as an implementation detail, and a robustness claim should be accompanied by the same measurement on encoders that differ in representation family.
-
-**Adaptive attacker, for completeness.** On both SPLADE and E5-base-v2 every defense again collapses to complete failure at the first perturbation step: `off-manifold` goes 0.1875 → 0.5000 → 0.8125 → 1.000 (SPLADE) and 0.000 → 1.000 (E5-base-v2) for $\lambda = 0, 0.25, 0.5, 1$; `multi_query` and `repr_conserving` saturate by $\lambda = 0.25$. This matches the companion paper's finding that a real encoder leaves defenses less adaptive headroom than our own retriever.
-
-**Consequences for our claims.** Two findings needed this experiment to be stated correctly:
-
-- Finding 2 (R1 inertness) survives and is **substantially stronger** than the version we would have claimed without backbone alignment: it holds across six retrievers and, decisively, holds *even when the attack moves R1 substantially* (up to 0.47 on GTE-base).
-- Finding 4 (corpus-dependence of the text attack) becomes a **three-way dependence**: on corpus repetitiveness, on injection rate, and on the representation family. Sparsity is the third term, and §5.5 shows it is the one with a mechanism behind it.
-
-Two findings do *not* survive unchanged, and we report both. First, the R2 constraint's **demonstrable benefit** shrinks on the dense encoders: the R2 gap is already saturated at 1.0000 under every defense configuration at this injection rate, leaving no headroom to recover, so we can show the constraint reducing the gap only on BM25 and our own retrievers. Second, our earlier statement that text-level injection is sufficient must be narrowed to the sparse and hashed representations and to Contriever; against GTE-base and E5-base-v2 it does not hold at any injection rate we tested.
-
-### 5.6 Encoder scale: susceptibility is not a smooth function of size
-
-The backbone comparison above covers six retrievers at *base* size. A natural objection is that encoder choice is a nuisance parameter of the implementation rather than a finding — that a larger checkpoint, being better trained, would simply be more robust, and that the spread would narrow. An earlier draft of this paper asserted as much, predicting that larger checkpoints "give no reason to expect agreement" without measuring it. We have now measured it, and **the prediction was right in direction but far too weak in magnitude: scaling up flips one encoder family from resistant to susceptible.**
-
-We pair each base encoder with its larger sibling from the *same* family and training recipe, holding corpus, injection rate, attack and defenses fixed: GTE-base → **GTE-large**, E5-base-v2 → **E5-large-v2**, and SPLADE (distil) → **SPLADE-efficient-large** (the published large SPLADE, which splits into separately fine-tuned query and document encoders).
-
-**Table 11.** Text-only (lexical) attack, $\rho = 0.5\%$, no defense. Base/large pairs from the same family.
-
-| Retriever | params | `poison@k` | R1 drift | R2 gap |
-|---|---|---|---|---|
-| GTE-base | 110M | **0.0625** | 0.0000 | n/a |
-| **GTE-large** | 335M | **0.5000** | 0.1313 | 0.9444 |
-| E5-base-v2 | 110M | **0.0625** | 0.0000 | n/a |
-| **E5-large-v2** | 335M | **0.0000** | 0.0000 | n/a |
-| SPLADE distil | 66M | 0.6250 | 0.2188 | 1.0000 |
-| **SPLADE large** | 110M | 0.5625 | 0.1875 | 0.8810 |
-
-**Finding 11. Text-attack susceptibility is a per-checkpoint property that is not monotone in encoder scale, and scaling can destroy resistance entirely.** GTE-base and E5-base-v2 are equally resistant at base size — both at 0.0625, i.e. the attack succeeds on three of 48 queries. Enlarging both by the same factor of three moves them in *opposite* directions: **E5-large-v2 becomes more resistant (0.0625 → 0.0000, the attack now fails on every query), while GTE-large becomes eight times more susceptible (0.0625 → 0.5000, succeeding on 24 of 48 queries).** SPLADE is susceptible at both scales with little change (0.6250 → 0.5625), so the learned-sparse result is stable under scaling even though its own size increase is modest.
-
-Two things make this more than a curiosity. First, it is a same-family, same-recipe comparison on identical data, so it cannot be attributed to corpus, rate, or attack construction — the only variable is the checkpoint. Second, the per-query distribution is discrete: adversarial inclusion is 0 or 1 per query with nothing in between, so the change from 3 to 24 affected queries is a shift in *how many* queries are compromised, not a drift in a continuous score. A system whose retrieval robustness was validated on GTE-base would become substantially more attackable by the routine act of upgrading the embedder.
-
-**Mechanism.** We tested the obvious explanation and it is wrong, which makes the result more informative rather than less. If GTE-large's embedding space were more *anisotropic* — vectors collapsed into a narrower cone — then a fixed textual nudge would move rank further, and the finding would reduce to a known geometric property. We measured it: GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), in effective dimensionality (13.2 in both, against 768 and 1024 nominal dimensions), and in the spread of query similarity (top-decile spread 0.0860 vs 0.0895). The same holds for the E5 pair (0.8291 / 0.8375 anisotropy, 13.9 / 14.8 effective dimensions). **Embedding geometry does not explain the scale effect.**
-
-What does explain it is the size of the gain the attack buys. Measuring the injected passages directly against the clean corpus, for the same queries:
-
-**Table 12.** Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, $\rho = 0.5\%$.
+**Table 9.** Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, $\rho = 0.5\%$.
 
 | Quantity | GTE-base | GTE-large |
 |---|---|---|
-| mean cosine gain of poison over clean (`poison − clean`) | **+0.0115** | **+0.0200** |
+| mean cosine gain of poison over clean | **+0.0115** | **+0.0200** |
 | mean best-poison cosine | 0.8907 | 0.8975 |
 | mean top-5 clean threshold | 0.8982 | 0.8988 |
 | mean margin (best poison − threshold) | **−0.0075** | **−0.0013** |
 | `poison@k` | 0.0625 | 0.5000 |
 
-The two encoders place the same injected text at almost the same distance from the query (best-poison cosine 0.8907 vs 0.8975), and the legitimate competition sits at the same threshold (0.8982 vs 0.8988). The difference is that **the identical appended vocabulary buys 74% more similarity on GTE-large (+0.0200 vs +0.0115)**. Because the mean margin is only about −0.007, a gain difference of +0.0085 is enough to carry a large fraction of queries across the threshold — which is exactly the 3-to-24 shift in affected queries. Susceptibility here is not a property of the space but of *how much a fixed lexical perturbation moves a passage within it*, and that quantity is not predictable from architecture, dimensionality, size, or geometry. This is what we mean by saying the property must be measured: it is the interaction between the attack's vocabulary and the encoder's learned weighting of it, and no coarse descriptor of the encoder we have tried predicts it.
+The two encoders place the same injected text at almost the same distance from the query (0.8907 vs 0.8975), and the legitimate competition sits at the same threshold (0.8982 vs 0.8988). The difference is that **the identical appended vocabulary buys 74% more similarity on GTE-large (+0.0200 vs +0.0115)**. Because the mean margin is only about −0.007, a gain difference of +0.0085 carries a large fraction of queries across the threshold — exactly the 3-to-24 shift. Susceptibility is the interaction between the attack's vocabulary and the encoder's learned weighting of it, and none of the coarse descriptors we tried — architecture, dimensionality, size, geometry, sparsity — predicts it.
 
-**Finding 6b. The R1 constraint remains inert at large scale.** Table 13 extends the §5.2 inertness check to the large checkpoints.
-
-**Table 13.** R1-only constraint inertness on large back-ends. `template_plus_projection`, $\rho = 0.5\%$; Δ = adversarial-passage inclusion minus no defense.
+**Table 10.** R1-only constraint inertness across encoders and scales. `template_plus_projection`, $\rho = 0.5\%$; Δ = adversarial-passage inclusion minus no defense.
 
 | Retriever | `repr_group` ε=0 | `repr_both` ε=0 | Δ |
 |---|---|---|---|
-| hash-dense (own) | 1.0000 | 1.0000 | **0.0000** |
+| BM25 | 0.7500 | 0.7500 | **0.0000** |
+| dense (hash) | 1.0000 | 1.0000 | **0.0000** |
+| SPLADE distil | 0.7500 | 0.7500 | **0.0000** |
+| SPLADE large | 1.0000 | 1.0000 | **0.0000** |
+| GTE-base | 1.0000 | 1.0000 | **0.0000** |
 | GTE-large | 1.0000 | 1.0000 | **0.0000** |
 | E5-base-v2 | 1.0000 | 1.0000 | **0.0000** |
 | E5-large-v2 | 1.0000 | 1.0000 | **0.0000** |
-| SPLADE distil | 0.7500 | 0.7500 | **0.0000** |
-| SPLADE large | 1.0000 | 1.0000 | **0.0000** |
-| BM25 (lexical) | 0.7500 | 0.7500 | **0.0000** |
 
-Across all eight back-ends and both constraint configurations, the difference is exactly zero. This is now the fourth independent setting in which the inertness holds — two corpora, six base retrievers, and the large checkpoints — and it remains the paper's most robust result. Note that the projection attack reaches complete inclusion (1.0000) on GTE-large, on E5-large-v2 and on SPLADE-large, so the constraint is inert in the worst case rather than in a marginal one.
+**Finding 6b. The R1 constraint is inert across every encoder and at every scale tested.** In all sixteen constrained configurations the difference is exactly zero. The projection attack reaches complete inclusion on seven of the eight, so the constraint is inert in the worst case rather than a marginal one. This is the third independent setting in which the inertness holds, after the two corpora and the injection-rate sweep.
 
-**Consequences for Finding 7.** Finding 7 identified sparsity as the operative property behind the base-size spread. The scale check bounds that claim rather than refuting it: sparsity still predicts susceptibility *at a fixed scale* (both sparse retrievers susceptible, and the one resistant-at-both-scales encoder is dense), but it is not sufficient, because GTE-large is dense and semantic yet susceptible. The honest form of Finding 7 is therefore that **the sparse/dense split is a strong correlate at base size and a heuristic, not a law**, and the only fully reliable statement is the weaker one: susceptibility is a property of the specific checkpoint, and it must be measured rather than inferred from architecture or size.
+### 5.6 Adaptive attacker: no defense survives an informed adversary
+
+The inertness results above are measured against a *static* attacker. The security literature's standard objection — and the reason adaptive evaluation is mandatory — is that a defense may hold against an attacker who does not know it and fail against one who does. It matters here for two independent reasons, both predicted by §6.5: our defenses are either randomised with public parameters or penalise an observable quantity.
+
+For each defense the attacker is given the defense's own penalty function and searches over perturbation strength $\lambda$, using the same subspace-projection construction. We also report `usage`, the mean cosine similarity between each injected passage's perturbed and original embedding, so that a defense cannot be credited for the attacker's self-inflicted degradation: if the injected material were destroyed, low adversarial inclusion would be meaningless.
+
+*The per-λ grid is in Appendix C, Table C1.*
+
+Off-manifold filtering is by a wide margin the strongest statically — it reduces adversarial inclusion from 0.750 for no defense to 0.250, a factor of three — and **collapses monotonically to complete failure by $\lambda = 2$**. Its static advantage is exactly what §6.5's Corollary 2 predicts: the defense penalises vectors that leave the corpus manifold, which is precisely where the projection perturbation places them, so once the attacker trades perturbation strength against penalty, the penalty becomes the attacker's constraint. The two composition-constrained defenses, which never beat 0.625 even statically, saturate by $\lambda = 0.5$. **The static ranking of defenses inverts under adaptation, and a defense selected on its static advantage is defeated as comprehensively as one selected on structural grounds.**
+
+**The attacker pays almost nothing for this.** `usage` stays at 0.945–0.979 through $\lambda = 1$ and 0.883 at $\lambda = 2$. At the point where the strongest defense has already lost most of its advantage, the injected material is over 94% semantically intact. The collapse therefore cannot be attributed to the attack degrading its own passages.
+
+**Correction.** An earlier draft reported 0.125 / 0.438 / 0.750 for off-manifold filtering and described its static advantage as a factor of six over no defense. Those values came from an exploratory run written to a scratch directory excluded from version control, not from the run that produces every other number in this paper; re-running the committed configuration reproduces Table C1 with 18 of 18 adaptive cells bit-identical. The qualitative conclusion is unchanged, but the static advantage is a factor of three, not six. We record it rather than silently overwriting, because a robustness factor is the kind of number a reader may quote.
 
 ### 5.7 Generation-stage propagation: does the retrieval skew reach the output?
+
 
 Every result above is measured at the retrieval layer. That is deliberate — it makes the mechanism measurable without a generator and reproducible on commodity hardware — but it leaves the question a reviewer will ask: **does a retrieval-layer stance skew change what the system says?** We answer it with a fixed generator, varying only the retrieved context, so that any difference between conditions is attributable to retrieval.
 
@@ -496,20 +448,13 @@ Every result above is measured at the retrieval layer. That is deliberate — it
 
 Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is reachable without a proxy from the network this work used. 207 API calls, 49.2k prompt tokens, 125 s of model time.
 
-**Table 14.** The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 15; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, $\rho = 2\%$.
 
-| Condition | fav. rate (g1) | fav. rate (g2) | **stance gap** | Δ vs clean |
-|---|---|---|---|---|
-| clean | 0.562 | 0.708 | **0.2708** | — |
-| poisoned | 0.583 | 0.979 | **0.3958** | **+46%** |
-| `r1only` (R1) | 0.604 | 1.000 | **0.3958** | +46% |
-| `r2both` (R1+R2) | 0.583 | 1.000 | **0.4167** | +54% |
 
-Read Table 14 and Table 15 together: the same experiment, on the same corpus at the same injection rate, yields a 46% rise in the absolute gap under one instrument and a rise of 0.0008–0.0018 under the other. We keep both because that discrepancy is itself the finding.
+Read Table C2 and Table 10 together: the same experiment, on the same corpus at the same injection rate, yields a 46% rise in the absolute gap under one instrument and a rise of 0.0008–0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
 **Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent generators — but only when the two groups are measured separately.** We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring `P(entail | answer, favourable) − P(entail | answer, unfavourable)`, calibrated in §5.7.1) across three generators from two model families. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-**Table 15.** Generation-layer stance, entailment-scored, three generators. Controlled corpus, GTE-base retrieval, $\rho = 2\%$, 48 queries, paired permutation test against `clean`.
+**Table 11.** Generation-layer stance, entailment-scored, three generators. Controlled corpus, GTE-base retrieval, $\rho = 2\%$, 48 queries, paired permutation test against `clean`.
 
 | Generator | Δ gap (absolute) | p | **Δ group 1** | p | **Δ group 2** | p |
 |---|---|---|---|---|---|---|
@@ -559,18 +504,9 @@ A distribution-constrained defense accepts exactly $\mathcal{R}_\varepsilon$. Al
 
 **Consequence.** A defense whose acceptance test is membership in $\mathcal{R}_\varepsilon$ admits a **fully adversarial** selection at any tolerance, including $\varepsilon = 0$. Tightening the budget does not exclude the injection; it constrains the attacker's *composition*, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical `poison@k` is *identical* to no defense at every $\varepsilon$ rather than merely close to it: the injected selection is not near the boundary of $\mathcal{R}_\varepsilon$, it is at the reference point.
 
-**Empirical check.** Table 15b reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
+**Empirical check.** Table C3 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
 
-**Table 15b.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
 
-| Corpus / retriever | ε=1.0 | ε=0.5 | ε=0.25 | ε=0.1 | ε=0.0 |
-|---|---|---|---|---|---|
-| controlled / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| controlled / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| BBQ / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| BBQ / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| controlled / GTE-base | 0.000 | — | — | — | 0.000 |
-| controlled / Contriever | 0.000 | — | — | — | 0.000 |
 
 *(entries are Δ`poison@k`; 0.000 in all 24 measured cells)*
 
@@ -619,7 +555,23 @@ Soundness fails for every $\varepsilon$ whenever the attacker can construct an �
 
 **This is the formal content of the paper's central claim, and our experiments land on all three horns.** (i) Soundness fails: `poison@k` equals no defense at every $\varepsilon$, on six retrievers, two corpora and all injection rates. (ii) Usefulness is squeezed: tightening the R1 budget to $\varepsilon=0$ on the controlled corpus changes `in_pool_rate` from 0.017 to 0.088 with no security gain, and on the dense back-end from 0.2437 to 0.2812 — i.e. the constraint perturbs the selection without excluding anything. (iii) Tightness is vacuous at $\varepsilon = 1$, where the constraint reduces to no defense by construction.
 
-### 6.5 Dimensionality does not help, and the only escape is individual-level evidence
+### 6.5 Proposition 4 — why the family is *structurally* exposed, not merely mis-tuned
+
+Propositions 1–3 show that a distribution constraint cannot exclude the injection. A reader may reasonably ask whether that is a property of *composition* constraints specifically, or of this defense family more broadly — and in particular whether the non-compositional members, which the literature presents as the more robust alternatives, escape it. They do not, and the reason is worth stating separately because it covers the family as a whole.
+
+**Proposition 4 (randomised defense under a known distribution).** Let a defense's selection mechanism be a fixed distribution $\pi(\mathcal{D} \mid q, \mathcal{C})$ over retrieved sets, public to the attacker, and let $U(\mathcal{D})$ be the attacker's utility (e.g. the indicator that $\mathcal{D}$ contains an injected passage). If any set in the support of $\pi$ has $U = 1$, the attacker can drive $\mathbb{E}_{\pi}[U] \to 1$ by choosing an injection that places adversarial passages in every set with non-negligible probability mass.
+
+*Proof sketch.* Since $\pi$ is fixed and known, $\mathbb{E}_\pi[U]$ is computable in closed form as a function of the injection, and the attacker maximises it by search or by gradient. Randomisation does not bound $\mathbb{E}_\pi[U]$; it bounds the *variance* of $U$ across realisations. An attacker whose success is measured in expectation over queries — the usual case — is indifferent to that variance. $\square$
+
+The proposition is elementary, and that is the point: **randomisation defends against unpredictability, not against knowledge.** Two corollaries identify the cases that arise in this literature.
+
+**Corollary 1 (public-distribution defenses).** Multi-query consistency [4] perturbs the query by token dropout at rate $\delta$ and aggregates over $n_v$ variants. The perturbation is random, but its *rate* and its *count* are public constants, so the expected aggregate score of a passage is a deterministic, differentiable function of the injected embedding which the attacker can maximise directly. Adding variants does not change this: the attacker optimises the expectation, and with many variants the empirical mean converges to it. The adaptive sweep reports the predicted collapse, from 0.729 at $\lambda = 0$ to 1.000 by $\lambda = 0.5$.
+
+**Corollary 2 (penalty-observable defenses).** A defense that down-weights passages by a penalty $f(d)$ computable from public information hands the attacker the constraint "remain in the low-penalty region". Whenever that constraint can be satisfied while raising similarity — possible whenever the penalty is a continuous function of a perturbation the attacker controls — the defense imposes a *cost* rather than a *barrier*. Off-manifold filtering is exactly this case, and the measured consequence is that it is the strongest defense statically (0.250 against 0.750 for no defense) and is defeated by $\lambda = 0.25$.
+
+We do not claim these observations are novel in general; they are the standard reason adaptive evaluation is required, and they are why security venues expect it. The claim is that **this defense family is structurally exposed to them**, because its two dominant mechanisms — public randomisation and an observable penalty — are precisely the two cases the proposition covers. Proposition 3 then explains why the remaining members fail for an independent reason, so the family is squeezed from both sides: composition constraints cannot exclude an individually admissible passage, and the non-compositional alternatives are defeated by an informed attacker. That is why we treat the failure as structural rather than as a matter of tuning, and why the honest remedy is detection (§6.6) rather than a better objective.
+
+### 6.6 Dimensionality does not help, and the only escape is individual-level evidence
 
 Two consequences of the above are the actionable content of this section.
 
@@ -641,14 +593,7 @@ Proposition 1 indicates that a usable defense needs individual-level evidence. W
 
 **Measurement.** We score each passage by the fraction of queries in the query set for which it appears in the top-$k$.
 
-**Table 16.** Over-generalisation signal.
 
-| Retriever | Set | n | mean | median | p90 |
-|---|---|---|---|---|---|
-| BM25 | poison | 16 | 0.1914 | 0.1875 | 0.2500 |
-| BM25 | clean | 608 | 0.0032 | **0.0000** | **0.0000** |
-| dense + projection (λ=1) | poison | 16 | 0.3086 | 0.2188 | 0.6250 |
-| dense + projection (λ=1) | clean | 608 | 0.0001 | **0.0000** | **0.0000** |
 
 At a threshold of the clean 90th percentile, detection rate is 1.000 with 3.9% (BM25) and 0.2% (dense) false positives.
 
@@ -699,13 +644,19 @@ The cause is that the attack balances what these statistics count and relocates 
 
 The practical consequence is that the R1-only defense is not weak but inert, and we state this as a ceiling rather than as a null that further data might overturn. The unconstrained baseline already admits adversarial passages on every query where it can, so no reduction is available even in principle; the per-query difference is identically zero and the equivalence bound is exactly ±0.0000. That is not because the constraint cannot change the selection — it can, and does — but because changing which passages are selected does not displace a single adversarial one. Extending the constraint to a second dimension improves the statistic it measures without changing adversarial inclusion. The problem is therefore not one of optimisation but of detection, and it requires evidence about individual passages rather than about the set they belong to.
 
-We close with the protocol the results imply for anyone measuring fairness in an adversarial retrieval setting:
+We close with the protocol the results imply. The first four points are about **measurement validity** — whether a statistic can see the attack at all — and the last five about **adversarial evaluation hygiene**, which is what makes a robustness claim interpretable:
 
 1. **Measure per-group shifts, not cross-group differences.** An absolute gap between groups is dominated by pre-existing corpus asymmetry and is blind to an attack that relocates both groups together. Report both group-level quantities, and report the change in each.
 2. **Report injection as a rate, not a count.** A fixed passage count measures corpus size rather than attack strength, and produced a spurious conclusion in our own earlier experiment.
 3. **Report the encoder as a factor.** Susceptibility is a per-checkpoint property that is not monotone in encoder size — within one family and training recipe, scaling GTE raised text-attack success eight-fold while scaling E5 lowered it to zero. A single-encoder robustness claim reports an unmeasured property of that checkpoint.
 4. **Give equivalence bounds for null claims.** "No effect detected" and "no effect" are different claims, and only the second supports a conclusion about a defense family. Where the per-query difference is identically zero this is easy and conclusive; where it is not, the bound is the honest statement.
-5. **Score stance and attribution by entailment, in the correct direction.** A prompted judge answering "did you rely on this passage?" returned 1.000 in every condition, because a model that answers from its context will agree that it used it. The direction is also not interchangeable: the reversed entailment convention returns near-zero for every input and fails silently, which is indistinguishable from a genuine null.
+5. **State the threat model explicitly, including whether the attacker knows the defense.** A robustness claim without this qualifier is uninterpretable, and the qualifier is what separates the two evaluations in §5.2.
+6. **Report adversarial inclusion as a function of attacker strength, not at a single operating point.** One value cannot distinguish a robust defense from one evaluated below its failure threshold. In our sweep every defense fails by $\lambda \le 2$; a sweep stopping at $\lambda = 0.25$ would have shown three apparently robust defenses.
+7. **Report a utility-preserving baseline.** A defense can achieve low adversarial inclusion trivially by returning fewer or worse passages, which is why §5.2 reports `in_pool_rate` alongside `poison@k`.
+8. **For a randomised defense, state the distribution and assume it is known.** Report the attacker's optimal response to the expectation rather than to a sample; by Proposition 4, randomisation bounds variance and not the expectation.
+9. **For a penalty-based defense, report whether the penalty is computable from public information.** If it is, treat it as a constraint in the attacker's optimisation rather than as an unknown; by Corollary 2 that is the difference between a cost and a barrier.
+
+Point 9 is the one most easily overlooked and, in our experiments, decisive for the defense that looked strongest statically. Point 5 is the one most often omitted in this literature. We suggest that points 1–4 are prerequisites for a fairness statistic to be reported at all under adversarial conditions, and points 5–9 for a robustness claim to be credited.
 
 We have reported an exploratory provenance signal in the direction the protocol implies — evidence about individual passages rather than about aggregates — together with the reason it may not survive replication on a natural corpus. Establishing which provenance cues do survive is, in our view, the central open problem this work exposes.
 
@@ -735,7 +686,7 @@ python -m src.run_experiment --config configs/align_splade_large.json   # ~12 mi
 python analysis/compare_six_backbones.py
 python analysis/compare_scale.py
 python analysis/diagnose_gte_large.py     # embedding geometry
-python analysis/diagnose_poison_scores.py # the mechanism behind Table 12
+python analysis/diagnose_poison_scores.py # the mechanism behind Table C1
 
 # generation layer (requires DEEPSEEK_API_KEY)
 python -m src.run_attribution --config configs/attribution.json
@@ -784,14 +735,13 @@ across eight encoder checkpoints, the slowest single run being GTE-large at
 23 minutes; the largest model loaded is a 335M-parameter encoder, which needs
 under 2 GB in fp32. No GPU is used anywhere in this paper.
 
-
 ---
 
 ## Appendix B. Paired tests and confidence intervals
 
 Every number in §5 is an aggregate over queries. Because the paper's central claim is a null, we give the paired tests on the underlying per-query data here, including the equivalence bound for each null cell. Reproduce with the script `analysis/stats_paper.py`.
 
-**Table 17.** Paired tests of R1-constraint inertness against no defense. Controlled corpus, `template_plus_projection`, $\rho = 0.5\%$, per-query adversarial-passage inclusion.
+**Table B1.** Paired tests of R1-constraint inertness against no defense. Controlled corpus, `template_plus_projection`, $\rho = 0.5\%$, per-query adversarial-passage inclusion.
 
 | Retriever | Defense | ε | n | Δ mean | 95% CI | p | excluded effect |
 |---|---|---|---|---|---|---|---|
@@ -810,7 +760,54 @@ Every number in §5 is an aggregate over queries. Because the paper's central cl
 
 Where the constraint changes nothing, the per-query difference vector is **identically zero**, not merely small: the bootstrap CI collapses to [0, 0] and the permutation test is degenerate by construction. The informative statistic is therefore the equivalence bound — the smallest effect the data exclude — and because the differences are exactly zero rather than approximately zero, these cells exclude *any* effect on adversarial-passage inclusion, not merely one above a threshold. The `repr_stance` rows are the contrast case: there the constraint does change the selection, the difference vector is non-degenerate, and both the CI and the p-value are meaningful.
 
-**Table 18.** Bootstrap 95% CIs on the positive claims (per-question values, 10,000 resamples, no defense).
+
+
+The point of Table B1 is the last column. For the R1-only and joint constraints the difference is zero per query, so the CI is [0, 0] and the equivalence bound is ±0.0000: the data exclude any effect on adversarial inclusion, not merely an effect above some threshold. The `repr_stance` rows are included as a contrast, since there the constraint genuinely changes the selection.
+
+---
+
+## Appendix C. Secondary tables
+
+Tables moved out of the main body to keep it readable. Each is referenced from the section that discusses it.
+
+**Table C1.** Adaptive attacker (defense-aware), `poison@k`. Controlled corpus, $\rho = 2\%$.
+
+| Defense | λ=0 | λ=0.25 | λ=0.5 | λ=1 | λ=2 | λ=4 | static rank |
+|---|---|---|---|---|---|---|---|
+| off-manifold filtering | **0.250** | **0.562** | **0.812** | 0.938 | 1.000 | 1.000 | 1st |
+| `repr_both` (R1+R2) | 0.625 | 0.875 | 1.000 | 1.000 | 1.000 | 1.000 | 2nd |
+| multi-query consistency | 0.729 | 0.958 | 1.000 | 1.000 | 1.000 | 1.000 | 3rd |
+
+**Table C2.** The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 11; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, $\rho = 2\%$.
+
+| Condition | fav. rate (g1) | fav. rate (g2) | **stance gap** | Δ vs clean |
+|---|---|---|---|---|
+| clean | 0.562 | 0.708 | **0.2708** | — |
+| poisoned | 0.583 | 0.979 | **0.3958** | **+46%** |
+| `r1only` (R1) | 0.604 | 1.000 | **0.3958** | +46% |
+| `r2both` (R1+R2) | 0.583 | 1.000 | **0.4167** | +54% |
+
+**Table C3.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
+
+| Corpus / retriever | ε=1.0 | ε=0.5 | ε=0.25 | ε=0.1 | ε=0.0 |
+|---|---|---|---|---|---|
+| controlled / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| controlled / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| BBQ / BM25 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| BBQ / feature-hash dense | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| controlled / GTE-base | 0.000 | — | — | — | 0.000 |
+| controlled / Contriever | 0.000 | — | — | — | 0.000 |
+
+**Table C4.** Over-generalisation signal.
+
+| Retriever | Set | n | mean | median | p90 |
+|---|---|---|---|---|---|
+| BM25 | poison | 16 | 0.1914 | 0.1875 | 0.2500 |
+| BM25 | clean | 608 | 0.0032 | **0.0000** | **0.0000** |
+| dense + projection (λ=1) | poison | 16 | 0.3086 | 0.2188 | 0.6250 |
+| dense + projection (λ=1) | clean | 608 | 0.0001 | **0.0000** | **0.0000** |
+
+**Table C5.** Bootstrap 95% CIs on the positive claims (per-question values, 10,000 resamples, no defense).
 
 | Condition | Retriever | Metric | mean | 95% CI |
 |---|---|---|---|---|
@@ -826,8 +823,6 @@ Where the constraint changes nothing, the per-query difference vector is **ident
 | template_plus_projection | bm25 | R1 drift (TV) | 0.1625 | [0.1062, 0.2208] |
 | template_plus_projection | dense | R2 stance gap | 1.0000 | [1.0000, 1.0000] |
 | template_plus_projection | dense | R1 drift (TV) | 0.1625 | [0.1187, 0.2083] |
-
-The point of §Table 16 is the last column. For the R1-only and joint constraints the difference is zero per query, so the CI is [0, 0] and the equivalence bound is ±0.0000: the data exclude any effect on adversarial inclusion, not merely an effect above some threshold. The epr_stance\ rows are included as a contrast, since there the constraint genuinely changes the selection.
 
 ---
 
