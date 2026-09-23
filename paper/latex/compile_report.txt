@@ -1,7 +1,7 @@
 pdflatex: C:\Users\Administrator\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe  exists=True
 paperA_R1R2        pass 1 exit=0
 paperA_R1R2        pass 2 exit=0
-  errors=0  undefined_refs=0  overfull>20pt=3  pages=38  pdf=283700 bytes
+  errors=0  undefined_refs=0  overfull>20pt=3  pages=40  pdf=291883 bytes
 paperB_adaptive    pass 1 exit=0
 paperB_adaptive    pass 2 exit=0
   errors=0  undefined_refs=0  overfull>20pt=4  pages=12  pdf=167959 bytes

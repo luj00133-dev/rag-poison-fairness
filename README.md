@@ -2,10 +2,17 @@
 
 Code and data for two companion papers:
 
-- **Paper A** — *Two Dimensions of Retrieval Fairness: Why Group-Proportion
-  Constraints Cannot Defend RAG Against Pairwise Poisoning*
+- **Paper A** — *Measuring Retrieval Fairness Under Adversarial Poisoning: Why
+  the Standard Statistics Are Blind, and What to Measure Instead*
 - **Paper B** — *The Fragility of Fair Retrieval Under an Informed Attacker: Why
   Randomized and Composition-Constrained RAG Defenses Do Not Survive Adaptation*
+
+Paper A is framed as a **measurement** paper: its subject is the validity of the
+statistics that fairness defenses are selected and validated by, and the defense
+failure it reports is a proved consequence of that measurement failure rather
+than a separate claim. The framing was changed late, after the experiments were
+complete, because the evidence supported it better — the paper's contributions
+are three measurement failures with a shared cause, not a defense that fails.
 
 Everything here runs on **CPU in under four minutes**. No GPU, no model
 downloads, no generator. The retrieval-layer formulation is deliberate: the
@@ -18,14 +25,14 @@ on commodity hardware and isolates the mechanism from generator behaviour.
 
 | Finding | Corpus | Status |
 |---|---|---|
-| R1 composition drift is small and non-diagnostic under attack | both | retained |
-| The R1-only defense is **inert** — identical to no defense at every ε, every injection rate, all 6 retrievers | both | retained, 12/12 cells Δ = 0.000 |
-| The R2 constraint is the only dimension that moves either metric | both | retained |
-| The projection attack transfers to naturally written text | both | retained |
-| The text-only attack is **corpus- and representation-dependent** | controlled only | Finding 4 + 7 |
-| Text-attack susceptibility tracks **sparsity**, not "neuralness" (SPLADE ≈ BM25; GTE/E5 resistant, Contriever not) | controlled | Finding 7 |
-| Susceptibility is **not monotone in encoder size**: GTE-base 0.0625 → GTE-large 0.5000 while E5-base 0.0625 → E5-large 0.0000 | controlled | §5.6, Finding 11 |
-| The scale effect is **not geometric**: identical anisotropy and effective dimensionality, but the same injected text buys 74% more similarity on GTE-large | controlled | §5.6, Table 12 |
+| **Composition statistics are blind** — R1 drift stays at or below legitimate retrieval variance | both | retained |
+| **Two of three R2 statistics are blind** — reference-deviation and one-sidedness are flat across clean and fully attacked | controlled | Finding 3 |
+| **The right axis is the per-group shift, not the gap between groups** — an absolute difference cancels the joint relocation the attack performs | both | Findings 8-9 |
+| The R1-only defense is **inert** — identical to no defense at every ε, every rate, all 6 retrievers; equivalence bound exactly ±0.0000 | both | retained, ceiling effect |
+| The projection attack transfers to naturally written text; the text-only attack does not (needs lexical room) | both | Finding 4 |
+| Text-attack susceptibility tracks **sparsity**, not "neuralness" — but sparsity is a correlate, not a law | controlled | Finding 7 |
+| Susceptibility is **not monotone in encoder size**: GTE-base 0.0625 → GTE-large 0.5000, E5 0.0625 → 0.0000 | controlled | §5.6, Finding 11 |
+| The scale effect is **not geometric**: identical anisotropy and effective dimensionality | controlled | Table 12 |
 | No defense survives a defense-aware attacker, on any of 6 back-ends | both | Paper B |
 
 Key numbers: 0.1% injection (8 passages) reaches 68.75% adversarial inclusion on
@@ -106,6 +113,8 @@ python -m src.run_experiment --config configs/align_splade_large.json
 python analysis/compare_six_backbones.py    # Paper A 5.5
 python analysis/compare_scale.py            # Paper A 5.6, from committed CSVs
 python analysis/collapse_table.py           # Paper B 5.2b, from committed CSVs
+python analysis/stats_paper.py              # Paper A Appendix B: paired tests, equivalence bounds
+python analysis/check_refs.py               # validates every §, Table and Finding cross-reference
 python analysis/dump_rate.py                # Paper A injection-rate tables
 python analysis/compare_corpora.py          # controlled vs BBQ
 python analysis/find_table1_source.py       # traces a quoted number back to its run dir
@@ -193,6 +202,11 @@ rewrite matches that form rather than the original.
 | `src/run_generation.py` | multi-generator generation-stage evaluation with bootstrap CIs and paired tests |
 | `src/run_experiment.py` | driver: sweeps injection rate × defense × retriever |
 | `analysis/compare_six_backbones.py` | the six-retriever comparison behind §5.5 |
+| `analysis/compare_scale.py` | the encoder-scale check behind §5.6 |
+| `analysis/stats_paper.py` | paired tests and equivalence bounds (Appendix B) |
+| `analysis/check_refs.py` | validates every cross-reference; run it after any restructuring |
+| `analysis/calibrate_nli.py` | pins the NLI convention down empirically; do not skip this |
+| `analysis/context_control.py` | negative control: does the generator use the context at all? |
 | `analysis/compare_corpora.py` | controlled corpus vs BBQ |
 | `paper/compile_papers.py` | compiles both papers with MiKTeX and parses **real** LaTeX errors |
 | `src/probe_overgeneralisation.py` | exploratory provenance signal (with its validity caveat) |
