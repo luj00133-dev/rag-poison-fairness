@@ -1,0 +1,24 @@
+bm25/repr_group/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+bm25/repr_group/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+bm25/repr_both/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+bm25/repr_both/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+bm25/repr_stance/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+bm25/repr_stance/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_group/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_group/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_both/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_both/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_stance/eps=0.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+dense/repr_stance/eps=1.0 n=48 delta=+0.0000 CI=[+0.0000,+0.0000] p=1.000 excluded=0.0000
+clean/bm25/R2 stance gap mean=0.0000 CI=[0.0000,0.0000]
+clean/bm25/R1 drift (TV) mean=0.0000 CI=[0.0000,0.0000]
+clean/dense/R2 stance gap mean=0.0000 CI=[0.0000,0.0000]
+clean/dense/R1 drift (TV) mean=0.0000 CI=[0.0000,0.0000]
+template/bm25/R2 stance gap mean=0.7436 CI=[0.6068,0.8718]
+template/bm25/R1 drift (TV) mean=0.1625 CI=[0.1062,0.2208]
+template/dense/R2 stance gap mean=0.6167 CI=[0.4556,0.7667]
+template/dense/R1 drift (TV) mean=0.0812 CI=[0.0438,0.1208]
+template_plus_projection/bm25/R2 stance gap mean=0.7436 CI=[0.6068,0.8718]
+template_plus_projection/bm25/R1 drift (TV) mean=0.1625 CI=[0.1062,0.2208]
+template_plus_projection/dense/R2 stance gap mean=1.0000 CI=[1.0000,1.0000]
+template_plus_projection/dense/R1 drift (TV) mean=0.1625 CI=[0.1187,0.2083]

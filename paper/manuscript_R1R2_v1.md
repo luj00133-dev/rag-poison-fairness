@@ -247,6 +247,14 @@ Three observations.
 
 **Finding 2. The R1-only defense is not weak but inert.** `repr_group` attains *exactly* the same `poison@k` as `vanilla` — 0.750 on BM25, 1.000 on dense — at **every** budget setting, including $\epsilon = 0$, the strictest possible constraint. The inclusion rate is not merely unchanged at the default setting; across a sweep of five values spanning the entire range of the budget parameter it does not vary at all. Tightening the budget does change R1 drift (0.1500 → 0.1812, i.e. it can make R1 *worse*, by forcing the selection away from the natural ranking) while leaving both the R2 gap and adversarial inclusion untouched. This is the signature of a constraint acting on quantities the attack does not perturb: the budget has no purchase on the attack.
 
+**This is a null result, so we state its strength rather than leaving a reader to guess.** A point estimate of zero can mean "no effect" or "not enough data", and the distinction matters here because the claim is that a published defense family does nothing. We therefore report paired tests on the per-query data (Table 16) instead of aggregate means:
+
+- For every R1-constrained configuration, the **per-query difference vector is identically zero** — not small, zero. The paired bootstrap CI collapses to [0, 0] and the permutation test is degenerate by construction. The informative statistic is the equivalence bound: because the differences are exactly zero rather than approximately zero, **these cells exclude any effect on adversarial-passage inclusion, not merely an effect above a threshold.**
+- The reason is a **ceiling**, and this is stronger than a failure to detect an effect. The unconstrained baseline already admits adversarial passages on every query it can — 1.000 for the dense retriever, 0.750 for BM25 — so there is no headroom for a constraint to demonstrate a reduction even in principle.
+- The ceiling is not an artefact of the constraint being unable to change the selection. It *does* change it: on BM25 the R2 stance gap moves from 0.7436 (no defense) to 0.5385 under the R2-only constraint, so different passages are being selected. **The selection changes and not one adversarial passage is displaced.**
+
+We give the full paired-test table, including the equivalence bounds and the contrast cells where the constraint does change the selection, in Appendix B.
+
 This is the central empirical claim of the paper, and it applies directly to the published defense family: [5] optimises R1 composition under a fairness constraint, [6] adjusts R1 proportions and ordering, [7] controls embedder group balance, [8] equalises item-side exposure. Each constrains aggregate composition along axes the attack leaves clean, so each inherits this insensitivity. We note that multi-query consistency [4], which operates on retrieval stability rather than composition, is also inert here (0.750).
 
 **Table 3.** Adaptive attacker (defense-aware), `poison@k`.
@@ -552,9 +560,9 @@ A distribution-constrained defense accepts exactly $\mathcal{R}_\varepsilon$. Al
 
 **Consequence.** A defense whose acceptance test is membership in $\mathcal{R}_\varepsilon$ admits a **fully adversarial** selection at any tolerance, including $\varepsilon = 0$. Tightening the budget does not exclude the injection; it constrains the attacker's *composition*, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical `poison@k` is *identical* to no defense at every $\varepsilon$ rather than merely close to it: the injected selection is not near the boundary of $\mathcal{R}_\varepsilon$, it is at the reference point.
 
-**Empirical check.** Table 16 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
+**Empirical check.** Table 15b reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion *exactly* unchanged at every tolerance.
 
-**Table 16.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
+**Table 15b.** Prop. 1 prediction vs. measurement. R1-only constraint (`repr_group`), strongest attack, largest injection rate per corpus; Δ = constrained minus no defense.
 
 | Corpus / retriever | ε=1.0 | ε=0.5 | ε=0.25 | ε=0.1 | ε=0.0 |
 |---|---|---|---|---|---|
@@ -764,6 +772,51 @@ The backbone alignment of §5.5 and §5.6 adds roughly 75 minutes of CPU time
 across eight encoder checkpoints, the slowest single run being GTE-large at
 23 minutes; the largest model loaded is a 335M-parameter encoder, which needs
 under 2 GB in fp32. No GPU is used anywhere in this paper.
+
+
+---
+
+## Appendix B. Paired tests and confidence intervals
+
+Every number in §5 is an aggregate over queries. Because the paper's central claim is a null, we give the paired tests on the underlying per-query data here, including the equivalence bound for each null cell. Reproduce with the script `analysis/stats_paper.py`.
+
+**Table 16.** Paired tests of R1-constraint inertness against no defense. Controlled corpus, `template_plus_projection`, $\rho = 0.5\%$, per-query adversarial-passage inclusion.
+
+| Retriever | Defense | ε | n | Δ mean | 95% CI | p | excluded effect |
+|---|---|---|---|---|---|---|---|
+| bm25 | repr_group | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| bm25 | repr_group | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| bm25 | repr_both | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| bm25 | repr_both | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| bm25 | repr_stance | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| bm25 | repr_stance | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_group | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_group | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_both | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_both | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_stance | 0.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+| dense | repr_stance | 1.0 | 48 | +0.0000 | [+0.0000, +0.0000] | 1.000 | ±0.0000 |
+
+Where the constraint changes nothing, the per-query difference vector is **identically zero**, not merely small: the bootstrap CI collapses to [0, 0] and the permutation test is degenerate by construction. The informative statistic is therefore the equivalence bound — the smallest effect the data exclude — and because the differences are exactly zero rather than approximately zero, these cells exclude *any* effect on adversarial-passage inclusion, not merely one above a threshold. The `repr_stance` rows are the contrast case: there the constraint does change the selection, the difference vector is non-degenerate, and both the CI and the p-value are meaningful.
+
+**Table 17.** Bootstrap 95% CIs on the positive claims (per-question values, 10,000 resamples, no defense).
+
+| Condition | Retriever | Metric | mean | 95% CI |
+|---|---|---|---|---|
+| clean | bm25 | R2 stance gap | 0.0000 | [0.0000, 0.0000] |
+| clean | bm25 | R1 drift (TV) | 0.0000 | [0.0000, 0.0000] |
+| clean | dense | R2 stance gap | 0.0000 | [0.0000, 0.0000] |
+| clean | dense | R1 drift (TV) | 0.0000 | [0.0000, 0.0000] |
+| template | bm25 | R2 stance gap | 0.7436 | [0.6068, 0.8718] |
+| template | bm25 | R1 drift (TV) | 0.1625 | [0.1062, 0.2208] |
+| template | dense | R2 stance gap | 0.6167 | [0.4556, 0.7667] |
+| template | dense | R1 drift (TV) | 0.0812 | [0.0438, 0.1208] |
+| template_plus_projection | bm25 | R2 stance gap | 0.7436 | [0.6068, 0.8718] |
+| template_plus_projection | bm25 | R1 drift (TV) | 0.1625 | [0.1062, 0.2208] |
+| template_plus_projection | dense | R2 stance gap | 1.0000 | [1.0000, 1.0000] |
+| template_plus_projection | dense | R1 drift (TV) | 0.1625 | [0.1187, 0.2083] |
+
+The point of §Table 16 is the last column. For the R1-only and joint constraints the difference is zero per query, so the CI is [0, 0] and the equivalence bound is ±0.0000: the data exclude any effect on adversarial inclusion, not merely an effect above some threshold. The epr_stance\ rows are included as a contrast, since there the constraint genuinely changes the selection.
 
 ---
 

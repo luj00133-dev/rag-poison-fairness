@@ -33,7 +33,7 @@ Nanjing University of Science and Technology}, city={Nanjing}, country={China}}
 
 Retrieval-augmented generation (RAG) systems ground large language model outputs in an external corpus, which makes the retrieval layer a security-critical component: an adversary who can inject passages into that corpus can steer what the system cites as evidence. A recent line of work shows that such injection can be used not only to induce factual errors but to amplify \emph{social bias}, and several defenses have been proposed that constrain the \textbf{group composition} of the retrieved set --- the proportion of passages about one protected group versus another.
 
-We show that this defense objective is mis-specified. ``Group representation'' in a retrieved set has two orthogonal dimensions: \textbf{(R1) group composition}, the proportion of group-relevant passages belonging to each group, and \textbf{(R2) within-group stance}, the proportion of passages about a given group that are favourable rather than unfavourable toward it. Pairwise poisoning --- the natural adversarial construction, in which injected passages reuse the legitimate template inventory and differ only in which group they favour --- is \textbf{balanced in R1 by construction} while being \textbf{arbitrarily skewed in R2}. Consequently every defense that constrains R1 alone admits the entire poisoned set while reporting a clean group distribution.
+We show that this defense objective is mis-specified. \texttt{}Group representation'' in a retrieved set has two orthogonal dimensions: \textbf{(R1) group composition}, the proportion of group-relevant passages belonging to each group, and \textbf{(R2) within-group stance}, the proportion of passages about a given group that are favourable rather than unfavourable toward it. Pairwise poisoning --- the natural adversarial construction, in which injected passages reuse the legitimate template inventory and differ only in which group they favour --- is \textbf{balanced in R1 by construction} while being \textbf{arbitrarily skewed in R2}. Consequently every defense that constrains R1 alone admits the entire poisoned set while reporting a clean group distribution.
 
 We formalise both dimensions, construct the pairwise attack, and re-implement five representative defenses --- multi-query consistency, off-manifold filtering, and three variants of representation-conserving selection (R1-only, R2-only, and joint) --- under a controlled corpus with exact group and stance annotations. Across BM25 and dense retrieval, over 48 queries spanning four bias strata, we find that:
 
@@ -77,7 +77,7 @@ In response, a body of work has begun to defend the retrieval layer on fairness 
 
 This paper argues that this objective is mis-specified, and we demonstrate the consequences empirically.
 
-\textbf{The problem.} ``Group representation'' is not one quantity but two. A retrieved set can be described by
+\textbf{The problem.} \texttt{}Group representation'' is not one quantity but two. A retrieved set can be described by
 
 \begin{itemize}
 \tightlist
@@ -138,15 +138,15 @@ All of this work targets \emph{factual} correctness except {[}4{]}, and {[}4{]} 
 
 \subsection{Fairness in RAG}\label{fairness-in-rag}
 
-Fairness in RAG has been studied primarily as a property of the knowledge base and the generator rather than of an adversary. Wu et al.~{[}6{]} construct scenario-based questions and evaluate group disparity across RAG components, finding that the retriever has the largest influence on both accuracy and fairness, and that utility and fairness trade off. Their mitigation is to adjust the proportion and ordering of group-relevant passages --- an R1 intervention --- and they state that they do not provide a comprehensive exploration of mitigation strategies. Kim et al.~{[}7{]} decompose RAG into LLM, embedder, and corpus, show that component biases interact (``bias conflict''), and find that \emph{reverse-biasing} a small embedder can cancel a much larger generator's bias; their bias metric is group membership, so both R1 and R2 are outside their formulation. Kim and Diaz {[}8{]} bring fair-ranking machinery to RAG, using stochastic rankers to equalise item-side exposure across repeated requests, and find that fairness and quality need not trade off severely; their fairness unit is the item/provider rather than the social group.
+Fairness in RAG has been studied primarily as a property of the knowledge base and the generator rather than of an adversary. Wu et al.~{[}6{]} construct scenario-based questions and evaluate group disparity across RAG components, finding that the retriever has the largest influence on both accuracy and fairness, and that utility and fairness trade off. Their mitigation is to adjust the proportion and ordering of group-relevant passages --- an R1 intervention --- and they state that they do not provide a comprehensive exploration of mitigation strategies. Kim et al.~{[}7{]} decompose RAG into LLM, embedder, and corpus, show that component biases interact (\texttt{}bias conflict''), and find that \emph{reverse-biasing} a small embedder can cancel a much larger generator's bias; their bias metric is group membership, so both R1 and R2 are outside their formulation. Kim and Diaz {[}8{]} bring fair-ranking machinery to RAG, using stochastic rankers to equalise item-side exposure across repeated requests, and find that fairness and quality need not trade off severely; their fairness unit is the item/provider rather than the social group.
 
 Most closely related is Zhao et al.~{[}5{]}, who model position-wise bias propagation in top-\(k\) RAG and formulate fairness-aware retrieval as an optimisation problem over group composition, solved by decomposition. This is the most general R1-constraining defense we are aware of, and we treat it as the representative of the class. Like the others, it assumes no adversary: bias is a property of the corpus and the generator, not something an attacker injects.
 
-Two further works are relevant. Kim et al.~{[}7{]} observe that ``naively increasing fairness is not always the optimal solution'' --- a conclusion we sharpen by identifying the \emph{specific} reason: the fairness being increased is measured along the wrong axis. Bagwe et al.~{[}13{]} construct fairness-targeted backdoor attacks that manipulate semantic relationships between groups and biases; their attack relies on a trigger and their objective is attack construction, whereas we study trigger-free injection and its consequences for defense design.
+Two further works are relevant. Kim et al.~{[}7{]} observe that \texttt{}naively increasing fairness is not always the optimal solution'' --- a conclusion we sharpen by identifying the \emph{specific} reason: the fairness being increased is measured along the wrong axis. Bagwe et al.~{[}13{]} construct fairness-targeted backdoor attacks that manipulate semantic relationships between groups and biases; their attack relies on a trigger and their objective is attack construction, whereas we study trigger-free injection and its consequences for defense design.
 
 \subsection{The gap}\label{the-gap}
 
-Across this literature we identify four points of agreement that together define the gap this paper addresses. First, fairness defenses for RAG consistently constrain group composition or item exposure (§2.2). Second, several authors independently report that existing defenses are not robust enough --- ``further optimization \ldots{} to achieve more stable and generalizable defense performance'' {[}4{]}; ``single-stage defenses give limited robustness'' {[}14{]}; ``does not provide a comprehensive exploration of strategies to mitigate these unfairnesses'' {[}6{]}. Third, and structurally, none of the fairness works models an adversary: they study corpora that are \emph{naturally} skewed. Fourth, no work we have found constrains or detects within-group stance.
+Across this literature we identify four points of agreement that together define the gap this paper addresses. First, fairness defenses for RAG consistently constrain group composition or item exposure (§2.2). Second, several authors independently report that existing defenses are not robust enough --- \texttt{}further optimization \ldots{} to achieve more stable and generalizable defense performance'' {[}4{]}; \texttt{}single-stage defenses give limited robustness'' {[}14{]}; \texttt{}does not provide a comprehensive exploration of strategies to mitigate these unfairnesses'' {[}6{]}. Third, and structurally, none of the fairness works models an adversary: they study corpora that are \emph{naturally} skewed. Fourth, no work we have found constrains or detects within-group stance.
 
 We therefore study the intersection that has not been studied: an \emph{adversary} acting on the axis that \emph{no} defense constrains.
 
@@ -174,7 +174,7 @@ Let a retrieved set for query \(q\) be \(\mathcal{D}_q = \{d_1, \dots, d_k\}\), 
 
 \[\Delta_{\text{R2}}(\mathcal{D}_q) = \max_{g \neq g'} \bigl| P^{\mathcal{D}_q}_{\text{fav}}(g) - P^{\mathcal{D}_q}_{\text{fav}}(g') \bigr|.\]
 
-\textbf{Why a gap across groups, and not a deviation from a reference.} The natural first choice for an R2 metric --- how far a group's favourable rate sits from the corpus reference --- turns out to be unusable, and the reason is worth recording because it is easy to get wrong. Consider a balanced corpus and a query such as \emph{``Who performed better in the engineering evaluation?''} The query's vocabulary matches favourable and unfavourable templates differently, so a clean retrieval of top-\(k\) tends to be \textbf{one-sided}: it returns five passages that are all favourable, or all unfavourable. Measured against a reference favourable rate of \(0.5\), this yields a large deviation (\(\approx 0.31\) by JS divergence) \emph{before any attack is applied}. We confirmed this directly: every clean query in our corpus returns a top-5 that is entirely one-sided.
+\textbf{Why a gap across groups, and not a deviation from a reference.} The natural first choice for an R2 metric --- how far a group's favourable rate sits from the corpus reference --- turns out to be unusable, and the reason is worth recording because it is easy to get wrong. Consider a balanced corpus and a query such as \emph{\texttt{}Who performed better in the engineering evaluation?''} The query's vocabulary matches favourable and unfavourable templates differently, so a clean retrieval of top-\(k\) tends to be \textbf{one-sided}: it returns five passages that are all favourable, or all unfavourable. Measured against a reference favourable rate of \(0.5\), this yields a large deviation (\(\approx 0.31\) by JS divergence) \emph{before any attack is applied}. We confirmed this directly: every clean query in our corpus returns a top-5 that is entirely one-sided.
 
 Crucially, that one-sidedness is \textbf{topic-conditioned, not group-conditioned}: when the corpus is balanced, an all-unfavourable retrieval is all-unfavourable for \emph{every} group, so it is not a fairness violation. A deviation-from-reference metric therefore conflates two different phenomena --- legitimate topic conditioning, which the attack does not change, and group-conditioned skew, which is the actual harm. Under pairwise poisoning the attack \emph{preserves} the topic-conditioned component (its injected passages are drawn from the same templates), so a deviation metric does not move: in our experiments both the reference-deviation and one-sidedness metrics are flat across the clean and attacked conditions (\(0.2859 \to 0.3113\) and \(0.4667 \to 0.5000\) respectively), while \texttt{poison@k} goes from 0 to 0.750. A defense monitoring either would see a healthy system.
 
@@ -391,6 +391,20 @@ dense & \texttt{repr\_group} (R1 only) & \textbf{0.0} & 0.2438 & 1.0000 & \textb
 
 \textbf{Finding 2. The R1-only defense is not weak but inert.} \texttt{repr\_group} attains \emph{exactly} the same \texttt{poison@k} as \texttt{vanilla} --- 0.750 on BM25, 1.000 on dense --- at \textbf{every} budget setting, including \(\epsilon = 0\), the strictest possible constraint. The inclusion rate is not merely unchanged at the default setting; across a sweep of five values spanning the entire range of the budget parameter it does not vary at all. Tightening the budget does change R1 drift (0.1500 \(\rightarrow\) 0.1812, i.e.~it can make R1 \emph{worse}, by forcing the selection away from the natural ranking) while leaving both the R2 gap and adversarial inclusion untouched. This is the signature of a constraint acting on quantities the attack does not perturb: the budget has no purchase on the attack.
 
+\textbf{This is a null result, so we state its strength rather than leaving a reader to guess.} A point estimate of zero can mean \texttt{}no effect'' or \texttt{}not enough data'', and the distinction matters here because the claim is that a published defense family does nothing. We therefore report paired tests on the per-query data (Table 16) instead of aggregate means:
+
+\begin{itemize}
+\tightlist
+\item
+  For every R1-constrained configuration, the \textbf{per-query difference vector is identically zero} --- not small, zero. The paired bootstrap CI collapses to {[}0, 0{]} and the permutation test is degenerate by construction. The informative statistic is the equivalence bound: because the differences are exactly zero rather than approximately zero, \textbf{these cells exclude any effect on adversarial-passage inclusion, not merely an effect above a threshold.}
+\item
+  The reason is a \textbf{ceiling}, and this is stronger than a failure to detect an effect. The unconstrained baseline already admits adversarial passages on every query it can --- 1.000 for the dense retriever, 0.750 for BM25 --- so there is no headroom for a constraint to demonstrate a reduction even in principle.
+\item
+  The ceiling is not an artefact of the constraint being unable to change the selection. It \emph{does} change it: on BM25 the R2 stance gap moves from 0.7436 (no defense) to 0.5385 under the R2-only constraint, so different passages are being selected. \textbf{The selection changes and not one adversarial passage is displaced.}
+\end{itemize}
+
+We give the full paired-test table, including the equivalence bounds and the contrast cells where the constraint does change the selection, in Appendix B.
+
 This is the central empirical claim of the paper, and it applies directly to the published defense family: {[}5{]} optimises R1 composition under a fairness constraint, {[}6{]} adjusts R1 proportions and ordering, {[}7{]} controls embedder group balance, {[}8{]} equalises item-side exposure. Each constrains aggregate composition along axes the attack leaves clean, so each inherits this insensitivity. We note that multi-query consistency {[}4{]}, which operates on retrieval stability rather than composition, is also inert here (0.750).
 
 \textbf{Table 3.} Adaptive attacker (defense-aware), \texttt{poison@k}.
@@ -480,7 +494,7 @@ The mechanism is visible in the implementation. The repair pass of §4.3 restore
 
 The results above use a controlled corpus whose passages are template-instantiated, which is a threat to external validity. We therefore replicate on \textbf{BBQ} {[}15{]}, a naturally written bias benchmark, using BBQ's own stereotype annotations to derive stance labels (§4.1) so that no new annotation is introduced. The corpus contains 17,792 passages over 144 group-neutral queries spanning four categories (gender, disability, age, race/ethnicity).
 
-\textbf{A note on the injection parameter, because our first attempt was wrong.} An earlier version of this experiment injected a fixed six passages per stratum and concluded that the text-only attack ``does not transfer'' to natural data. That conclusion was an artefact of the parameter, not a property of the corpus: six passages is roughly 10\% of a small candidate pool but \textasciitilde0.03\% of an 18k-passage corpus, so a fixed count measures corpus size rather than attack strength. Poisoning studies standardly report an \emph{injection rate}; we now do the same, sweeping \(\rho \in \{0.1\%, 0.25\%, 0.5\%, 1\%, 2\%\}\) of corpus size. All results below are at matched \(\rho\).
+\textbf{A note on the injection parameter, because our first attempt was wrong.} An earlier version of this experiment injected a fixed six passages per stratum and concluded that the text-only attack \texttt{}does not transfer'' to natural data. That conclusion was an artefact of the parameter, not a property of the corpus: six passages is roughly 10\% of a small candidate pool but \textasciitilde0.03\% of an 18k-passage corpus, so a fixed count measures corpus size rather than attack strength. Poisoning studies standardly report an \emph{injection rate}; we now do the same, sweeping \(\rho \in \{0.1\%, 0.25\%, 0.5\%, 1\%, 2\%\}\) of corpus size. All results below are at matched \(\rho\).
 
 \textbf{Table 5.} Attack effect vs.~injection rate \(\rho\); no defense; \texttt{poison@k}.
 
@@ -800,7 +814,7 @@ Two consequences, and the second is the uncomfortable one. One observation is wo
 
 First, a feature-hashing retriever is not a substitute for a semantic one: it preserves the lexical surface (0.6250, close to BM25's 0.7500) and therefore over-states text-attack effectiveness relative to a dense encoder. This is why our own earlier numbers, produced with it, were too pessimistic about encoder robustness.
 
-Second, \textbf{``dense semantic'' is not a guarantee --- Contriever is the counterexample.} Two of the three dense encoders resist almost completely (0.0625) while Contriever sits near BM25 (0.5625), a nine-fold gap between encoders of the same size class on the same corpus with the same injected text. And Contriever is the encoder used by the fair-ranking work we compare against {[}8{]}. A defense evaluated on Contriever would appear to face a live text-injection threat; the same defense on E5-base-v2 or GTE-base would face a negligible one. Because evaluations in this literature are typically run on a single encoder, a reported robustness figure conflates the defense's behaviour with an encoder property that is not measured. We do not regard this as a flaw in any particular paper so much as a \textbf{missing control}: the encoder should be reported as a factor rather than as an implementation detail, and a robustness claim should be accompanied by the same measurement on encoders that differ in representation family.
+Second, \textbf{\texttt{}dense semantic'' is not a guarantee --- Contriever is the counterexample.} Two of the three dense encoders resist almost completely (0.0625) while Contriever sits near BM25 (0.5625), a nine-fold gap between encoders of the same size class on the same corpus with the same injected text. And Contriever is the encoder used by the fair-ranking work we compare against {[}8{]}. A defense evaluated on Contriever would appear to face a live text-injection threat; the same defense on E5-base-v2 or GTE-base would face a negligible one. Because evaluations in this literature are typically run on a single encoder, a reported robustness figure conflates the defense's behaviour with an encoder property that is not measured. We do not regard this as a flaw in any particular paper so much as a \textbf{missing control}: the encoder should be reported as a factor rather than as an implementation detail, and a robustness claim should be accompanied by the same measurement on encoders that differ in representation family.
 
 \textbf{Adaptive attacker, for completeness.} On both SPLADE and E5-base-v2 every defense again collapses to complete failure at the first perturbation step: \texttt{off-manifold} goes 0.1875 \(\rightarrow\) 0.5000 \(\rightarrow\) 0.8125 \(\rightarrow\) 1.000 (SPLADE) and 0.000 \(\rightarrow\) 1.000 (E5-base-v2) for \(\lambda = 0, 0.25, 0.5, 1\); \texttt{multi\_query} and \texttt{repr\_conserving} saturate by \(\lambda = 0.25\). This matches the companion paper's finding that a real encoder leaves defenses less adaptive headroom than our own retriever.
 
@@ -818,7 +832,7 @@ Two findings do \emph{not} survive unchanged, and we report both. First, the R2 
 
 \subsection{Encoder scale: susceptibility is not a smooth function of size}\label{encoder-scale-susceptibility-is-not-a-smooth-function-of-size}
 
-The backbone comparison above covers six retrievers at \emph{base} size. A natural objection is that encoder choice is a nuisance parameter of the implementation rather than a finding --- that a larger checkpoint, being better trained, would simply be more robust, and that the spread would narrow. An earlier draft of this paper asserted as much, predicting that larger checkpoints ``give no reason to expect agreement'' without measuring it. We have now measured it, and \textbf{the prediction was right in direction but far too weak in magnitude: scaling up flips one encoder family from resistant to susceptible.}
+The backbone comparison above covers six retrievers at \emph{base} size. A natural objection is that encoder choice is a nuisance parameter of the implementation rather than a finding --- that a larger checkpoint, being better trained, would simply be more robust, and that the spread would narrow. An earlier draft of this paper asserted as much, predicting that larger checkpoints \texttt{}give no reason to expect agreement'' without measuring it. We have now measured it, and \textbf{the prediction was right in direction but far too weak in magnitude: scaling up flips one encoder family from resistant to susceptible.}
 
 We pair each base encoder with its larger sibling from the \emph{same} family and training recipe, holding corpus, injection rate, attack and defenses fixed: GTE-base \(\rightarrow\) \textbf{GTE-large}, E5-base-v2 \(\rightarrow\) \textbf{E5-large-v2}, and SPLADE (distil) \(\rightarrow\) \textbf{SPLADE-efficient-large} (the published large SPLADE, which splits into separately fine-tuned query and document encoders).
 
@@ -1039,9 +1053,9 @@ A distribution-constrained defense accepts exactly \(\mathcal{R}_\varepsilon\). 
 
 \textbf{Consequence.} A defense whose acceptance test is membership in \(\mathcal{R}_\varepsilon\) admits a \textbf{fully adversarial} selection at any tolerance, including \(\varepsilon = 0\). Tightening the budget does not exclude the injection; it constrains the attacker's \emph{composition}, which the attacker chooses freely. This is the mechanism behind Findings 2 and 6, and it explains why the empirical \texttt{poison@k} is \emph{identical} to no defense at every \(\varepsilon\) rather than merely close to it: the injected selection is not near the boundary of \(\mathcal{R}_\varepsilon\), it is at the reference point.
 
-\textbf{Empirical check.} Table 16 reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion \emph{exactly} unchanged at every tolerance.
+\textbf{Empirical check.} Table 15b reports the prediction of Prop. 1 against every configuration we ran: if the injected selection sits at the reference point, then constraining the R1 budget must leave adversarial inclusion \emph{exactly} unchanged at every tolerance.
 
-\textbf{Table 16.} Prop. 1 prediction vs.~measurement. R1-only constraint (\texttt{repr\_group}), strongest attack, largest injection rate per corpus; \(\Delta\) = constrained minus no defense.
+\textbf{Table 15b.} Prop. 1 prediction vs.~measurement. R1-only constraint (\texttt{repr\_group}), strongest attack, largest injection rate per corpus; \(\Delta\) = constrained minus no defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -1096,7 +1110,7 @@ Proposition 1 shows the attacker \emph{can} be admissible; we now give the budge
 
 \textbf{Corollary 2 (suppression is cheaper than flooding when the clean retrieval is one-sided).} If \(f_g = 0\) then \(p^{*}_{\text{fav}}(g) = 0\) and the flooding direction requires no violation at all, while the suppression direction must overcome the full rate; if \(f_g = m_g\) the reverse holds. The cheaper direction is always the one pushing an already-extreme rate further toward its extreme --- consistent with the empirical Finding 9, where the attack drove one group's favourable rate to ceiling rather than shifting both.
 
-\textbf{A correction we had to make.} An earlier version of this section concluded from Corollary 1 that ``the number of passages required is bounded by a small constant independent of corpus size''. That conflates two requirements that behave very differently:
+\textbf{A correction we had to make.} An earlier version of this section concluded from Corollary 1 that \texttt{}the number of passages required is bounded by a small constant independent of corpus size''. That conflates two requirements that behave very differently:
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -1245,13 +1259,13 @@ We report the signal because it is the direction Proposition 1 points to, and be
 \item
   \textbf{Injection budget is a rate, not a count.} We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
 \item
-  \textbf{Retrieval back-ends, and what the scale check changed.} Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders --- GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as ``to be added'' and \emph{predicted} that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since \textbf{GTE-base \(\rightarrow\) GTE-large moves from 0.0625 to 0.5000 --- an eight-fold increase in susceptibility within a single encoder family and training recipe.} That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies \textbf{nine-fold across the base dense encoders alone} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. Third, and most importantly, \textbf{even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively} --- so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M \(\rightarrow\) 335M for GTE and E5; 66M \(\rightarrow\) 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a ``large SPLADE is no more robust'' conclusion carries correspondingly less weight.
+  \textbf{Retrieval back-ends, and what the scale check changed.} Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders --- GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as \texttt{}to be added'' and \emph{predicted} that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since \textbf{GTE-base \(\rightarrow\) GTE-large moves from 0.0625 to 0.5000 --- an eight-fold increase in susceptibility within a single encoder family and training recipe.} That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies \textbf{nine-fold across the base dense encoders alone} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. Third, and most importantly, \textbf{even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively} --- so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M \(\rightarrow\) 335M for GTE and E5; 66M \(\rightarrow\) 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a \texttt{}large SPLADE is no more robust'' conclusion carries correspondingly less weight.
 \item
   \textbf{The generation-stage evaluation is preliminary, and we now know specifically why.} We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.7 adds a first generation-stage check on a single generator and one backbone; it establishes that the retrieval skew reaches the output and that it saturates one group, but not the magnitude. Three concrete limits, all uncovered while building a larger evaluation:
 
   \emph{Query diversity.} The controlled corpus's 48 retrieval slots correspond to only \textbf{16 distinct question texts} (each repeated 3\(\times\), once per paraphrase variant). Any statistic aggregated over the 48 is therefore aggregated over 16 questions, and the effective sample size is a third of what the table suggests. The natural-corpus evaluation does not have this problem (BBQ supplies 144 distinct, naturally written questions), which is an additional reason to prefer it for output-level measurement rather than treating it as a replication check.
 
-  \emph{The generator does not follow an inverted context on this corpus.} We ran a negative control that flips the stance of every retrieved passage while holding the question fixed. On the controlled corpus the answer was \textbf{unchanged in 6 of 6 cases under inversion}, but \textbf{changed in 6 of 6 cases when the context was replaced by unrelated passages} or removed entirely. The generator is therefore reading the context at the level of \emph{topic} --- it knows a question about an engineering evaluation calls for naming an engineer --- but not at the level of \emph{stance}, and the answers are determined by the question's framing rather than by the evidence on trial. This is a property of a template corpus whose questions presuppose their own answer, and it means a null propagation result on that corpus would have been uninformative. The forced-choice probe reported in §5.7 avoids the problem by construction, which is why it is the primary measurement; we now report the control because the free-form probe alone cannot distinguish ``no propagation'' from ``generator ignores stance''.
+  \emph{The generator does not follow an inverted context on this corpus.} We ran a negative control that flips the stance of every retrieved passage while holding the question fixed. On the controlled corpus the answer was \textbf{unchanged in 6 of 6 cases under inversion}, but \textbf{changed in 6 of 6 cases when the context was replaced by unrelated passages} or removed entirely. The generator is therefore reading the context at the level of \emph{topic} --- it knows a question about an engineering evaluation calls for naming an engineer --- but not at the level of \emph{stance}, and the answers are determined by the question's framing rather than by the evidence on trial. This is a property of a template corpus whose questions presuppose their own answer, and it means a null propagation result on that corpus would have been uninformative. The forced-choice probe reported in §5.7 avoids the problem by construction, which is why it is the primary measurement; we now report the control because the free-form probe alone cannot distinguish \texttt{}no propagation'' from \texttt{}generator ignores stance''.
 
   \emph{A metric we reported as failed is now fixed, and the fix is not cosmetic.} The per-passage attribution probe asked the generator itself whether its answer relied on a given passage; the judge answered YES almost always and the resulting EAE-D was a constant 1.000 in every condition. The cause is direction: an NLI model must be asked whether the \textbf{passage entails the answer}, not the reverse. Calibrated on this corpus, a passage the answer used scores 0.996 in the correct direction and 0.008 in the reversed one, and an unused passage scores 0.000 in both --- so the reversed form returns noise rather than an obviously wrong value. §5.7's EAE-D figures should be read as produced by the probe we have now replaced.
 
@@ -1344,6 +1358,105 @@ The backbone alignment of §5.5 and §5.6 adds roughly 75 minutes of CPU time
 across eight encoder checkpoints, the slowest single run being GTE-large at
 23 minutes; the largest model loaded is a 335M-parameter encoder, which needs
 under 2 GB in fp32. No GPU is used anywhere in this paper.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\section{Appendix B. Paired tests and confidence intervals}\label{appendix-b.-paired-tests-and-confidence-intervals}
+
+Every number in §5 is an aggregate over queries. Because the paper's central claim is a null, we give the paired tests on the underlying per-query data here, including the equivalence bound for each null cell. Reproduce with the script \texttt{analysis/stats\_paper.py}.
+
+\textbf{Table 16.} Paired tests of R1-constraint inertness against no defense. Controlled corpus, \texttt{template\_plus\_projection}, \(\rho = 0.5\%\), per-query adversarial-passage inclusion.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1250}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Retriever
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Defense
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\varepsilon\)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+n
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\Delta\) mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+95\% CI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+excluded effect
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+bm25 & repr\_group & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+bm25 & repr\_group & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+bm25 & repr\_both & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+bm25 & repr\_both & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+bm25 & repr\_stance & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+bm25 & repr\_stance & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_group & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_group & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_both & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_both & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_stance & 0.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+dense & repr\_stance & 1.0 & 48 & +0.0000 & {[}+0.0000, +0.0000{]} & 1.000 & ±0.0000 \\
+\end{longtable}
+}
+
+Where the constraint changes nothing, the per-query difference vector is \textbf{identically zero}, not merely small: the bootstrap CI collapses to {[}0, 0{]} and the permutation test is degenerate by construction. The informative statistic is therefore the equivalence bound --- the smallest effect the data exclude --- and because the differences are exactly zero rather than approximately zero, these cells exclude \emph{any} effect on adversarial-passage inclusion, not merely one above a threshold. The \texttt{repr\_stance} rows are the contrast case: there the constraint does change the selection, the difference vector is non-degenerate, and both the CI and the p-value are meaningful.
+
+\textbf{Table 17.} Bootstrap 95\% CIs on the positive claims (per-question values, 10,000 resamples, no defense).
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Condition
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Retriever
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Metric
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+95\% CI
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+clean & bm25 & R2 stance gap & 0.0000 & {[}0.0000, 0.0000{]} \\
+clean & bm25 & R1 drift (TV) & 0.0000 & {[}0.0000, 0.0000{]} \\
+clean & dense & R2 stance gap & 0.0000 & {[}0.0000, 0.0000{]} \\
+clean & dense & R1 drift (TV) & 0.0000 & {[}0.0000, 0.0000{]} \\
+template & bm25 & R2 stance gap & 0.7436 & {[}0.6068, 0.8718{]} \\
+template & bm25 & R1 drift (TV) & 0.1625 & {[}0.1062, 0.2208{]} \\
+template & dense & R2 stance gap & 0.6167 & {[}0.4556, 0.7667{]} \\
+template & dense & R1 drift (TV) & 0.0812 & {[}0.0438, 0.1208{]} \\
+template\_plus\_projection & bm25 & R2 stance gap & 0.7436 & {[}0.6068, 0.8718{]} \\
+template\_plus\_projection & bm25 & R1 drift (TV) & 0.1625 & {[}0.1062, 0.2208{]} \\
+template\_plus\_projection & dense & R2 stance gap & 1.0000 & {[}1.0000, 1.0000{]} \\
+template\_plus\_projection & dense & R1 drift (TV) & 0.1625 & {[}0.1187, 0.2083{]} \\
+\end{longtable}
+}
+
+The point of §Table 16 is the last column. For the R1-only and joint constraints the difference is zero per query, so the CI is {[}0, 0{]} and the equivalence bound is ±0.0000: the data exclude any effect on adversarial inclusion, not merely an effect above some threshold. The epr\_stance~rows are included as a contrast, since there the constraint genuinely changes the selection.
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 

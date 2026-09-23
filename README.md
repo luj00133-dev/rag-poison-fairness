@@ -150,7 +150,7 @@ references** — Paper A 30 pages, Paper B 12 pages, verified by
 `paper/make_latex.py` only converts Markdown to `.tex` and does not compile
 anything; its log is not a compile check.
 
-Four conversion problems are handled in `make_latex.py`; each produces a hard
+Five conversion problems are handled in `make_latex.py`; each produces a hard
 LaTeX error if left alone:
 
 | Problem | Fix |
@@ -159,6 +159,16 @@ LaTeX error if left alone:
 | pandoc's `\real{}` column widths | `calc` package |
 | pandoc's `\def\LTcaptype{none}` on uncaptioned tables | declare a `none` counter |
 | pandoc's syntax-highlighting macros (`\NormalTok` …) | `--no-highlight` |
+| **Backticks pandoc leaves literal become LaTeX control sequences** | `_convert_leftover_code_spans` wraps them in `\texttt{}` |
+
+That last one is not cosmetic. Pandoc converts `` `foo` `` to `\texttt{foo}`
+inside ordinary paragraphs but leaves backticks literal in text inserted by hand
+or inside raw constructs, and LaTeX then reads the following word as a control
+sequence: a line ending `` `python analysis/x.py` `` produced
+`! Undefined control sequence` on `\python` and failed the whole build.
+`postprocess` now converts any surviving backtick pair, escaping `_`, `%`, `#`,
+`&`, `{`, `}`, `~` and `^` inside it, since code spans in these papers are
+usually filenames.
 
 The reference list is also rewritten into a `thebibliography` block: pandoc
 renders `[1] Title` lines as prose with *escaped* brackets (`{[}1{]}`), so the

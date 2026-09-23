@@ -178,10 +178,49 @@ def run(cmd: list[str]) -> tuple[int, str, str]:
     return p.returncode, p.stdout or "", p.stderr or ""
 
 
+def _convert_leftover_code_spans(tex: str) -> str:
+    """Turn Markdown inline-code spans that pandoc left literal into ``\\texttt``.
+
+    Pandoc converts `` `foo` `` to ``\\texttt{foo}`` in ordinary paragraphs, but
+    it leaves the backticks literal in some positions -- prose we inserted by
+    hand, and text inside constructs pandoc treats as raw. A surviving backtick
+    is not a cosmetic problem: LaTeX reads whatever follows it as a control
+    sequence, so `` `python analysis/x.py` `` produced
+    ``! Undefined control sequence`` on ``\\python`` and failed the build.
+
+    Content is escaped before wrapping, since code spans routinely contain
+    characters that are special in LaTeX (``_`` in filenames here).
+    """
+    out = []
+    in_code = False
+    for ch in tex:
+        if ch == '`':
+            out.append('\\texttt{' if not in_code else '}')
+            in_code = not in_code
+            continue
+        if in_code:
+            if ch == '_':
+                out.append('\\_')
+            elif ch == '\\':
+                # an escaped char inside a code span: keep as-is
+                out.append(ch)
+            elif ch in '#$%&{}':
+                out.append('\\' + ch)
+            elif ch == '~':
+                out.append('\\textasciitilde{}')
+            elif ch == '^':
+                out.append('\\textasciicircum{}')
+            else:
+                out.append(ch)
+        else:
+            out.append(ch)
+    return ''.join(out)
+
+
 def postprocess(tex: str) -> str:
     """Turn pandoc's output into something a venue class will accept.
 
-    Four fixes, all of which would otherwise be visible in the compiled PDF:
+    Five fixes, all of which would otherwise be visible in the compiled PDF:
 
     1. The Markdown front matter (Author / Affiliation / Corresponding author /
        Target venue) is *already* inside ``\\author{}``; leaving the Markdown
@@ -193,12 +232,18 @@ def postprocess(tex: str) -> str:
        LaTeX's, so the leading number is stripped.
     4. ``\\tightlist`` is a pandoc macro neither venue class defines, which
        produces an undefined-control-sequence error.
+    5. Backticks that survive pandoc's inline-code conversion become LaTeX
+       control sequences and fail the build (see
+       :func:`_convert_leftover_code_spans`).
 
     Every backslash-bearing replacement uses ``str.replace`` rather than
     ``re.sub``: a replacement *string* in ``re.sub`` is a template, so
     ``"\\end{abstract}"`` raises "bad escape". That mistake is easy to make and
     cost us two iterations here, so the rule is applied throughout.
     """
+    # 5 first: it is the pass that can still see the raw backticks
+    tex = _convert_leftover_code_spans(tex)
+
     # 1. drop front matter (from "**Author**:" up to the Abstract heading).
     #    Slice rather than regex so the replacement never sees a backslash.
     cut = tex.find("\\textbf{Author}")
