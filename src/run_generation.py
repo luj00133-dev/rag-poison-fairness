@@ -75,7 +75,8 @@ if __package__ in (None, ""):
         STANCE_TEMPLATES,
         format_context,
     )
-    from src.eval.generation import ChatClient, NliScorer, ProviderError
+    from src.eval.generation import (ChatClient, LOCAL_MODELS, NliScorer,
+                                      ProviderError, make_generator)
 else:
     from .run_attribution import collect_contexts, _caps  # noqa: F401
     from .run_experiment import load_config
@@ -85,7 +86,8 @@ else:
         STANCE_TEMPLATES,
         format_context,
     )
-    from .eval.generation import ChatClient, NliScorer, ProviderError
+    from .eval.generation import (ChatClient, LOCAL_MODELS, NliScorer,
+                                  ProviderError, make_generator)
 
 
 CONDITIONS = ("clean", "poisoned", "r1only", "r2both")
@@ -389,13 +391,17 @@ def run_one_generator(
     print("=" * 78)
     print(f"GENERATOR {gen_name}")
     print("=" * 78)
-    client = ChatClient.from_name(
+    client = make_generator(
         gen_name,
         cache_path=os.path.join(out_dir, "generation_cache.json"),
-        dry_run=dry_run,
+        **({} if gen_name in LOCAL_MODELS else {"dry_run": dry_run}),
     )
-    print(f"  provider : {client.provider.label}")
-    print(f"  endpoint : {client.provider.base_url}")
+    if gen_name in LOCAL_MODELS:
+        print(f"  provider : {client.label}")
+        print(f"  weights  : {client.model_id}")
+    else:
+        print(f"  provider : {client.provider.label}")
+        print(f"  endpoint : {client.provider.base_url}")
 
     t0 = time.time()
     recs = answer_records(
@@ -481,7 +487,8 @@ def run_one_generator(
 
     return {
         "generator": gen_name,
-        "provider": client.provider.label,
+        # an API client carries .provider; a LocalGenerator carries .label
+        "provider": getattr(client, "label", None) or client.provider.label,
         "summary": summary,
         "tests_vs_clean": tests,
         "usage": client.usage,

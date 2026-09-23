@@ -243,6 +243,176 @@ class ChatClient:
 
 
 # --------------------------------------------------------------------------- #
+# Local open-weight generator
+# --------------------------------------------------------------------------- #
+
+#: Open-weight generators, run locally rather than through an API.
+#:
+#: Why this exists: the API panel spans two *families* (Alibaba's Qwen, DeepSeek),
+#: and a reviewer is entitled to object that a propagation result measured only on
+#: hosted models says nothing about the open-weight systems most RAG deployments
+#: actually run. Mistral-7B-Instruct is the largest 7B-class instruct model that
+#: needs no gated access, and it is a third family rather than another checkpoint
+#: of the first two.
+#:
+#: The machine has an RTX 5060 (Blackwell, sm_120, 8.5 GB). A 7B model fits only in
+#: 4-bit, which `analysis/test_4bit_gpu.py` verified works on this device before
+#: any download was attempted; the loaded model occupies 4.14 GB and 3 repeated
+#: greedy calls returned byte-identical text, which the protocol requires.
+#:
+#: The value may be a HuggingFace id or a local directory, because the weights were
+#: fetched with a resumable HTTP downloader rather than through huggingface_hub
+#: (see analysis/fetch_mistral.py for why).
+LOCAL_MODELS: Dict[str, str] = {
+    "mistral-7b": os.environ.get(
+        "MISTRAL_LOCAL_PATH",
+        r"D:\HaizeiwangPingshu\models\mistral-7b-v0.3"),
+    "phi-3.5-mini": "microsoft/Phi-3.5-mini-instruct",
+}
+
+
+@dataclass
+class LocalGenerator:
+    """A local instruct model behind the same ``chat`` interface as ChatClient.
+
+    Deliberately mirrors :class:`ChatClient` (``chat``, ``usage``, ``flush``,
+    ``from_name``) so the evaluation driver does not need to know which kind of
+    generator it is holding. Responses are cached on disk with the same key
+    scheme, so a local and an API run can share nothing and collide never.
+    """
+
+    model_id: str
+    label: str = ""
+    cache_path: Optional[str] = "results/attribution_cache.json"
+    max_new_tokens: int = 256
+    load_in_4bit: bool = True
+
+    _model: object = field(default=None, init=False, repr=False)
+    _tokenizer: object = field(default=None, init=False, repr=False)
+    _cache: Dict[str, str] = field(default_factory=dict, init=False)
+    n_calls: int = field(default=0, init=False)
+    n_cache_hits: int = field(default=0, init=False)
+    n_errors: int = field(default=0, init=False)
+    prompt_tokens: int = field(default=0, init=False)
+    completion_tokens: int = field(default=0, init=False)
+
+    def __post_init__(self) -> None:
+        if not self.label:
+            self.label = f"local:{self.model_id.split('/')[-1]}"
+        if self.cache_path and os.path.exists(self.cache_path):
+            try:
+                with open(self.cache_path, encoding="utf-8") as fh:
+                    self._cache = json.load(fh)
+            except Exception:
+                self._cache = {}
+
+    # -- loading ----------------------------------------------------------- #
+
+    def _ensure(self):
+        if self._model is not None:
+            return
+        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        if not torch.cuda.is_available():
+            raise ProviderError(
+                "local generation needs a CUDA build of torch; the environment "
+                "used for the retrieval results is CPU-only by design"
+            )
+        self._tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+        kwargs = {"device_map": "cuda"}
+        if self.load_in_4bit:
+            from transformers import BitsAndBytesConfig
+
+            kwargs["quantization_config"] = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.float16,
+                bnb_4bit_use_double_quant=True,
+            )
+        else:
+            kwargs["torch_dtype"] = torch.float16
+        self._model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+        self._model.eval()
+
+    # -- interface --------------------------------------------------------- #
+
+    def flush(self) -> None:
+        if not self.cache_path:
+            return
+        os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+        with open(self.cache_path, "w", encoding="utf-8") as fh:
+            json.dump(self._cache, fh, ensure_ascii=False)
+
+    @property
+    def usage(self) -> Dict[str, object]:
+        return {
+            "provider": self.label,
+            "calls": self.n_calls,
+            "cache_hits": self.n_cache_hits,
+            "errors": self.n_errors,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+        }
+
+    def chat(self, system: str, user: str) -> str:
+        key = "\x00".join((self.label, system, user))
+        if key in self._cache:
+            self.n_cache_hits += 1
+            return self._cache[key]
+        try:
+            self._ensure()
+            import torch
+
+            messages = [{"role": "system", "content": system},
+                        {"role": "user", "content": user}]
+            prompt = self._tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True)
+            enc = self._tokenizer(prompt, return_tensors="pt").to("cuda")
+            with torch.no_grad():
+                out = self._model.generate(
+                    **enc, max_new_tokens=self.max_new_tokens,
+                    do_sample=False,  # greedy, for the same determinism an API
+                                      # run gets from temperature 0
+                    pad_token_id=self._tokenizer.eos_token_id,
+                )
+            text = self._tokenizer.decode(
+                out[0][enc["input_ids"].shape[1]:], skip_special_tokens=True)
+            self.prompt_tokens += int(enc["input_ids"].shape[1])
+            self.completion_tokens += int(out.shape[1] - enc["input_ids"].shape[1])
+            self.n_calls += 1
+            self._cache[key] = text
+            return text
+        except Exception as exc:
+            self.n_errors += 1
+            raise ProviderError(f"{self.label}: {type(exc).__name__}: {exc}")
+
+    @staticmethod
+    def from_name(name: str, **kw) -> "LocalGenerator":
+        if name not in LOCAL_MODELS:
+            raise KeyError(
+                f"unknown local model {name!r}; known: {sorted(LOCAL_MODELS)}"
+            )
+        return LocalGenerator(model_id=LOCAL_MODELS[name], **kw)
+
+
+def make_generator(name: str, **kw):
+    """Return a generator for an API provider or a local open-weight model.
+
+    One entry point so the driver does not carry the distinction.
+    """
+    if name in PROVIDERS:
+        return ChatClient.from_name(name, **kw)
+    if name in LOCAL_MODELS:
+        return LocalGenerator.from_name(name, **kw)
+    raise KeyError(
+        "unknown generator %r; API: %s  local: %s"
+        % (name, sorted(PROVIDERS), sorted(LOCAL_MODELS))
+    )
+
+
+# --------------------------------------------------------------------------- #
 # NLI scorer: stance and attribution without asking a model to judge itself
 # --------------------------------------------------------------------------- #
 

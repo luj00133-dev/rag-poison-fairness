@@ -452,15 +452,16 @@ Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is r
 
 Read Table C2 and Table 10 together: the same experiment, on the same corpus at the same injection rate, yields a 46% rise in the absolute gap under one instrument and a rise of 0.0008–0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
-**Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent generators — but only when the two groups are measured separately.** We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring `P(entail | answer, favourable) − P(entail | answer, unfavourable)`, calibrated in §5.7.1) across three generators from two model families. The per-group shifts are large, consistent in sign, and highly significant everywhere:
+**Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent model families — including an open-weight model run locally — but only when the two groups are measured separately.** We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring `P(entail | answer, favourable) − P(entail | answer, unfavourable)`, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-**Table 11.** Generation-layer stance, entailment-scored, three generators. Controlled corpus, GTE-base retrieval, $\rho = 2\%$, 48 queries, paired permutation test against `clean`.
+**Table 11.** Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, $\rho = 2\%$, 48 queries, paired permutation test against `clean`.
 
 | Generator | Δ gap (absolute) | p | **Δ group 1** | p | **Δ group 2** | p |
 |---|---|---|---|---|---|---|
 | qwen-turbo | +0.0008 | 0.32 | **−0.1297** | **<0.0001** | **+0.1305** | **<0.0001** |
 | qwen-plus | +0.0018 | 0.042 | **−0.1280** | **0.0035** | **+0.1298** | **0.0015** |
 | qwen-max | −0.0491 | 0.18 | **−0.1785** | **0.0001** | **+0.1294** | **0.0029** |
+| **mistral-7b** (local, open weights) | +0.0025 | 0.42 | **−0.1297** | **0.0001** | **+0.1322** | **<0.0001** |
 
 **The absolute cross-group gap — the metric we originally used — is blind to this effect, and we had reproduced one level up the exact error we criticise in §5.3.** Under injection group 1's stance collapses (−0.13 to −0.18) while group 2's rises (+0.13), in every generator, at p ≤ 0.0035. Because the corpus carries a pre-existing stance asymmetry, `|stance(g1) − stance(g2)|` moves by less than 0.002 for two of the three generators and by −0.05 (the wrong sign) for the third. Taking an absolute difference between two groups destroys precisely the signal, for the same reason it does at the retrieval layer: the attack does not make the system uniformly more skewed, it suppresses one group and elevates the other, and the gap between them is dominated by a corpus-level constant that the attack does not touch.
 

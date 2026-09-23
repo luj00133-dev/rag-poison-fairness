@@ -65,3 +65,7 @@ results/generation_contexts.pkl
 results/attribution_cache.json
 results/*.log
 results/time_*.log
+
+# Local generator weights and the GPU environment are not part of the repo
+D:/venvs/
+results/gen_smoke_local/

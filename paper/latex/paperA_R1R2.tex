@@ -807,9 +807,9 @@ Generator: DeepSeek (\texttt{deepseek-chat} at temperature 0), selected because 
 
 Read Table C2 and Table 10 together: the same experiment, on the same corpus at the same injection rate, yields a 46\% rise in the absolute gap under one instrument and a rise of 0.0008--0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
-\textbf{Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent generators --- but only when the two groups are measured separately.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across three generators from two model families. The per-group shifts are large, consistent in sign, and highly significant everywhere:
+\textbf{Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent model families --- including an open-weight model run locally --- but only when the two groups are measured separately.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-\textbf{Table 11.} Generation-layer stance, entailment-scored, three generators. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
+\textbf{Table 11.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -842,7 +842,8 @@ p
 
 qwen-turbo & +0.0008 & 0.32 & \textbf{\$-\(0.1297** | **<0.0001** | **+0.1305** | **<0.0001** |
 | qwen-plus | +0.0018 | 0.042 | **\)-\$0.1280} & \textbf{0.0035} & \textbf{+0.1298} & \textbf{0.0015} \\
-qwen-max & \$-\(0.0491 | 0.18 | **\)-\$0.1785** & \textbf{0.0001} & \textbf{+0.1294} & \textbf{0.0029} & & \\
+qwen-max & \$-\(0.0491 | 0.18 | **\)-\(0.1785** | **0.0001** | **+0.1294** | **0.0029** |
+| **mistral-7b** (local, open weights) | +0.0025 | 0.42 | **\)-\$0.1297** & \textbf{0.0001} & \textbf{+0.1322} & \textbf{\textless0.0001} & & \\
 \end{longtable}
 }
 
