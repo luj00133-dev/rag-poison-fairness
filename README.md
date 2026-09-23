@@ -173,7 +173,7 @@ LaTeX error if left alone:
 That last one is not cosmetic. Pandoc converts `` `foo` `` to `\texttt{foo}`
 inside ordinary paragraphs but leaves backticks literal in text inserted by hand
 or inside raw constructs, and LaTeX then reads the following word as a control
-sequence: a line ending `` `python analysis/x.py` `` produced
+sequence: a prose line whose code span began with the word *python* produced
 `! Undefined control sequence` on `\python` and failed the whole build.
 `postprocess` now converts any surviving backtick pair, escaping `_`, `%`, `#`,
 `&`, `{`, `}`, `~` and `^` inside it, since code spans in these papers are
