@@ -43,7 +43,7 @@ The attack is \emph{pairwise poisoning}: injected passages reuse the legitimate 
 \item
   \textbf{Two natural R2 statistics are also blind.} Deviation of stance from a corpus reference (0.286 \(\rightarrow\) 0.311) and one-sidedness of stance (0.467 \(\rightarrow\) 0.500) are flat across the clean and fully attacked conditions, because a group-neutral query legitimately retrieves one-sided evidence, so both measure topic conditioning rather than group skew --- a component the attack preserves. The statistic that responds is the cross-group stance gap.
 \item
-  \textbf{The right axis is the per-group shift, not the gap between groups --- and we initially got this wrong ourselves.} Every metric above is an absolute difference between groups. Because the corpus carries a pre-existing asymmetry and the attack \emph{relocates both groups} rather than opening a gap between them, an absolute difference discards the signal. Measured per group, injection moves the suppressed group's stance by \$-\$0.13 to \$-\$0.18 and the favoured group's by +0.13, consistently across \textbf{three generators from two model families} at \(p \le 0.0035\); the absolute gap moves by less than 0.002 for two of the three. We reproduced, one level up, the exact error we identify at the retrieval layer.
+  \textbf{The right axis is the per-group shift, not the gap between groups --- and we initially got this wrong ourselves.} Every metric above is an absolute difference between groups. Because the corpus carries a pre-existing asymmetry and the attack \emph{relocates both groups} rather than opening a gap between them, an absolute difference discards the signal. Measured per group on our controlled corpus, injection moves the suppressed group's stance by \$-\$0.13 to \$-\$0.18 and the favoured group's by +0.13, consistently across \textbf{four generators spanning three model families} --- API-served Qwen and DeepSeek models plus an open-weight Mistral-7B run locally --- at \(p \le 0.0035\) in all six per-group comparisons; the absolute gap moves by less than 0.002 for three of the four. We reproduced, one level up, the exact error we identify at the retrieval layer. \textbf{That effect does not survive a naturally written corpus, and we report the failure rather than the controlled-corpus number alone}: on the full BBQ benchmark, 144 distinct naturally written questions, two of three generators show no measurable shift at all and the third shows one three to six times smaller with a different group-wise signature. The propagation claim is therefore scoped to a template corpus whose questions presuppose their answers --- a property our own negative control had already exposed --- and the general claim is withdrawn.
 \end{enumerate}
 
 The practical consequence is a \textbf{negative result about a class of defenses}, which we prove rather than only measure. A distribution-constrained defense faces a trilemma: it cannot simultaneously exclude adversarial passages, admit good clean selections, and impose a non-vacuous constraint. Empirically the R1 constraint is not weak but \textbf{inert} --- and the reason is a ceiling, not a sample-size problem. The unconstrained baseline already admits adversarial passages on every query where it can (1.000 for a dense retriever, 0.750 for BM25), so there is no headroom for a reduction to appear even in principle; the per-query difference is identically zero, giving an equivalence bound of exactly ±0.0000. This is not because the constraint fails to change the selection --- it does change it, moving the R2 stance gap from 0.7436 to 0.5385 --- but because different passages are selected and not one adversarial passage is displaced. We reach the same conclusion across six retrieval back-ends, two corpora, five injection rates and the full budget sweep, with \(|\mathcal{G}| = 2\) throughout.
@@ -807,7 +807,7 @@ Generator: DeepSeek (\texttt{deepseek-chat} at temperature 0), selected because 
 
 Read Table C2 and Table 10 together: the same experiment, on the same corpus at the same injection rate, yields a 46\% rise in the absolute gap under one instrument and a rise of 0.0008--0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
-\textbf{Finding 8. The retrieval-layer skew propagates to the generated output, and it replicates across three independent model families --- including an open-weight model run locally --- but only when the two groups are measured separately.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
+\textbf{Finding 8. On the controlled corpus the retrieval-layer skew propagates to the generated output and replicates across three model families, but it does not survive a naturally written corpus.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
 \textbf{Table 11.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
 
@@ -855,7 +855,62 @@ This vindicates the qualitative claim in Finding 9 --- the skew saturates one gr
 
 \textbf{Finding 10. Neither constraint improves the generation layer.} \texttt{r1only} leaves both per-group shifts identical to no defence to four decimal places (\(\Delta\)g1 = \$-\$0.1297, \(\Delta\)g2 = +0.1305 for qwen-turbo, identical values), and \texttt{r2both} moves them by less than 0.002. This is consistent with the retrieval-layer result: the input to the generator is unchanged, so the output is unchanged. \textbf{The constraints we proposed, evaluated here, do not repair the downstream harm.}
 
-\textbf{5.7.1 Two metric failures, and what they were caused by.} Both are worth recording because each cost us a wrong result before being found.
+\textbf{5.7.1 The same experiment on a naturally written corpus, which does not replicate it.} The section above is measured on the controlled corpus, whose questions presuppose their own answers. That corpus was rendered affordable to improve: encoder throughput on an RTX 5060 is 171x the CPU rate measured here (1079 against 6.3 documents per second), and we verified that the device changes none of the reported retrieval metrics --- all nine attack-by-metric combinations are identical to four decimal places --- so the full 17,792-document BBQ corpus could be used instead of a subsample. It supplies 144 distinct, naturally written questions in place of our 16.
+
+\textbf{Table 15.} The same generation-stage measurement on the full BBQ corpus. 144 queries, four conditions, paired permutation test against \texttt{clean}.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1429}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Generator
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\Delta\) gap (absolute)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\Delta\) group 1
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\(\Delta\) group 2
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+p
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+qwen-turbo & \$-\$0.0091 & 0.41 & +0.0012 & 0.82 & \$-\$0.0014 & 0.95 \\
+qwen-plus & \$-\$0.0075 & 0.52 & +0.0017 & 0.78 & \$-\$0.0028 & 0.91 \\
+\textbf{mistral-7b} & \textbf{+0.0420} & \textbf{0.006} & \textbf{+0.0435} & \textbf{0.006} & \textbf{+0.0209} & \textbf{0.030} \\
+\end{longtable}
+}
+
+The effect does not carry over, and three separate things distinguish the two settings:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Magnitude.} 0.02--0.04 on BBQ against 0.13 on the controlled corpus.
+\item
+  \textbf{Sign.} On BBQ the local model moves \emph{both} groups upward, rather than one collapsing while the other rises. The two API generators show no effect at all, and what little movement there is points the other way.
+\item
+  \textbf{Coverage.} Three of the six per-group comparisons reach \(p < 0.05\) on BBQ, against six of six on the controlled corpus.
+\end{itemize}
+
+\textbf{We therefore narrow the propagation claim rather than the corpus.} Finding 8 holds for a template corpus whose questions presuppose their answers, which is what the controlled corpus is; it does not hold for the naturally written benchmark. The negative control in §8 pointed the same way before this experiment existed: on the controlled corpus the generator ignored a context whose stance had been \emph{inverted} while reacting to a completely unrelated one, so its answers there are determined by the question's framing rather than by the evidence. A corpus built that way can register an effect that a natural corpus does not, and the honest reading is that the retrieval-layer skew is consequential \textbf{when the generator is genuinely weighing the retrieved evidence}, which our template corpus cannot guarantee and BBQ can measure.
+
+This is the second finding in this paper that a wider evaluation narrowed, and both narrowed in the same direction: the controlled corpus supports stronger conclusions than the natural one, and we now treat that asymmetry as a property of the instrument rather than of the phenomenon.
+
+\textbf{5.7.2 Two metric failures, and what they were caused by.} Both are worth recording because each cost us a wrong result before being found.
 
 \emph{Stance direction.} The first implementation scored stance as \texttt{P(entail\ \textbar{}\ statement,\ answer)}. Calibrated against the correct convention on the same data, the reversed form returns ±0.002 for a favourable answer, an unfavourable answer, an unrelated answer and a vacuous one alike: it cannot separate anything, and it fails silently by returning zeros rather than an obvious error. The correct direction, \texttt{P(entail\ \textbar{}\ answer,\ statement)}, returns +0.997 and \$-\$0.997 for the two extremes. The convention is not interchangeable and the failure mode is indistinguishable from a genuine null result --- a mistake worth flagging for anyone building this measurement.
 
@@ -1043,7 +1098,7 @@ We report the signal because it is the direction Proposition 1 points to, and be
 \item
   \textbf{Retrieval back-ends, and what the scale check changed.} Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders --- GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as \texttt{}to be added'' and \emph{predicted} that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since \textbf{GTE-base \(\rightarrow\) GTE-large moves from 0.0625 to 0.5000 --- an eight-fold increase in susceptibility within a single encoder family and training recipe.} That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies \textbf{nine-fold across the base dense encoders alone} (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against {[}8{]}. Third, and most importantly, \textbf{even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively} --- so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M \(\rightarrow\) 335M for GTE and E5; 66M \(\rightarrow\) 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a \texttt{}large SPLADE is no more robust'' conclusion carries correspondingly less weight.
 \item
-  \textbf{The generation-stage evaluation is preliminary, and we now know specifically why.} We evaluate at the retrieval layer by design, so the R1/R2 mechanism is measurable without a generator. §5.7 adds a first generation-stage check on a single generator and one backbone; it establishes that the retrieval skew reaches the output and that it saturates one group, but not the magnitude. Three concrete limits, all uncovered while building a larger evaluation:
+  \textbf{The generation-stage evaluation is now multi-generator and multi-corpus, and the wider evaluation weakened its conclusion.} §5.7 reports four generators spanning three model families (API-served Qwen and DeepSeek, plus open-weight Mistral-7B run locally in 4-bit on an RTX 5060), scored by entailment rather than by a prompted judge, with paired permutation tests and bootstrap intervals. Two limits remain, and the second is the important one. (i) \emph{Retrieval conditions are measured on one backbone} (GTE-base); the generation-stage comparison holds retrieval fixed, so the encoder-dependence documented in §5.5 is not varied here. (ii) \emph{The effect does not generalise to a naturally written corpus.} On the controlled corpus the per-group shift is large and replicates across all four generators (\(p \le 0.0035\) in six of six per-group comparisons). On the full BBQ benchmark, with 144 distinct naturally written questions, two of three generators show no measurable shift and the third shows one three to six times smaller with a different signature. We therefore scope the propagation claim to template corpora and withdraw the general form. This is not a power problem: BBQ supplies nine times as many distinct questions as the controlled corpus, and the two API generators give null results there with confidence intervals that exclude the controlled-corpus effect size. The negative control in §8 explains the asymmetry --- on the controlled corpus the generator ignores an inverted context, so its answers are driven by the question's framing rather than by the evidence --- and it is the reason we report the controlled-corpus result as scoped rather than as representative. A corpus whose questions presuppose their answers can produce a propagation effect that a natural corpus does not.
 
   \emph{Query diversity.} The controlled corpus's 48 retrieval slots correspond to only \textbf{16 distinct question texts} (each repeated 3\(\times\), once per paraphrase variant). Any statistic aggregated over the 48 is therefore aggregated over 16 questions, and the effective sample size is a third of what the table suggests. The natural-corpus evaluation does not have this problem (BBQ supplies 144 distinct, naturally written questions), which is an additional reason to prefer it for output-level measurement rather than treating it as a replication check.
 
