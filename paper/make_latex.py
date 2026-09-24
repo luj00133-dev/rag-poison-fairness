@@ -29,6 +29,11 @@ import subprocess
 import sys
 
 try:
+    from figure_env import convert_figures
+except ImportError:  # when run from another directory
+    from .figure_env import convert_figures
+
+try:
     from figure_env import normalise_graphic_includes
 except ImportError:  # when run from another directory
     from .figure_env import normalise_graphic_includes
@@ -246,6 +251,12 @@ def postprocess(tex: str) -> str:
     ``"\\end{abstract}"`` raises "bad escape". That mistake is easy to make and
     cost us two iterations here, so the rule is applied throughout.
     """
+    # figures first: the replacement inserts a figure environment and a
+    # caption, and later passes rewrite text that could sit inside one
+    tex, n_figs = convert_figures(tex)
+    if n_figs:
+        print("  converted %d figure(s)" % n_figs)
+
     # 5 first: it is the pass that can still see the raw backticks
     tex = _convert_leftover_code_spans(tex)
 

@@ -61,15 +61,26 @@ plt.rcParams.update({
 })
 
 
-def save(fig, name, *, bottom=0.20, left=0.13, right=0.97, top=0.86,
-         wspace=0.28):
-    """Lay out inside the canvas, then save without cropping."""
+def save(fig, name, *, bottom=0.24, left=0.17, right=0.97, top=0.95,
+         wspace=0.30):
+    """Lay out inside the canvas, then save without cropping.
+
+    Margins are deliberately generous. A vision description of the first render caught
+    a clipped y-axis label and a clipped suptitle, both caused by margins that were
+    right for the axes but not for the text around them; ink-coverage checks cannot
+    see that. Titles now live in the LaTeX caption, so `top` only has to clear the
+    axes frame.
+    """
     fig.subplots_adjust(bottom=bottom, left=left, right=right, top=top,
                         wspace=wspace)
     os.makedirs(FIGS, exist_ok=True)
+    # The file-writing loop lives here and nowhere else. An earlier round of edits
+    # replaced this function wholesale and silently dropped it, so the script still
+    # ran and printed "done" while writing nothing -- which is why a later tick-label
+    # change had no effect on the images even though the JSON behind them had changed,
+    # and why a vision description kept reporting the old label.
     for ext in ('pdf', 'png'):
-        p = os.path.join(FIGS, '%s.%s' % (name, ext))
-        fig.savefig(p, dpi=600)
+        fig.savefig(os.path.join(FIGS, '%s.%s' % (name, ext)), dpi=600)
     plt.close(fig)
     print('   wrote %s.pdf / .png' % name)
 
@@ -82,7 +93,7 @@ def stat_ok(p):
 def fig1_r1_inertness():
     """The R1 constraint's effect on adversarial inclusion is exactly zero."""
     d = DATA['fig4_r1_inertness']
-    fig, axes = plt.subplots(1, 2, figsize=(88 * MM, 42 * MM), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(88 * MM, 50 * MM), sharey=True)
     kinds = [('repr_group', 'R1 only', C['blue'], 'o', '-'),
              ('repr_stance', 'R2 only', C['orange'], 's', '--'),
              ('repr_both', 'R1+R2', C['purple'], '^', ':')]
@@ -99,19 +110,16 @@ def fig1_r1_inertness():
             y = [p['poison_at_k'] for p in pts]
             ax.plot(eps, y, color=col, marker=mk, ms=3.0, lw=0.9,
                     ls=ls, zorder=2, label=label, clip_on=False)
-        ax.set_title(rt.upper() if rt == 'bm25' else 'dense',
-                     fontsize=7.5, pad=3)
-        ax.set_xlabel(r'injection budget $\varepsilon$')
+        ax.set_xlabel(r'budget $\varepsilon$')
         ax.set_xlim(1.08, -0.08)
         ax.set_ylim(-0.05, 1.08)
         ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
 
-    axes[0].set_ylabel('adversarial inclusion (poison@k)')
+    axes[0].set_ylabel('poison@k')
     axes[0].legend(loc='lower left', ncol=1, handlelength=1.6,
                    borderpad=0.1, labelspacing=0.25)
-    fig.suptitle('Every constrained configuration coincides exactly with no defense',
-                 fontsize=7.5, y=1.04)
-    save(fig, 'fig_r1_inertness')
+    save(fig, 'fig_r1_inertness', bottom=0.24, left=0.20,
+         right=0.98, top=0.93, wspace=0.34)
 
 
 # --------------------------------------------------------------------------- #
@@ -138,7 +146,6 @@ def fig2_aggregate_vs_pergroup():
     ax.set_xticks(x)
     ax.set_xticklabels(gens, rotation=18, ha='right')
     ax.set_ylabel(r'$\Delta$ absolute cross-group gap')
-    ax.set_title('Aggregate statistic (blind)', fontsize=7.5, pad=3)
     ax.set_ylim(-0.07, 0.07)
     ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
 
@@ -159,24 +166,29 @@ def fig2_aggregate_vs_pergroup():
     ax.set_xticks(x)
     ax.set_xticklabels(gens, rotation=18, ha='right')
     ax.set_ylabel(r'$\Delta$ per-group stance')
-    ax.set_title('Per-group shifts (detect the attack)', fontsize=7.5, pad=3)
     ax.set_ylim(-0.22, 0.22)
     ax.legend(loc='lower left', ncol=2, handlelength=1.2, columnspacing=1.0,
               borderpad=0.1)
     ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
 
-    save(fig, 'fig_aggregate_vs_pergroup')
+    save(fig, 'fig_aggregate_vs_pergroup', bottom=0.30, left=0.13,
+         right=0.98, top=0.97, wspace=0.30)
 
 
 # --------------------------------------------------------------------------- #
 def fig3_encoder_scale():
-    """Susceptibility is not monotone in encoder size."""
+    """Susceptibility is not monotone in encoder size.
+
+    Values are not annotated on the lines: two families share 0.0625 at
+    base, so inline labels collide, and the legend already prints each
+    family's exact pair.
+    """
     d = DATA['fig6_encoder_scale']
     fams = [f for f in ('GTE', 'E5', 'SPLADE') if f in d]
     style = {'GTE': (C['blue'], 'o'), 'E5': (C['green'], 's'),
              'SPLADE': (C['orange'], '^')}
 
-    fig, ax = plt.subplots(figsize=(88 * MM, 52 * MM))
+    fig, ax = plt.subplots(figsize=(88 * MM, 62 * MM))
     for fam in fams:
         col, mk = style[fam]
         sizes = d[fam]
@@ -186,22 +198,23 @@ def fig3_encoder_scale():
         ax.plot([0, 1], y, color=col, marker=mk, ms=4.5, lw=1.2,
                 label='%s (%.4f $\\rightarrow$ %.4f)' % (fam, y[0], y[1]),
                 clip_on=False)
-        for xi, yi in zip((0, 1), y):
-            ax.annotate('%.4f' % yi, (xi, yi), textcoords='offset points',
-                        xytext=(0, 6 if yi < 0.35 else -11), ha='center',
-                        fontsize=6.2, color=col)
     ax.axhline(0, color=C['black'], lw=0.6)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(['base\n(110M / 66M)', 'large\n(335M / 110M)'])
     ax.set_xlim(-0.25, 1.25)
-    ax.set_ylim(-0.06, 0.60)
-    ax.set_ylabel(r'text-attack adversarial inclusion (poison@k)')
+    # The range comes from the data, not from a constant. A hard-coded 0.60 put the
+    # SPLADE base value (0.6250) outside the axes, so its marker and label were cut
+    # off by the canvas -- a reader would have seen that series starting at its
+    # second point.
+    vals = [v for fam in fams for v in d[fam].values()]
+    hi = max(vals) * 1.35 + 0.03
+    ax.set_ylim(-0.06, hi)
+    ax.set_ylabel('poison@k')
     ax.legend(loc='upper left', handlelength=1.6, borderpad=0.1,
               labelspacing=0.3)
     ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
-    ax.set_title('Same family, same recipe, opposite direction', fontsize=7.5,
-                 pad=3)
-    save(fig, 'fig_encoder_scale')
+    save(fig, 'fig_encoder_scale', bottom=0.22, left=0.20,
+         right=0.97, top=0.96)
 
 
 # --------------------------------------------------------------------------- #
@@ -227,11 +240,10 @@ def fig4_responsiveness():
                     va='bottom' if v > 0.05 else 'top', fontsize=6.2,
                     zorder=4)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=22, ha='right')
-    ax.set_ylabel('ground-truth group share in corpus')
+    ax.set_xticklabels(labels, rotation=30, ha='right', fontsize=6.0)
+    ax.set_xlim(-0.62, len(comp_s) - 0.38)
+    ax.set_ylabel('group share in corpus')
     ax.set_ylim(-0.10, 1.12)
-    ax.set_title('Ground truth (corpus size held constant)', fontsize=7.5,
-                 pad=3)
     ax.legend(loc='upper left', handlelength=1.4, borderpad=0.1)
     ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
 
@@ -248,15 +260,16 @@ def fig4_responsiveness():
                 label=label, clip_on=False)
     ax.axhline(0, color=C['black'], lw=0.6)
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=22, ha='right')
+    ax.set_xticklabels(labels, rotation=30, ha='right', fontsize=6.0)
+    ax.set_xlim(-0.62, len(comp_s) - 0.38)
     ax.set_ylabel('statistic value')
     ax.set_ylim(-0.03, 0.52)
-    ax.set_title('Statistics responding to it', fontsize=7.5, pad=3)
     ax.legend(loc='upper left', handlelength=1.8, borderpad=0.1,
               labelspacing=0.22)
     ax.grid(axis='y', color=C['lgrey'], lw=0.4, zorder=0)
 
-    save(fig, 'fig_responsiveness')
+    save(fig, 'fig_responsiveness', bottom=0.38, left=0.13,
+         right=0.98, top=0.96, wspace=0.30)
 
 
 if __name__ == '__main__':

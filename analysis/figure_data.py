@@ -114,8 +114,7 @@ def figure6_encoder_scale():
 def figure7_responsiveness():
     """Ground-truth composition vs each statistic, corpus size held constant."""
     return {
-        'variant': ['baseline', 'swap 500', 'swap 1500', 'swap 3000',
-                    'swap 3000\nreversed'],
+        'variant': ['base', '500', '1500', '3000', '3000 rev.'],
         'corpus_pct_woman': [0.500, 0.580, 0.739, 0.978, 0.022],
         'drift_tv': [0.0000, 0.0264, 0.0660, 0.0924, 0.0569],
         'drift_js': [0.0000, 0.0372, 0.0809, 0.1062, 0.0532],

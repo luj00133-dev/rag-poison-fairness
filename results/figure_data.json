@@ -218,11 +218,11 @@
   },
   "fig7_responsiveness": {
     "variant": [
-      "baseline",
-      "swap 500",
-      "swap 1500",
-      "swap 3000",
-      "swap 3000\nreversed"
+      "base",
+      "500",
+      "1500",
+      "3000",
+      "3000 rev."
     ],
     "corpus_pct_woman": [
       0.5,
