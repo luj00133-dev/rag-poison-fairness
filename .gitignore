@@ -69,3 +69,8 @@ results/time_*.log
 # Local generator weights and the GPU environment are not part of the repo
 D:/venvs/
 results/gen_smoke_local/
+
+# Forced-choice probe outputs and scratch runs
+results/fc_smoke/
+results/fc_cache.json
+results/**/fc_cache.json
