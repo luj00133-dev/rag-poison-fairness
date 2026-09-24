@@ -31,7 +31,19 @@ Nanjing University of Science and Technology}, city={Nanjing}, country={China}}
 
 \begin{abstract}
 
-Fairness defenses for retrieval-augmented generation (RAG) are selected and validated using aggregate statistics of the retrieved set: the proportion of passages about each protected group, the deviation of a group's stance from a corpus reference, or the exposure of items across repeated requests. We show that these statistics are \textbf{blind to the attack they are meant to detect}, and we identify the property they all share that makes them blind.
+Fairness defenses for retrieval-augmented generation (RAG) are selected and validated using aggregate statistics of the retrieved set: the proportion of passages about each protected group, the deviation of a group's stance from a corpus reference, or the exposure of items across repeated requests. Every such statistic has the same form --- a per-group quantity aggregated across groups --- and we show that an adversary who knows this can defeat the aggregation in exactly \textbf{three ways}, which together explain why the defenses built on these statistics fail:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{F1, balanced count.} The injection contributes equally to every group, so any statistic over group counts returns its clean value.
+\item
+  \textbf{F2, preserved nuisance.} The statistic is anchored to a reference the attack does not change, so it reports the component that varies with the query rather than the one that varies with the attack.
+\item
+  \textbf{F3, cancelled shift.} The attack moves all groups together, so any difference between groups is unchanged however far the groups move.
+\end{itemize}
+
+The three modes are not a description but a \textbf{test}: each can be checked against a candidate statistic before any attack is built, and we use them to predict which existing metrics will be blind. To separate \emph{blind to this adversary} from \emph{broken instrument}, we add a positive control in which the ground truth changes by a known amount and the same statistics must respond: they do, monotonically and in the right direction.
 
 The attack is \emph{pairwise poisoning}: injected passages reuse the legitimate template inventory and differ only in which group they favour. Because the injection is balanced across groups by construction, it leaves every group-composition statistic clean while skewing the stance of the evidence. We formalise this as two orthogonal dimensions --- \textbf{(R1) group composition} and \textbf{(R2) within-group stance} --- and show that the blindness is not an accident of any one metric:
 
@@ -109,7 +121,9 @@ Every statistic that aggregates over group composition is blind to this. It repo
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  A two-dimensional formalisation of representation in retrieved sets (R1 composition, R2 within-group stance), with the observation that adversarial injection is balanced in R1 and skewed in R2, and an analysis of which aggregate statistics are sensitive to it (§3, §5.1).
+  \textbf{A framework for why adversarial fairness statistics fail.} Every candidate metric in this literature is a per-group quantity aggregated across groups, and an adversary can defeat the aggregation in exactly three ways: by balancing what the statistic counts (F1), by anchoring it to a reference the attack preserves (F2), or by moving all groups together so a difference between them cancels (F3). The modes are checkable in advance of building an attack, and we use them to predict which published metrics are blind (§3.4), then confirm the predictions empirically (§5.1, §5.2, §5.7).
+\item
+  \textbf{A positive control that separates blindness from breakage.} With the ground truth moved by a known amount and the corpus size held fixed, the indicted statistics respond monotonically and directionally (Table 1). The claim is therefore specific --- these statistics are immune to an adversary who balances what they count --- rather than a general complaint that the instrument is unreliable.
 \item
   Identification of a \textbf{shared cause of measurement failure}: statistics that aggregate over group counts, or that take an absolute difference between groups, are insensitive to an attack that balances the former and relocates the latter --- with the error demonstrated at two layers, including in our own first generation-layer measurement (§5.1, §5.3, §5.7).
 \item
@@ -206,6 +220,105 @@ This asymmetry is the attack's entire mechanism, and it is invisible to an R1 mo
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
+\subsection{One form for every candidate metric, and three ways it loses the signal}\label{one-form-for-every-candidate-metric-and-three-ways-it-loses-the-signal}
+
+Every fairness statistic in this literature, including the ones we introduce, has the same shape: a per-group quantity aggregated across groups.
+
+\[M(\mathcal{D}) \;=\; A_{g \in \mathcal{G}}\bigl[\,\phi_g(\mathcal{D})\,\bigr] \tag{2}\]
+
+where \(\phi_g(\mathcal{D})\) is some per-group measurement --- the share of group-relevant passages belonging to \(g\), the proportion of those passages that are favourable, the exposure of \(g\)'s items --- and \(A\) is an aggregation over groups (a count, a deviation from a reference, a difference, a variance). R1 statistics take \(\phi_g\) to be a composition and \(A\) to be a deviation or a count; R2 statistics take \(\phi_g\) to be a stance proportion and \(A\) to be a deviation, a difference or an extremeness.
+
+This form is useful because it exposes exactly where an adversary can act. An attack on a fairness metric has two available moves and only two: leave the aggregate \(A\) where it is while moving \(\phi_g\), or move \(A\) in a direction the defender reads as harmless. Every attack we study does the first. The consequence is a taxonomy of three failure modes, and they are the reason the experiments in §5 come out as they do.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2500}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Failure mode
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Mechanism
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Which \(A\) is exposed
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Where we observe it
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+\textbf{F1 --- balanced count} & The injection contributes equally to every group, so any aggregate over group counts returns its clean value & any count or share across groups & §5.1, §5.2 (R1 statistics) \\
+\textbf{F2 --- preserved nuisance} & A statistic is anchored to a reference the attack does not change, so it reports the component that varies with the query rather than the one that varies with the attack & any deviation from a reference & §3.2, §5.1 (\texttt{stance\_div}, \texttt{stance\_onesided}) \\
+\textbf{F3 --- cancelled shift} & The attack relocates all groups in the same direction, so a difference between groups is unchanged even though every \(\phi_g\) moved a long way & any difference, variance or gap across groups & §5.1, §5.7 (\texttt{stance\_gap} and its generation-layer twin) \\
+\end{longtable}
+}
+
+\textbf{The taxonomy is a test, not a description.} For a candidate statistic \(M\), the three failure modes correspond to three questions that can be asked before any attack is built:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \emph{Does the injection balance the quantity \(M\) counts?} If the attacker's construction is symmetric across groups --- and pairwise poisoning is, because it reuses the legitimate template inventory in matched pairs --- then any counting aggregate is invariant by construction and no amount of data will show the attack.
+\item
+  \emph{Is \(M\) referenced to something the attack preserves?} If the reference is a per-query clean retrieval or a corpus-level rate, the attack leaves it intact by design, and \(M\) measures the query's topic rather than the attacker's skew.
+\item
+  \emph{Is \(M\) an aggregate that cancels a common-mode movement?} A difference or variance across groups is invariant under \(g \mapsto g + c\) for every group at once. An attack that moves all groups together is therefore invisible to it, no matter how large the movement.
+\end{enumerate}
+
+A statistic that survives all three is, in our setting, one that reports \textbf{per-group levels} rather than a difference between them, because that is the only form that is not invariant under at least one of the three moves. §5.1 and §5.7 test this prediction: on the same retrieval conditions where a difference statistics reports a change of 0.002, the per-group levels move by 0.13 and the paired test rejects at \(p < 0.01\). The prediction was made from the form of the statistic, not fitted to those numbers, and §8 records that we violated it ourselves in an earlier version of the generation-layer analysis.
+
+\textbf{The taxonomy is testable against known ground truth, and we ran that test.} A taxonomy of failure modes is only worth stating if the statistics it indicts are otherwise sound: if they did not respond to a real composition change either, the finding would be that the measurement apparatus is broken, not that an adversary defeats it. We therefore ran a positive control on the naturally written corpus, where the true composition is known by construction.
+
+The control holds the corpus size fixed at 17,792 passages and \textbf{swaps} passages between the two groups of a balanced stratum, so the retrieval pool and the score threshold do not move and composition is the only variable. It changes by a known number of passages, in a known direction, and is reversed in the last row.
+
+\textbf{Table 1.} Responsiveness control. Corpus size constant; only group composition changes. \texttt{corpus\%woman} is the true share after the swap; the remaining columns are the statistics under test.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1667}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Variant
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{corpus\%woman}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{drift\_tv}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{drift\_js}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{stance\_div}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\texttt{stance\_onesided}
+\end{minipage} \\
+\midrule\noalign{}
+
+\bottomrule\noalign{}
+
+baseline (balanced) & 0.500 & 0.0000 & 0.0000 & 0.2925 & 0.4753 \\
+swap 500 man\(\rightarrow\)woman & 0.580 & 0.0264 & 0.0372 & 0.2876 & 0.4711 \\
+swap 1500 man\(\rightarrow\)woman & 0.739 & 0.0660 & 0.0809 & 0.2854 & 0.4694 \\
+swap 3000 man\(\rightarrow\)woman & 0.978 & 0.0924 & 0.1062 & 0.2854 & 0.4694 \\
+\textbf{swap 3000 woman\(\rightarrow\)man} & \textbf{0.022} & \textbf{0.0569} & 0.0532 & 0.2851 & 0.4691 \\
+\end{longtable}
+}
+
+Two conclusions, and they are what make the negative results interpretable rather than merely negative. First, \textbf{\texttt{drift\_tv} and \texttt{drift\_js} are working instruments}: they rise monotonically with a real composition change and respond to its direction. The R1 statistic is not broken; it is \emph{specifically} invariant to an injection that balances group counts, which is exactly what F1 predicts and what §5.2 measures. Second, \textbf{the two reference-based stance statistics barely move even here} --- \texttt{stance\_div} changes by 0.007 across a composition swing from 0.022 to 0.978 --- which is independent confirmation of F2 on data whose ground truth is known by construction rather than inferred from an attack.
+
+The contrast is the paper's central claim in one table: the same statistics that detect a 3000-passage composition change with \(p \to 0\) detect a fully adversarial injection not at all.
+
+\textbf{What the taxonomy does not claim.} It is not a claim that no fairness metric can be robust. It is a claim about the class of statistics that appear in this literature, all of which are aggregates of the form (2), together with a constructive statement of what escapes the three modes: report \(\phi_g\) for each \(g\), and report how each moves. That recommendation is cheap, it is what §5.7 does, and it is the difference between detecting the attack and not.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
 \section{Attack and Evaluation Setup}\label{attack-and-evaluation-setup}
 
 \subsection{Corpus}\label{corpus}
@@ -292,9 +405,9 @@ Ground-truth poison labels are used \textbf{only} for the attack-success metrics
 
 \subsection{Pairwise poisoning is an R2 attack, not an R1 attack}\label{pairwise-poisoning-is-an-r2-attack-not-an-r1-attack}
 
-Table 1 reports attack effect with no defense, over 48 queries across four bias strata.
+Table 2 reports attack effect with no defense, over 48 queries across four bias strata.
 
-\textbf{Table 1.} Attack effect without defense.
+\textbf{Table 2.} Attack effect without defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -346,7 +459,7 @@ Three observations.
 
 \subsection{The R1-only defense is inert}\label{the-r1-only-defense-is-inert}
 
-\textbf{Table 2.} Defense comparison under template + projection. \texttt{poison@k} is the adversarial-passage inclusion rate.
+\textbf{Table 3.} Defense comparison under template + projection. \texttt{poison@k} is the adversarial-passage inclusion rate.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -415,7 +528,7 @@ The adaptive attacker defeats every defense. Off-manifold filtering is by a wide
 
 Adding the cross-group R2 constraint substantially improves the R2 statistic. On BM25 the \texttt{stance\_gap} falls from 0.6250 (no defense, and R1-only defense) to \textbf{0.1429} under \texttt{repr\_both} at \(\epsilon = 1.0\) --- a \textbf{77\% reduction}, and to 0.3542 at \(\epsilon = 0.25\). The constraint is doing exactly what it was designed to do.
 
-\textbf{Table 3.} R2 constraint effect vs.~adversarial inclusion (BM25, template + projection).
+\textbf{Table 4.} R2 constraint effect vs.~adversarial inclusion (BM25, template + projection).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -459,7 +572,7 @@ The results above use a controlled corpus whose passages are template-instantiat
 
 \textbf{A note on the injection parameter, because our first attempt was wrong.} An earlier version of this experiment injected a fixed six passages per stratum and concluded that the text-only attack \texttt{}does not transfer'' to natural data. That conclusion was an artefact of the parameter, not a property of the corpus: six passages is roughly 10\% of a small candidate pool but \textasciitilde0.03\% of an 18k-passage corpus, so a fixed count measures corpus size rather than attack strength. Poisoning studies standardly report an \emph{injection rate}; we now do the same, sweeping \(\rho \in \{0.1\%, 0.25\%, 0.5\%, 1\%, 2\%\}\) of corpus size. All results below are at matched \(\rho\).
 
-\textbf{Table 4.} Attack effect vs.~injection rate \(\rho\); no defense; \texttt{poison@k}.
+\textbf{Table 5.} Attack effect vs.~injection rate \(\rho\); no defense; \texttt{poison@k}.
 
 \emph{Controlled corpus (1,824 passages):}
 
@@ -538,7 +651,7 @@ clean & 0 & --- & --- & 0.9326 & 0.5569 \\
 
 \textbf{Finding 5. The projection attack is robust to corpus naturalness.} On the dense back-end, \texttt{poison@k} reaches \textbf{0.903 at 0.1\%} on BBQ and 1.000 by 2\%, with the utility proxy falling from 0.557 to 0.011. The projection operates in embedding space, where the perturbation's advantage does not depend on lexical distinctiveness, so it transfers where the text attack does not. Across both corpora and both injection modes, the projection attack is the only one that is consistently effective.
 
-\textbf{Table 5.} Defense comparison on BBQ under template + projection (dense), by injection rate. \texttt{poison@k}.
+\textbf{Table 6.} Defense comparison on BBQ under template + projection (dense), by injection rate. \texttt{poison@k}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -570,7 +683,7 @@ vanilla
 
 \textbf{The R2 constraint reduces adversarial inclusion on BBQ while the R1 constraint does not, and the pattern holds across the whole rate sweep.} \texttt{repr\_group} is identical to no defense at every rate (0.903 / 0.972 / 0.986 / 0.993 / 1.000), whereas \texttt{repr\_both} is weakly better at every rate, with its absolute advantage growing as the attack strengthens (0.021 at 0.5\%, 0.007 at 2\%) while its R2 advantage is much larger. The effect sizes here are smaller than the fixed-count run reported, and the reason is now clear: that run's comparison was confounded by the injection budget.
 
-\textbf{Table 6.} R2 constraint effect on BBQ (dense, template + projection, \(\rho = 0.5\%\)).
+\textbf{Table 7.} R2 constraint effect on BBQ (dense, template + projection, \(\rho = 0.5\%\)).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}llll@{}}
@@ -629,7 +742,7 @@ The three findings that hold on both corpora and at every injection rate are the
 
 The results so far are measured on our own retrievers. The encoders this literature actually uses differ substantially in how much structure an attacker can exploit, so we evaluate the attack across nine retrieval back-ends: BM25 and a self-contained feature-hashing dense retriever; the learned-sparse retriever SPLADE at two sizes; and the dense semantic encoders the compared work uses --- GTE-base {[}5{]} and its larger sibling GTE-large, Contriever {[}8{]}, and E5-base-v2 {[}4, 6{]} with E5-large-v2. We include SPLADE specifically because it separates two explanations a lexical-versus-semantic comparison cannot: it is sparse like BM25 but learned like a neural encoder. E5 receives its required \texttt{query:} / \texttt{passage:} prefixes; omitting them degrades retrieval and would distort the comparison.
 
-\textbf{Table 7.} Projection attack (\texttt{template\_plus\_projection}), \(\rho = 0.5\%\), no defense. The scale column pairs each encoder with its larger sibling from the same family and training recipe.
+\textbf{Table 8.} Projection attack (\texttt{template\_plus\_projection}), \(\rho = 0.5\%\), no defense. The scale column pairs each encoder with its larger sibling from the same family and training recipe.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -671,7 +784,7 @@ E5-base-v2 & dense semantic & 110M & 0.4000 & 1.0000 & 1.000 \\
 
 Every back-end is attacked, and the R2 gap saturates at its maximum for all but BM25. The dense encoders' R1 drift (0.37--0.47) is \textbf{2.3\(\times\)--2.9\(\times\)} that of BM25 (0.16): the projection attack perturbs group composition \emph{more} in a continuous semantic space, the opposite of what we expected when adding this experiment.
 
-\textbf{Table 8.} Text-only (lexical) attack, \(\rho = 0.5\%\) and \(2\%\), no defense. This is where the back-ends separate.
+\textbf{Table 9.} Text-only (lexical) attack, \(\rho = 0.5\%\) and \(2\%\), no defense. This is where the back-ends separate.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -715,11 +828,11 @@ Three observations, and they are the finding.
 
 \textbf{Finding 7. Sparsity, not \texttt{}neuralness'', predicts susceptibility at a fixed size, but it is a correlate rather than a law.} SPLADE learns its term weights --- it is a neural encoder trained on relevance --- yet it is as susceptible as BM25 (0.6250 versus 0.7500), because its representation is still a sparse bag of term weights. The attack raises a passage's score by appending query-aligned terms, which requires the representation to expose \textbf{per-term contributions}: a sparse retriever does that whether or not its weights are learned, and a dense encoder absorbs the appended text into a single vector. SPLADE is in fact the \emph{most} efficiently attacked of the nine on the R2 dimension, reaching the maximum stance gap 1.0000 where BM25 reaches 0.7436 --- its learned weighting evidently concentrates score on exactly the terms the attacker appends. But sparsity is a correlate, not a law, and two cases bound it: Contriever is dense and semantic yet nearly as susceptible as BM25 (0.5625), and GTE-large is dense and semantic yet eight times more susceptible than its own base checkpoint.
 
-\textbf{Finding 11. Susceptibility is not monotone in encoder scale, and scaling can destroy resistance entirely.} Table 8's clearest result is unexpected: GTE-base and E5-base-v2 are equally resistant at base size (both 0.0625 --- the attack succeeds on three of 48 queries), and enlarging both by the same factor of three moves them in \emph{opposite} directions. \textbf{E5-large-v2 becomes more resistant (0.0625 \(\rightarrow\) 0.0000, the attack now fails on every query); GTE-large becomes eight times more susceptible (0.0625 \(\rightarrow\) 0.5000, succeeding on 24 of 48).} SPLADE is susceptible at both sizes with little change (0.6250 \(\rightarrow\) 0.5625). Per-query inclusion is binary, so this is a shift in \emph{how many} queries are compromised, not a drift in a continuous score.
+\textbf{Finding 11. Susceptibility is not monotone in encoder scale, and scaling can destroy resistance entirely.} Table 9's clearest result is unexpected: GTE-base and E5-base-v2 are equally resistant at base size (both 0.0625 --- the attack succeeds on three of 48 queries), and enlarging both by the same factor of three moves them in \emph{opposite} directions. \textbf{E5-large-v2 becomes more resistant (0.0625 \(\rightarrow\) 0.0000, the attack now fails on every query); GTE-large becomes eight times more susceptible (0.0625 \(\rightarrow\) 0.5000, succeeding on 24 of 48).} SPLADE is susceptible at both sizes with little change (0.6250 \(\rightarrow\) 0.5625). Per-query inclusion is binary, so this is a shift in \emph{how many} queries are compromised, not a drift in a continuous score.
 
 \textbf{The mechanism is not geometry.} We tested the obvious explanation and it is wrong, which makes the result more informative. If GTE-large's space were more anisotropic --- vectors collapsed into a narrower cone --- a fixed textual nudge would move rank further, and the finding would reduce to a known property. Measured, GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), effective dimensionality (13.2 both, against 768 and 1024 nominal), and spread of query similarity (0.0860 vs 0.0895); the E5 pair behaves the same (0.8291 / 0.8375; 13.9 / 14.8). What differs is the gain the attack buys:
 
-\textbf{Table 9.} Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, \(\rho = 0.5\%\).
+\textbf{Table 10.} Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, \(\rho = 0.5\%\).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -748,7 +861,7 @@ mean margin (best poison \(-\) threshold) & \textbf{\$-\(0.0075** | **\)-\$0.001
 
 The two encoders place the same injected text at almost the same distance from the query (0.8907 vs 0.8975), and the legitimate competition sits at the same threshold (0.8982 vs 0.8988). The difference is that \textbf{the identical appended vocabulary buys 74\% more similarity on GTE-large (+0.0200 vs +0.0115)}. Because the mean margin is only about \$-\$0.007, a gain difference of +0.0085 carries a large fraction of queries across the threshold --- exactly the 3-to-24 shift. Susceptibility is the interaction between the attack's vocabulary and the encoder's learned weighting of it, and none of the coarse descriptors we tried --- architecture, dimensionality, size, geometry, sparsity --- predicts it.
 
-\textbf{Table 10.} R1-only constraint inertness across encoders and scales. \texttt{template\_plus\_projection}, \(\rho = 0.5\%\); \(\Delta\) = adversarial-passage inclusion minus no defense.
+\textbf{Table 11.} R1-only constraint inertness across encoders and scales. \texttt{template\_plus\_projection}, \(\rho = 0.5\%\); \(\Delta\) = adversarial-passage inclusion minus no defense.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -805,11 +918,11 @@ Every result above is measured at the retrieval layer. That is deliberate --- it
 
 Generator: DeepSeek (\texttt{deepseek-chat} at temperature 0), selected because it is reachable without a proxy from the network this work used. 207 API calls, 49.2k prompt tokens, 125 s of model time.
 
-Read Table C2 and Table 10 together: the same experiment, on the same corpus at the same injection rate, yields a 46\% rise in the absolute gap under one instrument and a rise of 0.0008--0.0018 under the other. We keep both because that discrepancy is itself the finding.
+Read Table C2 and Table 11 together: the same experiment, on the same corpus at the same injection rate, yields a 46\% rise in the absolute gap under one instrument and a rise of 0.0008--0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
 \textbf{Finding 8. On the controlled corpus the retrieval-layer skew propagates to the generated output and replicates across three model families, but it does not survive a naturally written corpus.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ \$-\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-\textbf{Table 11.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
+\textbf{Table 12.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -857,7 +970,7 @@ This vindicates the qualitative claim in Finding 9 --- the skew saturates one gr
 
 \textbf{5.7.1 The same experiment on a naturally written corpus, which does not replicate it.} The section above is measured on the controlled corpus, whose questions presuppose their own answers. That corpus was rendered affordable to improve: encoder throughput on an RTX 5060 is 171x the CPU rate measured here (1079 against 6.3 documents per second), and we verified that the device changes none of the reported retrieval metrics --- all nine attack-by-metric combinations are identical to four decimal places --- so the full 17,792-document BBQ corpus could be used instead of a subsample. It supplies 144 distinct, naturally written questions in place of our 16.
 
-\textbf{Table 15.} The same generation-stage measurement on the full BBQ corpus. 144 queries, four conditions, paired permutation test against \texttt{clean}.
+\textbf{Table 13.} The same generation-stage measurement on the full BBQ corpus. 144 queries, four conditions, paired permutation test against \texttt{clean}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -1082,6 +1195,20 @@ We report the signal because it is the direction Proposition 1 points to, and be
 \textbf{An error we made twice, and why that is the point.} §3.2 identifies a class of mistakes that is easy to make and hard to notice: R2 statistics evaluated against a per-query clean retrieval, or against a corpus reference, are dominated by topic-conditioned stance variation that the attack preserves, and therefore report a healthy system while the retrieved set is fully adversarial. We made that error, corrected it by adopting the cross-group gap, and then made a second error of the same family one level up in §5.7: the cross-group gap is itself an absolute difference, and it is blind to an attack that relocates both groups rather than separating them. Both errors share a signature that makes them dangerous --- they return a plausible, healthy-looking number rather than an obviously wrong one. We therefore make two recommendations rather than one. Any stance-style metric should be specified together with its reference \emph{and} accompanied by a control showing it responds to a known attack; and where a metric is computed as a difference between two groups, the per-group values should be reported alongside it, because the difference can be flat while both components move a long way.
 
 \textbf{Adversarial evaluation is a measurement problem before it is a defense problem.} Taken together, the failures in this paper --- a composition statistic that counts what the attack balances, a reference-based statistic that measures topic rather than stance, an absolute difference that cancels a joint shift, a self-report attribution probe that a model answers affirmatively by construction, an entailment convention whose reversed form returns zeros, and a null reported without an equivalence bound --- are all failures of instrument rather than of method. None of them would be caught by improving an attack or a defense. We suspect this generalises beyond retrieval fairness: any evaluation whose statistic is an aggregate over the quantity an adversary controls is vulnerable to the same class of error. The mitigation that worked here was mechanical rather than conceptual --- a control that flips the signal and checks the statistic moves, an equivalence bound on every null, and a per-component report for every difference.
+
+\textbf{The three failure modes, and what each one predicts about work we did not run.} §3.4 stated the taxonomy from the form of the statistics; §5 confirmed it on measurements. Collecting the confirmations makes the framework's reach explicit, including for defenses we did not implement.
+
+\emph{F1, balanced count.} Confirmed twice: the R1 statistics are invariant under pairwise injection (§5.1), and the positive control shows the same statistics detect a 3000-passage composition change with the corpus size held fixed (Table 1). So the invariance is a property of the attack, not the instrument. \textbf{The prediction for work we did not run}: any defense whose objective is a group count or share --- the re-ranking of {[}5{]}, the proportion adjustment of {[}6{]}, the embedder control of {[}7{]}, the exposure equalisation of {[}8{]} --- inherits this invariance exactly, without regard to how well it is optimised, because the injection is constructed to satisfy whatever composition the defense prefers. Our measurements on re-implementations of that objective support this and we have no reason to expect a different outcome from a better-optimised version of the same statistic.
+
+\emph{F2, preserved nuisance.} Confirmed twice, and the second confirmation is the stronger one: \texttt{stance\_div} and \texttt{stance\_onesided} are flat across the clean and fully attacked conditions (§5.1), \emph{and} they are flat across the positive control where the true composition swings from 0.022 to 0.978 (Table 1). A statistic that does not move when the ground truth moves will not move for an adversary either. \textbf{The prediction}: any metric anchored to a per-query clean retrieval or a corpus-level rate is measuring the query's topic conditioning, which the attack preserves by construction, so evaluations that report such a metric alongside a clean baseline are reporting a quantity orthogonal to the threat.
+
+\emph{F3, cancelled shift.} Confirmed at two layers, and this is the one we got wrong ourselves: the cross-group gap is blind to the retrieval-layer attack (§5.1) and to the generation-layer attack (§5.7), and on the generation layer our first analysis used it anyway and reported a null. \textbf{The prediction}: any difference, gap or variance across groups is invariant under a common-mode move, so a defense or an evaluation that reports only a gap will under-report any attack that relocates groups together rather than separating them --- which is what a matched-pair injection does by construction.
+
+The three modes also compose, which is why the defense family fails as a family rather than in parts. F1 accounts for the composition-constrained members; §6.4 proves that no refinement along that axis escapes it. F3 accounts for the non-compositional members that report a group difference. And §6.5 shows the remaining mechanisms --- public randomisation and an observable penalty --- fail for a fourth reason that is not a measurement failure at all: an informed attacker optimises the expectation of a public distribution, and treats a computable penalty as a constraint rather than a barrier.
+
+\textbf{The constructive half.} A taxonomy of failure modes is only useful if something escapes it, and the three modes share one structural feature: each is an invariance of an \emph{aggregation} over groups. Reporting the per-group quantities \(\phi_g\) and their paired changes is not invariant under any of the three, because it makes no aggregation claim for the adversary to preserve. That is a cheap change to how a result is reported, it requires no new defense, and §5.7 is an existence proof that it works: on identical retrieval conditions, the aggregated gap moved by 0.002 while the per-group levels moved by 0.13 at \(p < 0.01\). The recommendation is therefore not \texttt{}build a better defense metric'' but \texttt{}stop reporting only the aggregate''.
+
+\textbf{A caveat we insist on.} The per-group report is more sensitive, and sensitivity is not validity. §5.7 also shows that on the controlled corpus the per-group shift is large and replicates across four generators while on the naturally written corpus it largely disappears, and our negative control attributes that to the controlled corpus's questions presupposing their answers. A more sensitive statistic will report a larger effect on an instrument that manufactures one. Sensitivity without a control is how a measurement paper produces a finding that does not exist, and we report both outcomes rather than the favourable one.
 
 \textbf{Limitations.}
 
@@ -1330,7 +1457,7 @@ multi-query consistency & 0.729 & 0.958 & 1.000 & 1.000 & 1.000 & 1.000 & 3rd \\
 \end{longtable}
 }
 
-\textbf{Table C2.} The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 11; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
+\textbf{Table C2.} The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 12; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
