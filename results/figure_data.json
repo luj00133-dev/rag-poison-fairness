@@ -1,0 +1,263 @@
+{
+  "fig4_r1_inertness": {
+    "bm25": {
+      "baseline": 0.75,
+      "series": {
+        "repr_group": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          }
+        ],
+        "repr_stance": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          }
+        ],
+        "repr_both": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 0.75,
+            "delta": 0.0
+          }
+        ]
+      }
+    },
+    "dense": {
+      "baseline": 1.0,
+      "series": {
+        "repr_group": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          }
+        ],
+        "repr_stance": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          }
+        ],
+        "repr_both": [
+          {
+            "eps": 1.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.5,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.25,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.1,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          },
+          {
+            "eps": 0.0,
+            "poison_at_k": 1.0,
+            "delta": 0.0
+          }
+        ]
+      }
+    }
+  },
+  "fig5_aggregate_vs_pergroup": [
+    {
+      "generator": "qwen-turbo",
+      "delta_gap": 0.0008112380914866435,
+      "p_gap": 0.3183,
+      "delta_g1": -0.12967334164484612,
+      "p_g1": 0.0,
+      "delta_g2": 0.13050514420802037,
+      "p_g2": 0.0
+    },
+    {
+      "generator": "qwen-plus",
+      "delta_gap": 0.0018113949801706515,
+      "p_gap": 0.0424,
+      "delta_g1": -0.12795994088456553,
+      "p_g1": 0.0035,
+      "delta_g2": 0.1297813380644944,
+      "p_g2": 0.0015
+    },
+    {
+      "generator": "mistral-7b",
+      "delta_gap": 0.002474944471437368,
+      "p_gap": 0.0414,
+      "delta_g1": -0.1296753201948325,
+      "p_g1": 0.0001,
+      "delta_g2": 0.13218867654504626,
+      "p_g2": 0.0
+    }
+  ],
+  "fig6_encoder_scale": {
+    "GTE": {
+      "base": 0.0625,
+      "large": 0.5
+    },
+    "E5": {
+      "base": 0.0625,
+      "large": 0.0
+    },
+    "SPLADE": {
+      "base": 0.625,
+      "large": 0.5625
+    }
+  },
+  "fig7_responsiveness": {
+    "variant": [
+      "baseline",
+      "swap 500",
+      "swap 1500",
+      "swap 3000",
+      "swap 3000\nreversed"
+    ],
+    "corpus_pct_woman": [
+      0.5,
+      0.58,
+      0.739,
+      0.978,
+      0.022
+    ],
+    "drift_tv": [
+      0.0,
+      0.0264,
+      0.066,
+      0.0924,
+      0.0569
+    ],
+    "drift_js": [
+      0.0,
+      0.0372,
+      0.0809,
+      0.1062,
+      0.0532
+    ],
+    "stance_div": [
+      0.2925,
+      0.2876,
+      0.2854,
+      0.2854,
+      0.2851
+    ],
+    "stance_onesided": [
+      0.4753,
+      0.4711,
+      0.4694,
+      0.4694,
+      0.4691
+    ]
+  }
+}

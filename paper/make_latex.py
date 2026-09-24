@@ -28,6 +28,11 @@ import re
 import subprocess
 import sys
 
+try:
+    from figure_env import normalise_graphic_includes
+except ImportError:  # when run from another directory
+    from .figure_env import normalise_graphic_includes
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "latex")
 
@@ -314,6 +319,11 @@ def postprocess(tex: str) -> str:
     #    and copy-editors expect \bibitem entries.  Rewrite the block between the
     #    References heading and the next section into a thebibliography.
     tex = _convert_bibliography(tex)
+    # figures last: pandoc emits alt={...}, height=\textheight and a
+    # path with directories, none of which the venue classes accept
+    tex, n_figs = normalise_graphic_includes(tex)
+    if n_figs:
+        print("  normalised %d figure include(s)" % n_figs)
     return tex
 
 

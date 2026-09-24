@@ -158,6 +158,52 @@ def render_markdown(md_path, docx_path, title, subtitle=None):
     while i < len(lines):
         line = lines[i].rstrip()
 
+        # figures: ![caption](path){width=NNmm}
+        m_img = re.match(
+            r"^!\[(?P<cap>[^\]]*)\]\((?P<path>[^)]+)\)"
+            r"(?:\{width=(?P<w>[0-9.]+)(?P<u>mm|cm|in)\})?\s*$", line.strip())
+        if m_img:
+            # python-docx hands the path to an opener that does not tolerate the
+            # mixed separators produced by joining a POSIX-style markdown path onto
+            # a Windows directory ("paper\figures/fig_x.pdf"). os.path.exists
+            # accepts that form, so the failure only appears as
+            # UnrecognizedImageError from inside the library. Normalising to an
+            # absolute path with native separators fixes it.
+            # The path in the markdown is relative to the manuscript, not to the
+            # process working directory. Resolving it *before* testing for the PNG
+            # is the whole fix: the earlier version tested the bare relative path,
+            # which only exists when the interpreter happens to be run from the
+            # repository root. Run from anywhere else it silently fell through to
+            # the .pdf, and python-docx cannot read PDF, so the failure surfaced as
+            # UnrecognizedImageError from inside the library rather than as a
+            # missing-file error.
+            src = os.path.join(os.path.dirname(os.path.abspath(md_path)),
+                               m_img.group("path").replace("/", os.sep))
+            cand = os.path.splitext(src)[0] + ".png"
+            if not os.path.exists(cand):
+                cand = src
+            cand = os.path.abspath(cand)
+            print("  [fig] %s -> %s" % (m_img.group("path"),
+                                        os.path.basename(cand)))
+            if os.path.exists(cand):
+                width = 16.0
+                if m_img.group("w"):
+                    v = float(m_img.group("w"))
+                    u = m_img.group("u")
+                    width = v / 10.0 if u == "mm" else (v * 2.54 if u == "in" else v)
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.add_run().add_picture(cand, width=Cm(min(width, 16.0)))
+                cap = doc.add_paragraph()
+                cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r = cap.add_run(m_img.group("cap"))
+                r.italic = True
+                r.font.size = Pt(8.5)
+            else:
+                print("  [warn] figure not found: %s" % cand)
+            i += 1
+            continue
+
         # tables
         if line.startswith("|") and i + 1 < len(lines) and \
            re.match(r"^\|[\s:|-]+\|$", lines[i + 1].strip()):
