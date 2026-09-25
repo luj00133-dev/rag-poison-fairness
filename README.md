@@ -48,6 +48,18 @@ format (40 body + 8 appendix + 3 references, measured by
 `analysis/page_profile.py`), Paper B 12 pp. That script parses real `pdflatex`
 logs; the conversion log from `paper/make_latex.py` is *not* a compile check.
 
+**Citation style.** Paper A's tex uses **author-date** citations, which is what
+IP&M prints: verified against two 2026 articles in the journal through Crossref's
+deposited reference strings ("Aljundi, R., Babiloni, F., ... (2018). Memory aware
+synapses..."). This requires the `authoryear` class option —
+`\documentclass[authoryear,review,3p,times]{elsarticle}` — because loading natbib
+separately clashes and `\biboptions` afterwards has no effect. The conversion from
+the earlier numeric style is scripted
+(`analysis/apply_authoryear_conversion.py`) and checked by
+`analysis/check_authoryear.py`. The markdown source still uses numbered citations,
+since the docx is an internal copy rather than a submission format; the two
+therefore differ in citation style by design.
+
 Section 8's limitations are a summary table in the body, with the full statement
 of each in Appendix D. Ten repeated result tables live in Appendix C. Both moves
 were made to hold the *body* length down while keeping every measurement in the

@@ -1,0 +1,541 @@
+{
+ "1": [
+  "citep",
+  [
+   "lewis2020"
+  ],
+  null,
+  "Retrieval-augmented generation (RAG)"
+ ],
+ "2": [
+  "citep",
+  [
+   "zou2025",
+   "zhang2025"
+  ],
+  null,
+  "large majority of cases"
+ ],
+ "3": [
+  "texcite",
+  [
+   "wang2025"
+  ],
+  "Wang et al.~",
+  "need not target factual correctness"
+ ],
+ "4": [
+  "citep",
+  [
+   "zhao2026"
+  ],
+  null,
+  "equalise group proportions"
+ ],
+ "5": [
+  "citep",
+  [
+   "wu2025"
+  ],
+  null,
+  "group-relevant passages"
+ ],
+ "6": [
+  "citep",
+  [
+   "kim2025a"
+  ],
+  null,
+  "generator's own bias"
+ ],
+ "7": [
+  "citep",
+  [
+   "kim2025b"
+  ],
+  null,
+  "equal exposure"
+ ],
+ "8": [
+  "citep",
+  [
+   "kim2025b"
+  ],
+  null,
+  "aggregate composition"
+ ],
+ "9": [
+  "texcite",
+  [
+   "zou2025"
+  ],
+  "Zou et al.~",
+  "Corpus poisoning against RAG was established by"
+ ],
+ "10": [
+  "citep",
+  [
+   "zhang2025"
+  ],
+  null,
+  "black-box and query-agnostic settings"
+ ],
+ "11": [
+  "citep",
+  [
+   "liang2026"
+  ],
+  null,
+  "knowledge-graph-structured retrieval"
+ ],
+ "12": [
+  "citep",
+  [
+   "ha2025",
+   "liu2025",
+   "edemacu2026"
+  ],
+  null,
+  "multimodal pipelines"
+ ],
+ "13": [
+  "texcite",
+  [
+   "wang2025"
+  ],
+  "Wang et al.~",
+  "rank highly regardless of their text"
+ ],
+ "14": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "targets \\emph{factual} correctness except"
+ ],
+ "15": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "and"
+ ],
+ "16": [
+  "texcite",
+  [
+   "wu2025"
+  ],
+  "Wu et al.~",
+  "defines fairness by the statistic it optimises"
+ ],
+ "17": [
+  "texcite",
+  [
+   "kim2025a"
+  ],
+  "Kim et al.~",
+  "exploration of mitigation strategies"
+ ],
+ "18": [
+  "texcite",
+  [
+   "kim2025b"
+  ],
+  "Kim and Diaz ",
+  "both R1 and R2 are outside their formulation"
+ ],
+ "19": [
+  "texcite",
+  [
+   "zhao2026"
+  ],
+  "Zhao et al.~",
+  "Most closely related is"
+ ],
+ "20": [
+  "texcite",
+  [
+   "kim2025a"
+  ],
+  "Kim et al.~",
+  "Two further works are relevant"
+ ],
+ "21": [
+  "texcite",
+  [
+   "bagwe2025"
+  ],
+  "Bagwe et al.~",
+  "measured along the wrong axis"
+ ],
+ "22": [
+  "texcite",
+  [
+   "dai2024"
+  ],
+  "Dai et al.~",
+  "frame how this work should be read"
+ ],
+ "23": [
+  "texcite",
+  [
+   "hu2024"
+  ],
+  "Hu et al.~",
+  "rather than the statistic"
+ ],
+ "24": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "stable and generalizable defense performance"
+ ],
+ "25": [
+  "year",
+  [
+   "mohanty2026"
+  ],
+  null,
+  "single-stage defenses give limited robustness"
+ ],
+ "26": [
+  "year",
+  [
+   "wu2025"
+  ],
+  null,
+  "comprehensive exploration of strategies"
+ ],
+ "27": [
+  "texcite",
+  [
+   "jacobs2021"
+  ],
+  "Jacobs and Wallach ",
+  "we do not claim it as ours"
+ ],
+ "28": [
+  "texcite",
+  [
+   "ekstrand2022a"
+  ],
+  "Ekstrand et al.~",
+  "tools for making those mismatches explicit"
+ ],
+ "29": [
+  "citep",
+  [
+   "ekstrand2022b"
+  ],
+  null,
+  "alongside the aggregate for this reason"
+ ],
+ "30": [
+  "citep",
+  [
+   "efron1993"
+  ],
+  null,
+  "rather than to a single number, is standard"
+ ],
+ "31": [
+  "citep",
+  [
+   "parrish2022",
+   "nadeem2021"
+  ],
+  null,
+  "template inventories"
+ ],
+ "32": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "the mean query direction, following"
+ ],
+ "33": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "Multi-query consistency"
+ ],
+ "34": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "the encoders GTE-base"
+ ],
+ "35": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "Contriever"
+ ],
+ "36": [
+  "year",
+  [
+   "wang2025",
+   "wu2025"
+  ],
+  null,
+  "E5-large-v2"
+ ],
+ "37": [
+  "skip",
+  [],
+  null,
+  "bootstrap CI collapses to"
+ ],
+ "38": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "published defense family:"
+ ],
+ "39": [
+  "author",
+  [
+   "wu2025"
+  ],
+  null,
+  "under a fairness constraint,"
+ ],
+ "40": [
+  "author",
+  [
+   "kim2025a"
+  ],
+  null,
+  "proportions and ordering,"
+ ],
+ "41": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "embedder group balance,"
+ ],
+ "42": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "multi-query consistency"
+ ],
+ "43": [
+  "citep",
+  [
+   "parrish2022"
+  ],
+  null,
+  "We therefore replicate on \\textbf{BBQ}"
+ ],
+ "44": [
+  "citep",
+  [
+   "zou2025"
+  ],
+  null,
+  "factual-poisoning literature"
+ ],
+ "45": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "GTE-base"
+ ],
+ "46": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "Contriever"
+ ],
+ "47": [
+  "year",
+  [
+   "wang2025",
+   "wu2025"
+  ],
+  null,
+  "E5-base-v2"
+ ],
+ "48": [
+  "texcite",
+  [
+   "kim2025b"
+  ],
+  "Kim \\& Diaz ",
+  "expected-attributed-exposure (EAE-D) statistic of"
+ ],
+ "49": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "the objective of"
+ ],
+ "50": [
+  "author",
+  [
+   "wu2025"
+  ],
+  null,
+  "proportion adjustment of"
+ ],
+ "51": [
+  "year",
+  [
+   "wang2025"
+  ],
+  null,
+  "Multi-query consistency"
+ ],
+ "52": [
+  "citep",
+  [
+   "ekstrand2022b"
+  ],
+  null,
+  "TREC 2022 Fair Ranking Track"
+ ],
+ "53": [
+  "year",
+  [
+   "zhang2025"
+  ],
+  null,
+  "query-agnostic attack"
+ ],
+ "54": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "Concretely,"
+ ],
+ "55": [
+  "author",
+  [
+   "wu2025"
+  ],
+  null,
+  "optimisation,"
+ ],
+ "56": [
+  "author",
+  [
+   "kim2025a"
+  ],
+  null,
+  "proportion adjustment,"
+ ],
+ "57": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "embedder control, and"
+ ],
+ "58": [
+  "author",
+  [
+   "zhao2026"
+  ],
+  null,
+  "the re-ranking of"
+ ],
+ "59": [
+  "author",
+  [
+   "wu2025"
+  ],
+  null,
+  "proportion adjustment of"
+ ],
+ "60": [
+  "author",
+  [
+   "kim2025a"
+  ],
+  null,
+  "embedder control of"
+ ],
+ "61": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "exposure equalisation of"
+ ],
+ "62": [
+  "skip",
+  [],
+  null,
+  "bootstrap CI collapses to"
+ ],
+ "63": [
+  "skip",
+  [],
+  null,
+  "so the CI is"
+ ],
+ "64": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "fair-ranking work we compare against"
+ ],
+ "65": [
+  "author",
+  [
+   "kim2025b"
+  ],
+  null,
+  "attributed exposure"
+ ],
+ "66": [
+  "year",
+  [
+   "wang2025",
+   "kim2025a"
+  ],
+  null,
+  "generator bias"
+ ],
+ "67": [
+  "year",
+  [
+   "wu2025",
+   "kim2025a",
+   "kim2025b"
+  ],
+  null,
+  "Binary groups.} Following"
+ ]
+}
