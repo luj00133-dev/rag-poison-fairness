@@ -43,10 +43,19 @@ retrievers, and the two susceptible ones (BM25, SPLADE) are exactly the sparse
 ones.
 
 Both manuscripts compile to PDF with **zero LaTeX errors and zero undefined
-references** via `paper/compile_papers.py`: Paper A is 51 pp. in the review
-format (40 body + 8 appendix + 3 references, measured by
+references** via `paper/compile_papers.py`: Paper A is 54 pp. in the review
+format (43 body + 8 appendix + 3 references, measured by
 `analysis/page_profile.py`), Paper B 12 pp. That script parses real `pdflatex`
 logs; the conversion log from `paper/make_latex.py` is *not* a compile check.
+
+**Paper A now carries Paper B's positive result.** Paper B's §4 propositions were
+already absorbed by A's §6 (four propositions, including the one on public
+randomisation) and B's reporting protocol overlaps A's §8 protocol, so neither was
+transplanted. What A gained is §5.8: the six-back-end adaptive sweep, the evaluation
+cost of the attack, the finding that only a set-composition constraint retains any
+benefit, and §5.8.1, a six-point reporting protocol. Paper B remains in the
+repository as a separate manuscript; it is now partly superseded.
+`analysis/scope_paperB_merge.py` records what overlaps and what does not.
 
 **Citation style.** Paper A's tex uses **author-date** citations, which is what
 IP&M prints: verified against two 2026 articles in the journal through Crossref's
