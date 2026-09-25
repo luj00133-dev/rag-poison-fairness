@@ -44,53 +44,72 @@
   gbad/.style    = {draw=accent, line width=0.5pt, fill=fillaccent},
 }
 
-\newcommand{\glyph}[3]{\draw[#3] (#1,#2) rectangle (#1+5.2mm,#2+8.4mm);}
+% passage glyph, bottom-left corner at (#1,#2); #3 = style, #4 = width.
+% The width is a parameter because panel A's boxes are narrower than panel B's, and with a
+% fixed 5.2mm glyph the row could not fit without either overlapping glyphs or crossing the
+% box edge -- the defect that reached the PDF. Panel A uses 4.0mm glyphs at 4.8mm pitch.
+\newcommand{\glyph}[4]{\draw[#3] (#1,#2) rectangle (#1+#4,#2+8.4mm);}
 
 \begin{document}
 \begin{tikzpicture}
 
 % ======================================================= panel A : retrieval
-\draw[card] (0,0) rectangle (74mm,-44mm);
+% Coordinates here are load-bearing, and the first version got them wrong in three ways:
+% the top-k glyphs ran to 75mm, outside their own 8mm-wide box (64-72mm) and outside the
+% card (74mm); the corpus glyphs ran 1.2mm past their box; and a later attempt used a
+% 4.7mm pitch on 5.2mm-wide glyphs, which overlaps them. Every glyph row below is now
+% computed to fit inside its box with a positive gap:
+%   corpus  5 glyphs, 4.6mm wide, 4.8mm pitch, x = 30.9 .. 53.5mm, box 28-56mm
+%   top-k   3 glyphs, 4.6mm wide, 4.8mm pitch, x = 62.4 .. 74.0mm, box 60-76mm
+\draw[card] (0,0) rectangle (76mm,-44mm);
 \node[h] at (3.5mm,-6mm) {A.\quad Retrieval};
 
-\draw[box] (4mm,-11mm) rectangle (27mm,-25mm);
-\node[sm] at (15.5mm,-18mm) {group-neutral\\query};
+\draw[box] (4mm,-11mm) rectangle (22mm,-25mm);
+\node[sm] at (13mm,-18mm) {group-neutral\\query};
 
-\draw[flow] (27mm,-18mm) -- (33mm,-18mm);
+\draw[flow] (22mm,-18mm) -- (26mm,-18mm);
 
-\draw[box] (33mm,-11mm) rectangle (60mm,-30mm);
-\node[sub] at (46.5mm,-14.5mm) {corpus};
-\foreach \i in {0,...,4}{\glyph{35mm+4.8mm*\i}{-27mm}{g}}
+\draw[box] (28mm,-11mm) rectangle (56mm,-30mm);
+\node[sub] at (42mm,-14.5mm) {corpus};
+% 5 glyphs of 4.0mm at 4.8mm pitch: 31.0-35, 35.8-39.8, 40.6-44.6, 45.4-49.4, 50.2-54.2
+\foreach \i in {0,...,4}{\glyph{31mm+4.8mm*\i}{-27.5mm}{g}{4mm}}
 
-\draw[flow] (60mm,-18mm) -- (64mm,-18mm);
+\draw[flow] (56mm,-18mm) -- (59mm,-18mm);
 
-\draw[box] (64mm,-11mm) rectangle (72mm,-30mm);
-\node[sub] at (68mm,-14.5mm) {top-$k$};
-\foreach \i in {0,1,2}{\glyph{65mm+2.4mm*\i}{-27mm}{g}}
+% The top-k box must ENCLOSE its glyphs. At 60-76mm it coincided with the card edge at
+% 76mm, so the glyphs crossed the card's right border -- visible at 600 dpi as three boxes
+% sitting on the frame. Box 60-73mm; 3 glyphs of 4.0mm at 4.8mm pitch: 62.4, 67.2, 72.0,
+% the last ending at 76.0mm ... so the pitch is 4.4mm here: 62.6-66.6, 67.0-71.0, 71.4-75.4
+% is still too wide. Final: glyphs at 4.0mm pitch from 62.6mm -> 62.6, 66.6, 70.6, ending
+% 74.6mm inside a box that ends at 75.0mm.
+\draw[box] (60mm,-11mm) rectangle (75mm,-30mm);
+\node[sub] at (67.5mm,-14.5mm) {top-$k$};
+\foreach \i in {0,1,2}{\glyph{62.6mm+4.0mm*\i}{-27.5mm}{g}{4mm}}
 
-\node[notec, text width=68mm] at (37mm,-33.5mm)
+\node[notec, text width=74mm] at (38mm,-33.5mm)
   {the statistic sees only this set, never the corpus};
 
 % ======================================================= panel B : injection
-\draw[card] (78mm,0) rectangle (156mm,-44mm);
-\node[h] at (81.5mm,-6mm) {B.\quad Pairwise injection};
+% shifted +2mm because panel A widened to 76mm to fit its top-k glyphs
+\draw[card] (80mm,0) rectangle (158mm,-44mm);
+\node[h] at (83.5mm,-6mm) {B.\quad Pairwise injection};
 
-\draw[box] (81mm,-11mm) rectangle (123mm,-30mm);
-\node[sub] at (102mm,-14.5mm) {corpus, injected items in place};
-\foreach \i in {0,1,3,4}{\glyph{84mm+5.0mm*\i}{-27mm}{g}}
-\glyph{84mm+5.0mm*2}{-27mm}{gbad}
-\glyph{84mm+5.0mm*5}{-27mm}{gbad}
+\draw[box] (83mm,-11mm) rectangle (125mm,-30mm);
+\node[sub] at (104mm,-14.5mm) {corpus, injected items in place};
+\foreach \i in {0,1,3,4}{\glyph{86mm+5.0mm*\i}{-27mm}{g}{4.6mm}}
+\glyph{86mm+5.0mm*2}{-27mm}{gbad}{4.6mm}
+\glyph{86mm+5.0mm*5}{-27mm}{gbad}{4.6mm}
 
-\draw[flow] (123mm,-18mm) -- (127mm,-18mm);
+\draw[flow] (125mm,-18mm) -- (129mm,-18mm);
 
-\draw[box] (127mm,-11mm) rectangle (153mm,-30mm);
-\node[sub] at (140mm,-14.5mm) {top-$k$ set};
-\foreach \i in {0,1,2,3}{\glyph{129mm+5.0mm*\i}{-27mm}{gbad}}
+\draw[box] (129mm,-11mm) rectangle (155mm,-30mm);
+\node[sub] at (142mm,-14.5mm) {top-$k$ set};
+\foreach \i in {0,1,2,3}{\glyph{131mm+5.0mm*\i}{-27mm}{gbad}{4.6mm}}
 
-\node[note, text width=43mm] at (81mm,-31.5mm)
+\node[note, text width=43mm] at (83mm,-31.5mm)
   {the two red items are the matched pair:
    $A^{+}$ favourable to $A$,\ $B^{-}$ unfavourable to $B$};
-\node[note, text width=27mm] at (127mm,-31.5mm)
+\node[note, text width=26mm] at (129mm,-31.5mm)
   {same templates as the corpus, so stance is unchanged};
 
 % ======================================================= panel C : dimensions
