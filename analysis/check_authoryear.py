@@ -20,7 +20,10 @@ import re
 TEX = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    'paper', 'latex', 'paperA_R1R2.tex')
 
-CITE_COMMANDS = ('citep', 'citet', 'citeyearpar', 'citeauthor')
+# \citeyear is included because two sites need a bare year inside an existing
+# parenthesis; without it in this list, lewis2020 looked uncited and the checker failed a
+# paper that was in fact correct.
+CITE_COMMANDS = ('citep', 'citet', 'citeyear', 'citeyearpar', 'citeauthor')
 
 
 def main():

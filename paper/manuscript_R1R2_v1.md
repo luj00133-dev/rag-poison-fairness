@@ -1,8 +1,8 @@
 # Measuring Retrieval Fairness Under Adversarial Poisoning: Why the Standard Statistics Are Blind, and What to Measure Instead
 
-**Author**: Jiang Lu
+**Author**: Lu Jiang
 **Affiliation**: School of Electronic and Optical Engineering, Nanjing University of Science and Technology
-**Corresponding author**: Jiang Lu (lujiang12@njust.edu.cn; luj00133@gmail.com). ORCID: 0009-0001-0717-2732.
+**Corresponding author**: Lu Jiang (lujiang12@njust.edu.cn; luj00133@gmail.com). ORCID: 0009-0001-0717-2732.
 
 **Target venue**: *Computers & Security* (Q1, CCF-B) — alternative: IEEE TDSC / IEEE TIFS
 
