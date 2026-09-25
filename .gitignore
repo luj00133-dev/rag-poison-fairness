@@ -47,6 +47,13 @@ paper/latex/*.out
 paper/latex/*.pass*.log
 paper/latex/*.body.md
 paper/.texbin
+# standalone figures are compiled from their .tex source in the same directory
+paper/figures/*.log
+paper/figures/*.aux
+# working backups made while editing the sources by hand
+*.bak
+*.bak2
+*.pre-renumber
 
 # One-off patch/build scripts and console output (regenerable)
 paper/patch_*.py

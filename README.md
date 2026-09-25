@@ -43,9 +43,34 @@ retrievers, and the two susceptible ones (BM25, SPLADE) are exactly the sparse
 ones.
 
 Both manuscripts compile to PDF with **zero LaTeX errors and zero undefined
-references** (Paper A ~30 pp, Paper B ~12 pp) via `paper/compile_papers.py`.
-That script parses real `pdflatex` logs; the conversion log from
-`paper/make_latex.py` is *not* a compile check.
+references** via `paper/compile_papers.py`: Paper A is 51 pp. in the review
+format (40 body + 8 appendix + 3 references, measured by
+`analysis/page_profile.py`), Paper B 12 pp. That script parses real `pdflatex`
+logs; the conversion log from `paper/make_latex.py` is *not* a compile check.
+
+Section 8's limitations are a summary table in the body, with the full statement
+of each in Appendix D. Ten repeated result tables live in Appendix C. Both moves
+were made to hold the *body* length down while keeping every measurement in the
+paper; the appendix is where the page count goes as a result.
+
+### Figures
+
+Paper A carries nine figures: four data figures redrawn from committed results
+(`fig_responsiveness`, `fig_r1_inertness`, `fig_encoder_scale`,
+`fig_aggregate_vs_pergroup`) and five conceptual figures that illustrate the
+paper's own framework — `fig_framework_tikz` (the retrieval → injection →
+statistic panel, **drawn in TikZ** so it uses the document font and sets the
+paper's own notation for \(\Delta_{R1}\) and \(\Delta_{R2}\) instead of
+paraphrasing it), `fig_f_f1` / `fig_f_f2` / `fig_f_f3` (the three failure modes,
+composed in the tex with `subcaption` and in the markdown as the pre-composed
+`fig_failure_modes.pdf`), and `fig_probe_commitment` (free-form versus
+forced-choice probe). The remaining four are generated bitmaps; `fig_framework.png`
+is the earlier bitmap of the framework panel, kept only as a spare. The
+conceptual figures carry no measured values, so nothing in them can be read as
+data; every number they illustrate is in a table or in one of the four data
+figures. Figure placement in the tex is checked by
+`analysis/verify_pdf_figures.py`, which reads the PDF's own object stream and the
+compile log rather than trusting a clean compile.
 
 ### Corrections we made to our own results
 

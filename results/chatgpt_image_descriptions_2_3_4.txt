@@ -1,0 +1,103 @@
+==============================================================================
+image (2).png
+==============================================================================
+This is a **two-panel schematic/conceptual diagram** (not a chart, graph, or screenshot). It has a **left panel** and a **right panel**, with a full-width explanatory caption below both. There are no axes, tick marks, legends, or measured data labels.
+
+**Visible text, transcribed exactly as it appears:**
+
+- Left panel:
+  - `group A`
+  - `group B`
+  - `both groups moved`
+  - `equally`
+- Right panel:
+  - `difference between groups`
+- Bottom caption:
+  - `F3  cancelled shift. All groups move`
+  - `together, so a difference between them is unchanged however far they move.`
+
+No other text, numbers, axis labels, ticks, or legend entries are visible. The only numeric character appears in `F3`.
+
+**Layout and reading order:**
+
+- **Left panel:** Two horizontal red arrows point to the right, stacked vertically. The top arrow is beside the label `group A`; the bottom arrow is beside the label `group B`. Below the two arrows is the centered text `both groups moved` followed on the next line by `equally`. The arrows appear equal in length and parallel.
+- **Right panel:** A black-outlined horizontal rectangle is drawn. From about the midpoint of its top edge, a vertical red arrow points upward. Above this arrow is the label `difference between groups`. There is no visible scale or numeric value attached to the arrow.
+- **Bottom caption:** This text spans the full width beneath both panels and begins with `F3  cancelled shift.` It appears to explain both panels together.
+- There are no connecting lines/arrows between the left and right panels; they are separate diagrams linked by the shared caption.
+- Reading order is left-to-right, then the bottom caption: first the `group A` / `group B` arrows and `both groups moved equally`, then the right-hand rectangle with `difference between groups`, then the bottom caption.
+
+**Empirical or conceptual:**
+
+The image is **purely conceptual/illustrative**. It contains no real measured numbers, data points, error bars, sample sizes, or quantitative axis values. It uses red arrows and an outlined rectangle to illustrate a “cancelled shift” idea, not to present empirical results.
+
+**Clipping, garbling, misspelling:**
+
+No text appears clipped, garbled, or misspelled. `cancelled` is spelled with a double “l” (British-style spelling), but it is legible and not an error. All visible text is fully readable.
+==============================================================================
+image (3).png
+==============================================================================
+The image is a **schematic / conceptual diagram**, not a data chart or screenshot. It has **two side-by-side panels** (left and right), separated by a thin vertical black divider line.
+
+**Visible text, transcribed exactly:**
+- “Free-form probe”
+- “no position taken”
+- “takes a position”
+- “reads near zero”
+- “Forced-choice probe”
+- “must choose a side”
+- “reads an effect”
+- “On a naturally written corpus most free-form answers take no position, so no stance change can appear in them. Forcing a choice makes the same effect measurable.”
+
+**Layout and reading order:**
+- **Left panel:** Heading “Free-form probe” at the top. Below it is a 2-row × 5-column array of filled squares: the top row is all gray; the bottom row is gray for the first four columns and black for the fifth column. A bracket under the first four columns is labeled “no position taken”; a smaller bracket under the fifth column is labeled “takes a position.” Below these is a horizontal black line scale with short vertical end ticks and a middle tick; a red line segment slants downward from the left end. To the right of this scale is “reads near zero.”
+- **Right panel:** Heading “Forced-choice probe” at the top. Below it is a 2-row × 5-column array of all black squares. A single bracket spans all five columns and is labeled “must choose a side.” Below this is another horizontal black line scale with end ticks and a middle tick; a red dot lies on the line near the right side, with a red segment slanting down from the dot. To the right of this scale is “reads an effect.”
+- The bottom explanatory caption spans the full width beneath both panels.
+
+**Data status:** The image is **purely conceptual/illustrative**. It does **not** present empirical data, real measured numbers, axes with numeric scales, tick labels, legends, or numeric values. No numeric digits appear anywhere in the image.
+
+**Text quality:** All visible text is legible, correctly spelled, and not clipped or garbled. There are no numbers to transcribe beyond the words “zero” in “reads near zero” and no numeric tick labels.
+==============================================================================
+image (4).png
+==============================================================================
+## 1. Image type and panel count
+
+This is a **schematic diagram** (a conceptual illustration, not a chart or plot). It has **one single panel** — there are no panel labels such as A/B/C and no grid of sub-figures. It is a wide, landscape-format image on a plain white background.
+
+## 2. Complete transcription of visible text
+
+Box and annotation labels, left to right:
+
+- `injected` (below the second box)
+- `injected` (below the fourth box)
+- `retrieved set` (below the curly brace)
+- `attack does not` (first line above the arrow)
+- `move this` (second line above the arrow)
+- `reference` (inside the rounded rectangle)
+- `F2  preserved nuisance. The statistic is anchored to a reference the attack leaves intact, so it reports query-conditioned variation instead.` (caption at the bottom)
+
+There are **no** axis labels, no axis tick values, no legend entries, and **no numeric values** of any kind. "F2" is a label/text token, not a measured number.
+
+## 3. Layout and reading order
+
+The diagram reads **left to right**:
+
+- **Left group:** a horizontal row of five equally sized square outline boxes.
+  - Box 1: solid black outline, empty.
+  - Box 2: dashed dark-red outline, empty.
+  - Box 3: solid black outline, empty.
+  - Box 4: dashed dark-red outline, empty.
+  - Box 5: solid black outline, empty.
+  - The word `injected` sits under box 2 and again under box 4.
+  - A single **curly brace** (opening upward) spans beneath all five boxes, and `retrieved set` is centered below the brace.
+- **Center:** a straight horizontal black arrow points to the right. A **red "X"** mark is drawn across the middle of the arrow shaft (overlapping it), indicating a blocked or prevented action. Two stacked lines of text, `attack does not` / `move this`, sit directly above the arrow.
+- **Right of the arrow:** the arrowhead terminates at a **rounded rectangle** with a light grey fill and black outline, containing the word `reference`.
+- **Far right:** a separate large **rectangle** (black outline) representing a panel. Inside it, near the top edge center, there is a short black vertical tick descending from the top border, from which a **red vertical line** hangs down, ending in a filled **red circular dot** at roughly four-fifths of the panel's height — visually a needle or pendulum anchored to the top of the panel.
+- **Bottom:** a centered two-line caption starting with the bold-looking token `F2`.
+
+Vertical ordering: box row / brace / labels at upper-left, arrow and its annotation at upper-center, `reference` at upper-center-right, needle panel at upper-right, caption at the bottom.
+
+## 4. Empirical vs. conceptual, and text integrity
+
+The image is **purely conceptual** — it shows a schematic of a retrieval pipeline (retrieved set containing injected items, a blocked displacement of a reference, and a needle/statistic anchored to a reference). It presents **no empirical data, no measured values, no uncertainty, and no plotted quantities**; every element is a symbolic diagram rather than data.
+
+Text quality: all text is **legible and complete**; nothing is clipped, garbled, or misspelled. The caption reads as a single sentence fragment starting with the label "F2", followed by two spaces before "preserved nuisance."

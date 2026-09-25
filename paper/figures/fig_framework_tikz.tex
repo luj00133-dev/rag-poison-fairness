@@ -1,0 +1,130 @@
+% Framework figure, drawn in LaTeX/TikZ rather than generated as a bitmap.
+%
+% Why redraw: a bitmap schematic cannot use the manuscript's font, cannot set the
+% paper's own notation (Eq. 1-3), bakes its own explanation into pixels so the figure
+% and the LaTeX caption say the same thing twice, and cannot be edited when a symbol in
+% the text changes. Vector text in the document font fixes all four.
+%
+% Layout is deliberately flat: one tikzpicture, absolute coordinates in mm, no nested
+% pictures and no fit/let computations. A nested version of this figure did not
+% terminate in pgf -- if you extend this file, keep it flat, and keep every
+% anchor=west/north west node's text width inside its card, which is the mistake this
+% figure needed two passes to lose.
+%
+% Design system: rule grey for structure, exactly one accent red for anything the
+% attacker causes, panel headers bold at \small, labels \scriptsize or \tiny, colour
+% never decorative. Panel C draws both bar charts on one axis (11mm = rate 1.0) so the
+% two dimensions can be read against each other.
+%
+% Build:  pdflatex fig_framework_tikz.tex
+% Use:    \includegraphics[width=88mm]{fig_framework_tikz.pdf}
+\documentclass[border=3pt]{standalone}
+\usepackage{tikz}
+\usepackage{amsmath,amssymb}
+\usetikzlibrary{arrows.meta}
+
+\definecolor{accent}{RGB}{178,60,52}
+\definecolor{ink}{RGB}{26,26,26}
+\definecolor{rulegrey}{RGB}{95,95,95}
+\definecolor{fillgrey}{RGB}{233,233,233}
+\definecolor{fillaccent}{RGB}{236,209,206}
+
+\tikzset{
+  card/.style    = {draw=ink, line width=0.9pt, rounded corners=3pt},
+  box/.style     = {draw=rulegrey, line width=0.5pt, rounded corners=1.5pt},
+  flow/.style    = {-{Latex[length=2.0mm,width=1.5mm]}, draw=ink, line width=0.7pt},
+  h/.style       = {font=\small\bfseries, text=ink, anchor=west},
+  sub/.style     = {font=\scriptsize, text=rulegrey, align=center},
+  acc/.style     = {font=\scriptsize, text=accent, align=left, anchor=west},
+  sm/.style      = {font=\scriptsize, text=ink, align=center},
+  eq/.style      = {font=\small, text=ink, align=left, anchor=west},
+  note/.style    = {font=\tiny, text=rulegrey, align=left, anchor=north west},
+  notec/.style   = {font=\tiny, text=rulegrey, align=center, anchor=north},
+  g/.style       = {draw=rulegrey, line width=0.5pt, fill=fillgrey},
+  gbad/.style    = {draw=accent, line width=0.5pt, fill=fillaccent},
+}
+
+\newcommand{\glyph}[3]{\draw[#3] (#1,#2) rectangle (#1+5.2mm,#2+8.4mm);}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ======================================================= panel A : retrieval
+\draw[card] (0,0) rectangle (74mm,-44mm);
+\node[h] at (3.5mm,-6mm) {A.\quad Retrieval};
+
+\draw[box] (4mm,-11mm) rectangle (27mm,-25mm);
+\node[sm] at (15.5mm,-18mm) {group-neutral\\query};
+
+\draw[flow] (27mm,-18mm) -- (33mm,-18mm);
+
+\draw[box] (33mm,-11mm) rectangle (60mm,-30mm);
+\node[sub] at (46.5mm,-14.5mm) {corpus};
+\foreach \i in {0,...,4}{\glyph{35mm+4.8mm*\i}{-27mm}{g}}
+
+\draw[flow] (60mm,-18mm) -- (64mm,-18mm);
+
+\draw[box] (64mm,-11mm) rectangle (72mm,-30mm);
+\node[sub] at (68mm,-14.5mm) {top-$k$};
+\foreach \i in {0,1,2}{\glyph{65mm+2.4mm*\i}{-27mm}{g}}
+
+\node[notec, text width=68mm] at (37mm,-33.5mm)
+  {the statistic sees only this set, never the corpus};
+
+% ======================================================= panel B : injection
+\draw[card] (78mm,0) rectangle (156mm,-44mm);
+\node[h] at (81.5mm,-6mm) {B.\quad Pairwise injection};
+
+\draw[box] (81mm,-11mm) rectangle (123mm,-30mm);
+\node[sub] at (102mm,-14.5mm) {corpus, injected items in place};
+\foreach \i in {0,1,3,4}{\glyph{84mm+5.0mm*\i}{-27mm}{g}}
+\glyph{84mm+5.0mm*2}{-27mm}{gbad}
+\glyph{84mm+5.0mm*5}{-27mm}{gbad}
+
+\draw[flow] (123mm,-18mm) -- (127mm,-18mm);
+
+\draw[box] (127mm,-11mm) rectangle (153mm,-30mm);
+\node[sub] at (140mm,-14.5mm) {top-$k$ set};
+\foreach \i in {0,1,2,3}{\glyph{129mm+5.0mm*\i}{-27mm}{gbad}}
+
+\node[note, text width=43mm] at (81mm,-31.5mm)
+  {the two red items are the matched pair:
+   $A^{+}$ favourable to $A$,\ $B^{-}$ unfavourable to $B$};
+\node[note, text width=27mm] at (127mm,-31.5mm)
+  {same templates as the corpus, so stance is unchanged};
+
+% ======================================================= panel C : dimensions
+\draw[card] (0,-48mm) rectangle (160mm,-96mm);
+\node[h] at (3.5mm,-54mm)
+  {C.\quad The two dimensions, and what the attack does to each};
+
+\draw[rulegrey, line width=0.4pt] (80mm,-58mm) -- (80mm,-93mm);
+
+% ---- R1, left half.  Both panels share one axis: 11mm of bar height = rate 1.0.
+\node[h] at (5mm,-62mm) {R1\quad group composition};
+\node[eq] at (5mm,-67.5mm)
+  {$\Delta_{\mathrm{R1}}=\tfrac12\sum_{g}\bigl|P_{\mathrm{grp}}(g)-P^{*}_{\mathrm{grp}}(g)\bigr|$};
+\node[note, text width=72mm] at (5mm,-70.5mm)
+  {composition of the retrieved set against the balanced reference};
+\draw[fill=fillgrey, draw=rulegrey, line width=0.4pt] (7mm,-90mm) rectangle (19mm,-79mm);
+\draw[fill=fillgrey, draw=rulegrey, line width=0.4pt] (25mm,-90mm) rectangle (37mm,-79mm);
+\node[sub] at (13mm,-92mm) {group $A$};
+\node[sub] at (31mm,-92mm) {group $B$};
+\node[acc, text width=42mm] at (42mm,-84.5mm)
+  {balanced by construction:\\ $\Delta_{\mathrm{R1}}\approx 0$\\ the attack is invisible};
+
+% ---- R2, right half
+\node[h] at (85mm,-62mm) {R2\quad within-group stance};
+\node[eq] at (85mm,-67.5mm)
+  {$\Delta_{\mathrm{R2}}=\max_{g\neq g'}\bigl|P_{\mathrm{fav}}(g)-P_{\mathrm{fav}}(g')\bigr|$};
+\node[note, text width=72mm] at (85mm,-70.5mm)
+  {stance gap between groups, which the injection relocates};
+\draw[fill=accent, draw=accent] (86mm,-90mm) rectangle (102mm,-79mm);
+\draw[fill=accent, draw=accent] (110mm,-90mm) rectangle (126mm,-84.5mm);
+\node[sub] at (94mm,-92mm) {favourable, $A$};
+\node[sub] at (118mm,-92mm) {favourable, $B$};
+\node[acc, text width=30mm] at (129mm,-84.5mm)
+  {relocated together:\\ $\Delta_{\mathrm{R2}}\to\max$\\ the gap keeps the signal};
+
+\end{tikzpicture}
+\end{document}

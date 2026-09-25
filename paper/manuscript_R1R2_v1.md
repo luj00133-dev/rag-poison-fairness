@@ -78,25 +78,31 @@ Every statistic that aggregates over group composition is blind to this. It repo
 
 ## 2. Related Work
 
-### 2.1 Poisoning attacks on RAG
+### 2.1 Poisoning as a retrieval-quality problem
 
-Corpus poisoning against RAG was established by Zou et al. [2], who showed that a small number of optimised passages can steer a system's answers, and has since been extended to black-box and query-agnostic settings [3], to knowledge-graph-structured retrieval [9], and to multimodal pipelines [10, 11, 12]. A parallel thread targets the retrieval process itself rather than passage content, manipulating embedding space so that injected passages rank highly regardless of their text. Wang et al. [4] combine both: reward-optimised adversarial documents, subspace projection to raise their retrieval probability, and a generate–evaluate–reinject loop that accumulates bias over time.
+**This paper is about what a retrieval evaluation statistic can see, so it belongs to the corpus of work on how retrieved evidence is measured — not to the corpus of attack construction.** Corpus poisoning against RAG was established by Zou et al. [2], who showed that a small number of optimised passages can steer a system's answers, and has since been extended to black-box and query-agnostic settings [3], to knowledge-graph-structured retrieval [9], and to multimodal pipelines [10, 11, 12]. A parallel thread targets the retrieval process itself rather than passage content, manipulating embedding space so that injected passages rank highly regardless of their text. Wang et al. [4] combine both: reward-optimised adversarial documents, subspace projection to raise their retrieval probability, and a generate–evaluate–reinject loop that accumulates bias over time.
 
-All of this work targets *factual* correctness except [4], and [4] itself measures bias by *counting* stereotype-consistent selections rather than by modelling the distribution of stance within groups. Our R2 formulation is a distributional refinement of that measurement, and we show that the refinement changes which defenses can work.
+All of this work targets *factual* correctness except [4], and [4] itself measures bias by *counting* stereotype-consistent selections rather than by modelling the distribution of stance within groups. Our R2 formulation is a distributional refinement of that measurement, and we show that the refinement changes which defenses can work. We adopt this literature's attacks as *instruments*, not as a contribution: what the paper adds is an argument about which statistics can register them, and the evaluation practice that follows. The attacks here are used the way a test collection is used — to make a measurement's blind spots observable, by reporting a change against a control condition rather than a single value. §3.4 and §5.7 return to what that reporting practice should be.
 
-### 2.2 Fairness in RAG
+### 2.2 Fairness as a measurement choice in information access
 
-Fairness in RAG has been studied primarily as a property of the knowledge base and the generator rather than of an adversary. Wu et al. [6] construct scenario-based questions and evaluate group disparity across RAG components, finding that the retriever has the largest influence on both accuracy and fairness, and that utility and fairness trade off. Their mitigation is to adjust the proportion and ordering of group-relevant passages — an R1 intervention — and they state that they do not provide a comprehensive exploration of mitigation strategies. Kim et al. [7] decompose RAG into LLM, embedder, and corpus, show that component biases interact ("bias conflict"), and find that *reverse-biasing* a small embedder can cancel a much larger generator's bias; their bias metric is group membership, so both R1 and R2 are outside their formulation. Kim and Diaz [8] bring fair-ranking machinery to RAG, using stochastic rankers to equalise item-side exposure across repeated requests, and find that fairness and quality need not trade off severely; their fairness unit is the item/provider rather than the social group.
+Fairness in RAG has been studied primarily as a property of the knowledge base and the generator rather than of an adversary, and — this is the point for what follows — each work defines fairness by the statistic it optimises. Wu et al. [6] construct scenario-based questions and evaluate group disparity across RAG components, finding that the retriever has the largest influence on both accuracy and fairness, and that utility and fairness trade off. Their mitigation is to adjust the proportion and ordering of group-relevant passages — an R1 intervention — and they state that they do not provide a comprehensive exploration of mitigation strategies. Kim et al. [7] decompose RAG into LLM, embedder, and corpus, show that component biases interact ("bias conflict"), and find that *reverse-biasing* a small embedder can cancel a much larger generator's bias; their bias metric is group membership, so both R1 and R2 are outside their formulation. Kim and Diaz [8] bring fair-ranking machinery to RAG, using stochastic rankers to equalise item-side exposure across repeated requests, and find that fairness and quality need not trade off severely; their fairness unit is the item/provider rather than the social group.
+
+Two measurement traditions meet here, and it matters which statistics each one supplies. Group fairness in information access is defined over a set — the share of a group in a retrieved set, or its exposure across requests — so its natural statistics are aggregates over groups, and the critiques of those aggregates in the wider fairness literature are critiques of exactly that form (§2.3). Item-side fair ranking instead treats fairness as a property of a distribution over rankings, which is why its machinery is stochastic. Read this way, the RAG fairness results above are not a set of competing defenses but a set of *measurement choices*, each taking a position on what fairness is a property of: Wu et al. take it to be a property of the retrieved set's composition, Kim et al. of component membership, Kim and Diaz of the ranking distribution.
 
 Most closely related is Zhao et al. [5], who model position-wise bias propagation in top-$k$ RAG and formulate fairness-aware retrieval as an optimisation problem over group composition, solved by decomposition. This is the most general R1-constraining defense we are aware of, and we treat it as the representative of the class. Like the others, it assumes no adversary: bias is a property of the corpus and the generator, not something an attacker injects.
 
 Two further works are relevant. Kim et al. [7] observe that "naively increasing fairness is not always the optimal solution" — a conclusion we sharpen by identifying the *specific* reason: the fairness being increased is measured along the wrong axis. Bagwe et al. [13] construct fairness-targeted backdoor attacks that manipulate semantic relationships between groups and biases; their attack relies on a trigger and their objective is attack construction, whereas we study trigger-free injection and its consequences for defense design.
 
+A survey and one further result frame how this work should be read. Dai et al. [14] survey bias and unfairness in retrieval and recommend unified measurement across the pipeline — the direction this paper takes, though their unit of analysis is the system rather than the statistic. Hu et al. [15] find that RAG can undermine fairness even for users who are vigilant about it, so the harm does not require a careless reader; that is the property our adversary exploits deliberately, and it is why we treat the retrieval-layer statistic rather than the user's behaviour as the thing to fix.
+
 ### 2.3 The gap
 
-Across this literature we identify four points of agreement that together define the gap this paper addresses. First, fairness defenses for RAG consistently constrain group composition or item exposure (§2.2). Second, several authors independently report that existing defenses are not robust enough — "further optimization … to achieve more stable and generalizable defense performance" [4]; "single-stage defenses give limited robustness" [14]; "does not provide a comprehensive exploration of strategies to mitigate these unfairnesses" [6]. Third, and structurally, none of the fairness works models an adversary: they study corpora that are *naturally* skewed. Fourth, no work we have found constrains or detects within-group stance.
+Across this literature we identify four points of agreement that together define the gap this paper addresses. First, fairness defenses for RAG consistently constrain group composition or item exposure (§2.2) — that is, they all occupy one cell of the two-dimensional space this paper separates, and the cell they occupy is the one an adversary can leave untouched. Second, several authors independently report that existing defenses are not robust enough — "further optimization … to achieve more stable and generalizable defense performance" [4]; "single-stage defenses give limited robustness" [16]; "does not provide a comprehensive exploration of strategies to mitigate these unfairnesses" [6]. Third, and structurally, none of the fairness works models an adversary: they study corpora that are *naturally* skewed. Fourth, no work we have found constrains or detects within-group stance.
 
 We therefore study the intersection that has not been studied: an *adversary* acting on the axis that *no* defense constrains.
+
+**Where this sits relative to the measurement literature.** Treating an evaluation statistic as a *measurement* of a theoretical construct — and asking whether it can bear the inferential weight placed on it — is not a new idea, and we do not claim it as ours. Jacobs and Wallach [17] show that many documented fairness harms are mismatches between the construct a system is supposed to measure and its operationalisation, and they supply construct-validity tools for making those mismatches explicit. Ekstrand et al. [18] make the same argument inside information access, where an aggregate over groups hides the per-group and per-stakeholder structure that a fairness claim depends on. Our contribution is what happens to that argument once the adversary is put back in. Those works establish that an aggregate may fail to represent its construct; we show that under pairwise poisoning the failure is not a matter of degree or of a badly chosen threshold but an *invariance*, and we identify which invariance each candidate statistic has — F1 for anything counting, F2 for anything referenced, F3 for anything differenced — and therefore which construction defeats it. §3.4 states the three modes, §5 confirms them on measurements, and the positive control in the same section separates an invariant instrument from a broken one. The remaining distance from that literature is also the reason our recommendation is a *reporting* rule rather than a new metric: a per-group report is what construct validity requires when no aggregation is safe.
 
 ---
 
@@ -166,11 +172,15 @@ This form is useful because it exposes exactly where an adversary can act. An at
 | **F2 — preserved nuisance** | A statistic is anchored to a reference the attack does not change, so it reports the component that varies with the query rather than the one that varies with the attack | any deviation from a reference | §3.2, §5.1 (`stance_div`, `stance_onesided`) |
 | **F3 — cancelled shift** | The attack relocates all groups in the same direction, so a difference between groups is unchanged even though every $\phi_g$ moved a long way | any difference, variance or gap across groups | §5.1, §5.7 (`stance_gap` and its generation-layer twin) |
 
+![The paper's framework in one panel. **(A)** A group-neutral query is answered from the top-$k$ retrieved set. **(B)** The attacker injects passages drawn from the legitimate template inventory in matched pairs --- one favourable to group A, one unfavourable to group B --- so the injection is balanced across groups by construction. **(C)** What a statistic then sees: an R1 (group-composition) statistic is left at its clean value because the attack balances the count, whereas an R2 (within-group stance) statistic is skewed because the attack changes the stance the evidence supports. The figure states the two dimensions the paper separates; the three failure modes below are the ways an aggregate over such statistics loses that signal.](figures/fig_framework.png){width=88mm}
+
 **The taxonomy is a test, not a description.** For a candidate statistic $M$, the three failure modes correspond to three questions that can be asked before any attack is built:
 
 1. *Does the injection balance the quantity $M$ counts?* If the attacker's construction is symmetric across groups — and pairwise poisoning is, because it reuses the legitimate template inventory in matched pairs — then any counting aggregate is invariant by construction and no amount of data will show the attack.
 2. *Is $M$ referenced to something the attack preserves?* If the reference is a per-query clean retrieval or a corpus-level rate, the attack leaves it intact by design, and $M$ measures the query's topic rather than the attacker's skew.
 3. *Is $M$ an aggregate that cancels a common-mode movement?* A difference or variance across groups is invariant under $g \mapsto g + c$ for every group at once. An attack that moves all groups together is therefore invisible to it, no matter how large the movement.
+
+![The three failure modes, shown on the same retrieval setting. **(a) F1:** the injection contributes equally to every group, so a counting or composition statistic returns its clean value --- the attack is invisible to it (measured in §5.1 and §5.2). **(b) F2:** the statistic is anchored to a reference the attack does not move, so it reports the component that varies with the query rather than the one that varies with the attack (`stance_div` and `stance_onesided`, §3.2 and §5.1). **(c) F3:** all groups are relocated together, so any difference between groups is unchanged however far the groups move (`stance_gap` and its generation-layer twin, §5.1 and §5.7). The three panels are conceptual and carry no measured values; the corresponding measurements are in the sections named in the table above and in the responsiveness figure.](figures/fig_failure_modes.pdf){width=140mm}
 
 A statistic that survives all three is, in our setting, one that reports **per-group levels** rather than a difference between them, because that is the only form that is not invariant under at least one of the three moves. §5.1 and §5.7 test this prediction: on the same retrieval conditions where a difference statistics reports a change of 0.002, the per-group levels move by 0.13 and the paired test rejects at $p < 0.01$. The prediction was made from the form of the statistic, not fitted to those numbers, and §8 records that we violated it ourselves in an earlier version of the generation-layer analysis.
 
@@ -194,7 +204,7 @@ The contrast is the paper's central claim in one table: the same statistics that
 
 ![Responsiveness control. Corpus size is held constant at 17{,}792 passages and passages are swapped between two well-populated groups, so the retrieval pool and the score threshold do not move and composition is the only variable. The ground-truth group share changes from 0.500 to 0.978 and back to 0.022; the R1 drift statistics track it monotonically and in the right direction, while the two reference-based R2 statistics are flat even here. The indicted statistics are therefore working instruments that are specifically invariant to an injection balancing group counts, not unreliable ones.](figures/fig_responsiveness.pdf){width=140mm}
 
-**What the taxonomy does not claim.** It is not a claim that no fairness metric can be robust. It is a claim about the class of statistics that appear in this literature, all of which are aggregates of the form (2), together with a constructive statement of what escapes the three modes: report $\phi_g$ for each $g$, and report how each moves. That recommendation is cheap, it is what §5.7 does, and it is the difference between detecting the attack and not.
+**What the taxonomy does not claim.** It is not a claim that no fairness metric can be robust. It is a claim about the class of statistics that appear in this literature, all of which are aggregates of the form (2), together with a constructive statement of what escapes the three modes: report $\phi_g$ for each $g$, and report how each moves. That recommendation is cheap, it is what §5.7 does, and it is the difference between detecting the attack and not. Two further bodies of work bound the claim. Within IR evaluation, the practice of reporting a distribution of per-query and per-topic effects rather than a single averaged score is long established — the TREC fair ranking track reports per-query exposure alongside the aggregate for this reason [19] — and the statistical machinery for attaching uncertainty to a difference between conditions, rather than to a single number, is standard [20]. Neither is aimed at an adversary, which is precisely why the invariance matters: those practices make a statistic's uncertainty visible, and an invariant statistic has no uncertainty to report, because its per-query difference is identically zero.
 
 ---
 
@@ -202,7 +212,7 @@ The contrast is the paper's central claim in one table: the same statistics that
 
 ### 4.1 Corpus
 
-We require a corpus in which (i) every passage carries exact group and stance annotations, and (ii) the clean reference for both R1 and R2 is known by construction. Public bias benchmarks provide stereotype/anti-stereotype template inventories [15, 16] but not passage-level scaffolding with a known clean reference, so we build a controlled corpus: for each of four bias strata (gender, disability, age, race), a balanced pool of passages is instantiated from the stratum's template inventory, with an equal number of favourable and unfavourable passages per group and a set of group-neutral passages. Queries are group-neutral by construction — the query text never names a protected group — so any group skew in a retrieved set is attributable to the corpus and not to the question. §5.4 replicates the mechanism findings on the naturally written BBQ corpus, and §8 discusses why no *neutral* retrieval corpus can substitute (§8, Limitation 1).
+We require a corpus in which (i) every passage carries exact group and stance annotations, and (ii) the clean reference for both R1 and R2 is known by construction. Public bias benchmarks provide stereotype/anti-stereotype template inventories [21, 22] but not passage-level scaffolding with a known clean reference, so we build a controlled corpus: for each of four bias strata (gender, disability, age, race), a balanced pool of passages is instantiated from the stratum's template inventory, with an equal number of favourable and unfavourable passages per group and a set of group-neutral passages. Queries are group-neutral by construction — the query text never names a protected group — so any group skew in a retrieved set is attributable to the corpus and not to the question. §5.4 replicates the mechanism findings on the naturally written BBQ corpus, and §8 discusses why no *neutral* retrieval corpus can substitute (§8, Limitation 1).
 
 ### 4.2 Attack
 
@@ -343,21 +353,11 @@ The mechanism is visible in the implementation. The repair pass of §4.3 restore
 
 ### 5.4 Replication on a natural corpus (BBQ)
 
-The results above use a controlled corpus whose passages are template-instantiated, which is a threat to external validity. We therefore replicate on **BBQ** [15], a naturally written bias benchmark, using BBQ's own stereotype annotations to derive stance labels (§4.1) so that no new annotation is introduced. The corpus contains 17,792 passages over 144 group-neutral queries spanning four categories (gender, disability, age, race/ethnicity).
+The results above use a controlled corpus whose passages are template-instantiated, which is a threat to external validity. We therefore replicate on **BBQ** [21], a naturally written bias benchmark, using BBQ's own stereotype annotations to derive stance labels (§4.1) so that no new annotation is introduced. The corpus contains 17,792 passages over 144 group-neutral queries spanning four categories (gender, disability, age, race/ethnicity).
 
 **A note on the injection parameter, because our first attempt was wrong.** An earlier version of this experiment injected a fixed six passages per stratum and concluded that the text-only attack "does not transfer" to natural data. That conclusion was an artefact of the parameter, not a property of the corpus: six passages is roughly 10% of a small candidate pool but ~0.03% of an 18k-passage corpus, so a fixed count measures corpus size rather than attack strength. Poisoning studies standardly report an *injection rate*; we now do the same, sweeping $\rho \in \{0.1\%, 0.25\%, 0.5\%, 1\%, 2\%\}$ of corpus size. All results below are at matched $\rho$.
 
-**Table 5.** Attack effect vs. injection rate $\rho$; no defense; `poison@k`.
-
-*Controlled corpus (1,824 passages):*
-
-| ρ | passages/stratum | BM25 `poison@k` | BM25 `stance_gap` | dense `poison@k` | dense `stance_gap` |
-|---|---|---|---|---|---|
-| clean | 0 | — | **0.0000** | — | **0.0000** |
-| 0.1% | 2 | **0.6875** | 0.5417 | 0.4375 | 0.2833 |
-| 0.25% | 5 | 0.750 | 0.6250 | 0.625 | 0.5000 |
-| 1% | 18 | 0.750 | 0.7692 | 0.625 | 0.6111 |
-| 2% | 36 | 0.750 | 0.7000 | 0.625 | 0.6667 |
+The sweep itself is in Appendix C, Table C6.
 
 *BBQ (17,792 passages):*
 
@@ -386,13 +386,7 @@ The results above use a controlled corpus whose passages are template-instantiat
 
 **The R2 constraint reduces adversarial inclusion on BBQ while the R1 constraint does not, and the pattern holds across the whole rate sweep.** `repr_group` is identical to no defense at every rate (0.903 / 0.972 / 0.986 / 0.993 / 1.000), whereas `repr_both` is weakly better at every rate, with its absolute advantage growing as the attack strengthens (0.021 at 0.5%, 0.007 at 2%) while its R2 advantage is much larger. The effect sizes here are smaller than the fixed-count run reported, and the reason is now clear: that run's comparison was confounded by the injection budget.
 
-**Table 7.** R2 constraint effect on BBQ (dense, template + projection, $\rho = 0.5\%$).
-
-| Defense | ε | `stance_gap` (R2) | `poison@k` |
-|---|---|---|---|
-| vanilla | — | 0.9696 | 0.986 |
-| `repr_group` (R1 only) | 0.0 | 0.9515 | 0.986 |
-| **`repr_both` (R1+R2)** | **1.0** | **0.5250** | **0.972** |
+The operating-point comparison is in Appendix C, Table C7.
 
 The R2 constraint roughly halves the stance gap (0.9696 → 0.5250) at this operating point while the R1 constraint leaves it essentially unchanged (0.9515). This is the clearest form of the paper's central claim on natural data: **the R1 dimension is inert and the R2 dimension is where the effect lives.**
 
@@ -457,30 +451,11 @@ Three observations, and they are the finding.
 
 **The mechanism is not geometry.** We tested the obvious explanation and it is wrong, which makes the result more informative. If GTE-large's space were more anisotropic — vectors collapsed into a narrower cone — a fixed textual nudge would move rank further, and the finding would reduce to a known property. Measured, GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), effective dimensionality (13.2 both, against 768 and 1024 nominal), and spread of query similarity (0.0860 vs 0.0895); the E5 pair behaves the same (0.8291 / 0.8375; 13.9 / 14.8). What differs is the gain the attack buys:
 
-**Table 10.** Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, $\rho = 0.5\%$.
-
-| Quantity | GTE-base | GTE-large |
-|---|---|---|
-| mean cosine gain of poison over clean | **+0.0115** | **+0.0200** |
-| mean best-poison cosine | 0.8907 | 0.8975 |
-| mean top-5 clean threshold | 0.8982 | 0.8988 |
-| mean margin (best poison − threshold) | **−0.0075** | **−0.0013** |
-| `poison@k` | 0.0625 | 0.5000 |
+The decomposition is in Appendix C, Table C8.
 
 The two encoders place the same injected text at almost the same distance from the query (0.8907 vs 0.8975), and the legitimate competition sits at the same threshold (0.8982 vs 0.8988). The difference is that **the identical appended vocabulary buys 74% more similarity on GTE-large (+0.0200 vs +0.0115)**. Because the mean margin is only about −0.007, a gain difference of +0.0085 carries a large fraction of queries across the threshold — exactly the 3-to-24 shift. Susceptibility is the interaction between the attack's vocabulary and the encoder's learned weighting of it, and none of the coarse descriptors we tried — architecture, dimensionality, size, geometry, sparsity — predicts it.
 
-**Table 11.** R1-only constraint inertness across encoders and scales. `template_plus_projection`, $\rho = 0.5\%$; Δ = adversarial-passage inclusion minus no defense.
-
-| Retriever | `repr_group` ε=0 | `repr_both` ε=0 | Δ |
-|---|---|---|---|
-| BM25 | 0.7500 | 0.7500 | **0.0000** |
-| dense (hash) | 1.0000 | 1.0000 | **0.0000** |
-| SPLADE distil | 0.7500 | 0.7500 | **0.0000** |
-| SPLADE large | 1.0000 | 1.0000 | **0.0000** |
-| GTE-base | 1.0000 | 1.0000 | **0.0000** |
-| GTE-large | 1.0000 | 1.0000 | **0.0000** |
-| E5-base-v2 | 1.0000 | 1.0000 | **0.0000** |
-| E5-large-v2 | 1.0000 | 1.0000 | **0.0000** |
+The cross-back-end cut is in Appendix C, Table C9.
 
 **Finding 6b. The R1 constraint is inert across every encoder and at every scale tested.** In all sixteen constrained configurations the difference is exactly zero. The projection attack reaches complete inclusion on seven of the eight, so the constraint is inert in the worst case rather than a marginal one. This is the third independent setting in which the inertness holds, after the two corpora and the injection-rate sweep.
 
@@ -509,7 +484,7 @@ Generator: DeepSeek (`deepseek-chat` at temperature 0), selected because it is r
 
 
 
-Read Table C2 and Table 11 together: the same experiment, on the same corpus at the same injection rate, yields a 46% rise in the absolute gap under one instrument and a rise of 0.0008–0.0018 under the other. We keep both because that discrepancy is itself the finding.
+Read Table C2 and Table C9 together: the same experiment, on the same corpus at the same injection rate, yields a 46% rise in the absolute gap under one instrument and a rise of 0.0008–0.0018 under the other. We keep both because that discrepancy is itself the finding.
 
 **Finding 8. On the controlled corpus the retrieval-layer skew propagates to the generated output and replicates across three model families, but it does not survive a naturally written corpus.** We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring `P(entail | answer, favourable) − P(entail | answer, unfavourable)`, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
@@ -540,6 +515,8 @@ This vindicates the qualitative claim in Finding 9 — the skew saturates one gr
 |---|---|---|
 | controlled | 0.1555 | 84.4% |
 | **BBQ (full)** | **0.0071** | **99.0%** |
+
+![The instrument, not the corpus, was the reason the natural corpus appeared to show nothing. **Left:** with a free-form probe most answers take no position at all --- on the full BBQ corpus 99.0% of them, against 84.4% on the controlled corpus --- so the statistic reads near zero under every condition and no effect of any size could have appeared in it. **Right:** a forced-choice probe makes the same answers commit to a side, and on identical retrieval conditions it reads an effect, with five per-group shifts at $p < 0.05$ for one generator (Table 14). The panels are conceptual and carry no measured values; the commitment values they illustrate are in Table 13.](figures/fig_probe_commitment.png){width=140mm}
 
 The gap is 22×, and it means the free-form statistic on BBQ is near zero under *every* condition: the effect we were looking for could not have appeared there. This also bounds the controlled-corpus result more honestly than we previously stated it — 84.4% of those answers are non-committal too, so the shift reported above rests on roughly a sixth of them.
 
@@ -699,7 +676,7 @@ At a threshold of the clean 90th percentile, detection rate is 1.000 with 3.9% (
 **This result must not be taken at face value, and we state the reason.** The clean 90th percentile is **0.0000** — 90% of legitimate passages are retrieved by *no* query. That is not a property of realistic corpora; it is a property of our construction, in which injected passages share a fixed query-aligned vocabulary that legitimate passages lack. The separation may therefore measure *lexical overlap with our query template set* rather than *retrieval optimisation*. In a natural corpus this signal may vanish entirely.
 
 **Falsification protocol.** Before this can be claimed as a defense:
-1. replicate on a natural corpus (TREC 2022 Fair Ranking Track [17], Natural Questions) with injected passages generated by a query-agnostic attack [3] so that no shared vocabulary is introduced by construction;
+1. replicate on a natural corpus (TREC 2022 Fair Ranking Track [19], Natural Questions) with injected passages generated by a query-agnostic attack [3] so that no shared vocabulary is introduced by construction;
 2. report the signal's AUC with confidence intervals, and the resulting detection/false-positive trade-off;
 3. verify that threshold selection does not require knowledge of the injection rate.
 
@@ -729,25 +706,19 @@ The three modes also compose, which is why the defense family fails as a family 
 
 **A caveat we insist on, and a worked example of it from this paper.** The per-group report is more sensitive than an aggregate, and sensitivity is not validity. The clearest example is our own: the free-form probe reports a large, replicated per-group shift on the controlled corpus and nothing on the naturally written one, and it would have been easy to publish that as a finding about corpora. It is not — the probe scores answers that take no position in 99.0% of cases on natural text, so it was structurally incapable of reporting the effect that a commitment-forcing probe then found there. An instrument that manufactures commitment will report an effect where there is none; an instrument that suppresses it will report a null that does not exist. We hit the second case, and the control that caught it was measuring commitment rather than trusting the margin. We therefore report both probes and both corpora, and treat the disagreement between them as the result.
 
-**Limitations.**
+**Limitations.** Ten constraints bound what this study establishes. The table states
+each one and what it costs; the full statement of each, with the measurements behind it,
+is in Appendix D.
 
-1. **The measurement requires group- and stance-annotated passages, and natural retrieval corpora do not have them.** This is the binding constraint on this line of work, and it is worth stating plainly rather than as a data-collection to-do. R1 needs a group label per passage; R2 needs a stance label per passage. NQ and MS MARCO — the standard neutral retrieval corpora — carry neither, and stance toward a social group is not a property that can be inferred from a neutral passage, because a neutral passage does not express one. We therefore could not substitute a neutral corpus for BBQ, and neither can the defenses we evaluate: an R1-constraining defense needs the same group labels, and an R2-constraining defense needs labels that no existing neutral corpus provides. The framework's applicability is thus bounded by annotation, not by computation, and constructing a neutral, group- and stance-annotated retrieval benchmark is the field's outstanding infrastructure problem. Our two corpora bound the behaviour from the two sides available today: a template-controlled corpus with an exactly known reference, and a naturally written bias benchmark. We flag this as an open problem rather than a gap in the present study.
-2. **Neither corpus is a neutral retrieval benchmark, and they disagree in two respects.** The text-only template attack is effective only on the controlled corpus (Finding 4), and the R2 constraint reduces adversarial inclusion only on BBQ. We report both conditions rather than selecting the favourable one. The mechanism behind the first disagreement is identified (lexical room depends on corpus repetitiveness), which we regard as a finding rather than a gap; the second is a smaller effect whose magnitude we expect to depend on the corpus's pre-existing stance imbalance.
-3. **The absolute R2 metric does not transfer.** `stance_gap` is exactly 0 on the balanced controlled corpus and near its maximum (0.9326) on BBQ *before any attack*, where it is dominated by the benchmark's own stereotyped construction. On such a corpus only the change from the clean baseline is informative. A corpus-relative normalisation of $\Delta_{\text{R2}}$ would be preferable and we leave it open.
-4. **Injection budget is a rate, not a count.** We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
-5. **Retrieval back-ends, and what the scale check changed.** Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders — GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as "to be added" and *predicted* that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since **GTE-base → GTE-large moves from 0.0625 to 0.5000 — an eight-fold increase in susceptibility within a single encoder family and training recipe.** That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies **nine-fold across the base dense encoders alone** (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against [8]. Third, and most importantly, **even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively** — so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M → 335M for GTE and E5; 66M → 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a "large SPLADE is no more robust" conclusion carries correspondingly less weight.
-6. **The generation-stage evaluation is multi-generator and multi-probe, and the probes disagree in a way that is itself a result.** §5.7 reports four generators spanning three model families (API-served Qwen and DeepSeek, plus open-weight Mistral-7B run locally in 4-bit on an RTX 5060), two corpora, and two probes: free-form answers scored by entailment, and a forced-choice probe scored by the choice it forces. Three limits remain. (i) *Retrieval conditions are measured on one backbone* (GTE-base), held fixed across the generation-stage comparison, so the encoder-dependence of §5.5 is not varied here. (ii) *The two probes support different conclusions, and the freer one is the weaker.* Free-form answers commit to a position in only 15.6% of cases on the controlled corpus and 1.0% on BBQ, so that probe is near-blind on natural text; the forced-choice probe detects the effect on both. We report both rather than the favourable one, because a probe that manufactures commitment can also manufacture an effect, and §5.7.1 records the checks we ran to establish that the forced choice tracks statement content rather than option position (100% versus 35% agreement with the placement of the favourable statement). (iii) *The effect is generator-dependent.* One of three generators carries most of the signal on both corpora, a second shows a single group on BBQ, and the third shows none reaching significance there. A result of this shape is not summarisable as one number, and we no longer report one. Whether a larger generator would show more or less is an open question: we ran one open-weight model and three API models, and the scale of the API models is not controlled.
-
-   *Query diversity.* The controlled corpus's 48 retrieval slots correspond to only **16 distinct question texts** (each repeated 3×, once per paraphrase variant). Any statistic aggregated over the 48 is therefore aggregated over 16 questions, and the effective sample size is a third of what the table suggests. The natural-corpus evaluation does not have this problem (BBQ supplies 144 distinct, naturally written questions), which is an additional reason to prefer it for output-level measurement rather than treating it as a replication check.
-
-   *The generator does not follow an inverted context on this corpus.* We ran a negative control that flips the stance of every retrieved passage while holding the question fixed. On the controlled corpus the answer was **unchanged in 6 of 6 cases under inversion**, but **changed in 6 of 6 cases when the context was replaced by unrelated passages** or removed entirely. The generator is therefore reading the context at the level of *topic* — it knows a question about an engineering evaluation calls for naming an engineer — but not at the level of *stance*, and the answers are determined by the question's framing rather than by the evidence on trial. This is a property of a template corpus whose questions presuppose their own answer, and it means a null propagation result on that corpus would have been uninformative. The forced-choice probe reported in §5.7 avoids the problem by construction, which is why it is the primary measurement; we now report the control because the free-form probe alone cannot distinguish "no propagation" from "generator ignores stance".
-
-   *A metric we reported as failed is now fixed, and the fix is not cosmetic.* The per-passage attribution probe asked the generator itself whether its answer relied on a given passage; the judge answered YES almost always and the resulting EAE-D was a constant 1.000 in every condition. The cause is direction: an NLI model must be asked whether the **passage entails the answer**, not the reverse. Calibrated on this corpus, a passage the answer used scores 0.996 in the correct direction and 0.008 in the reversed one, and an unused passage scores 0.000 in both — so the reversed form returns noise rather than an obviously wrong value. §5.7's EAE-D figures should be read as produced by the probe we have now replaced.
-
-   A multi-generator evaluation with entailment-based attribution is in progress and is not reported here; we do not otherwise report attributed exposure [8] or generator bias [4, 7].
-7. **Binary groups.** Following [6, 7, 8], we use two groups per stratum. Extension to $|\mathcal{G}| > 2$ is mechanical for R1 and R2 but is not evaluated here. We note that the race/ethnicity category of BBQ is markedly imbalanced in our corpus build (960 passages about the protected group versus 88 about the non-protected group), which is itself a property of the benchmark worth flagging for anyone reusing it.
-
----
+| # | Limitation | What it constrains, or what already handles it |
+|---|---|---|
+| 1 | **Group- and stance-annotated passages are required, and neutral retrieval corpora do not carry them** | The binding constraint on this whole line of work: the framework's applicability is bounded by annotation, not computation. R1 needs a group label per passage and R2 a stance label, and no standard neutral corpus (NQ, MS MARCO) has either, nor can stance toward a group be inferred from a neutral passage. Described in full in Appendix D.1. |
+| 2 | **Neither corpus is a neutral retrieval benchmark, and they disagree in two respects** | The text-only attack works only on the controlled corpus; the R2 constraint reduces inclusion only on BBQ. Both conditions are reported rather than the favourable one, and the mechanism behind the first disagreement is identified (§5.4). |
+| 3 | **The absolute R2 metric does not transfer across corpora** | `stance_gap` is exactly 0 on the balanced controlled corpus but 0.9326 on BBQ *before any attack*. Only the change from the clean baseline is informative there, and §5.4 relies on the change throughout. |
+| 4 | **Injection budget must be reported as a rate, not a count** | A fixed count measures corpus size rather than attack strength. §5.4 sweeps $\rho \in \{0.1\%, \dots, 2\%\}$; readers comparing against absolute counts must convert. |
+| 5 | **Nine retrieval back-ends, and the scale check changed the conclusion** | GTE-base → GTE-large moves susceptibility from 0.0625 to 0.5000 within one family and recipe, so a single-encoder robustness claim reports an unmeasured checkpoint property (§5.5). Contriever is not swept at large scale and multilingual or instruction-tuned embedders are not tested. |
+| 6 | **The generation-stage evaluation is multi-generator and multi-probe, and the probes disagree** | Three sub-limits, each with a measurement behind it: retrieval conditions are fixed to one backbone; the free-form probe commits to a position in only 15.6\% (controlled) and 1.0\% (BBQ) of cases, which is why the forced-choice probe is primary; and the effect is generator-dependent. Appendix D.6 also records the inverted-context negative control and a corrected attribution metric. |
+| 7 | **Binary groups: $\vert\mathcal{G}\vert = 2$ throughout** | Extension to $\vert\mathcal{G}\vert > 2$ is mechanical for R1 and R2 but is not evaluated here. BBQ's race/ethnicity category is also markedly imbalanced in our build (960 vs 88 passages). |
 
 ## 9. Conclusion
 
@@ -778,6 +749,8 @@ We have reported an exploratory provenance signal in the direction the protocol 
 ## Data and Code Availability
 
 The implementation, configuration files, and the scripts that regenerate every number in §5 are released at **https://github.com/luj00133-dev/rag-poison-fairness**. The controlled corpus is generated deterministically from a fixed seed and requires no dataset download; the BBQ corpus is reconstructed from the official benchmark files by a released loader that derives stance labels from BBQ's own annotations. §5.7 additionally requires a DeepSeek API key, supplied through the `DEEPSEEK_API_KEY` environment variable and never stored in the repository.
+
+**Note for double-anonymized submission.** The repository URL above carries the author's username, and the submitting author's email shares that username. For any venue using double-anonymized review, submit this section with the URL replaced by `[anonymized repository]`, keep the software-availability details, and restore the link in the camera-ready version. Nothing else in the manuscript identifies the author.
 
 **How to regenerate.**
 
@@ -937,9 +910,81 @@ Tables moved out of the main body to keep it readable. Each is referenced from t
 | template_plus_projection | dense | R2 stance gap | 1.0000 | [1.0000, 1.0000] |
 | template_plus_projection | dense | R1 drift (TV) | 0.1625 | [0.1187, 0.2083] |
 
+**Table C6.** Attack effect vs. injection rate $\rho$; no defense; `poison@k`.
+
+*Controlled corpus (1,824 passages):*
+
+| ρ | passages/stratum | BM25 `poison@k` | BM25 `stance_gap` | dense `poison@k` | dense `stance_gap` |
+|---|---|---|---|---|---|
+| clean | 0 | — | **0.0000** | — | **0.0000** |
+| 0.1% | 2 | **0.6875** | 0.5417 | 0.4375 | 0.2833 |
+| 0.25% | 5 | 0.750 | 0.6250 | 0.625 | 0.5000 |
+| 1% | 18 | 0.750 | 0.7692 | 0.625 | 0.6111 |
+| 2% | 36 | 0.750 | 0.7000 | 0.625 | 0.6667 |
+
+**Table C7.** R2 constraint effect on BBQ (dense, template + projection, $\rho = 0.5\%$).
+
+| Defense | ε | `stance_gap` (R2) | `poison@k` |
+|---|---|---|---|
+| vanilla | — | 0.9696 | 0.986 |
+| `repr_group` (R1 only) | 0.0 | 0.9515 | 0.986 |
+| **`repr_both` (R1+R2)** | **1.0** | **0.5250** | **0.972** |
+
+**Table C8.** Where the GTE scale effect comes from. 36 injected passages, 48 queries, no defense, $\rho = 0.5\%$.
+
+| Quantity | GTE-base | GTE-large |
+|---|---|---|
+| mean cosine gain of poison over clean | **+0.0115** | **+0.0200** |
+| mean best-poison cosine | 0.8907 | 0.8975 |
+| mean top-5 clean threshold | 0.8982 | 0.8988 |
+| mean margin (best poison − threshold) | **−0.0075** | **−0.0013** |
+| `poison@k` | 0.0625 | 0.5000 |
+
+**Table C9.** R1-only constraint inertness across encoders and scales. `template_plus_projection`, $\rho = 0.5\%$; Δ = adversarial-passage inclusion minus no defense.
+
+| Retriever | `repr_group` ε=0 | `repr_both` ε=0 | Δ |
+|---|---|---|---|
+| BM25 | 0.7500 | 0.7500 | **0.0000** |
+| dense (hash) | 1.0000 | 1.0000 | **0.0000** |
+| SPLADE distil | 0.7500 | 0.7500 | **0.0000** |
+| SPLADE large | 1.0000 | 1.0000 | **0.0000** |
+| GTE-base | 1.0000 | 1.0000 | **0.0000** |
+| GTE-large | 1.0000 | 1.0000 | **0.0000** |
+| E5-base-v2 | 1.0000 | 1.0000 | **0.0000** |
+| E5-large-v2 | 1.0000 | 1.0000 | **0.0000** |
+
+---
+
+## Appendix D. Limitations in full
+
+The body states each limitation in one line and what it costs; this appendix states them in full, with the measurements behind each. The numbering matches the body table.
+
+1. **The measurement requires group- and stance-annotated passages, and natural retrieval corpora do not have them.** This is the binding constraint on this line of work, and it is worth stating plainly rather than as a data-collection to-do. R1 needs a group label per passage; R2 needs a stance label per passage. NQ and MS MARCO — the standard neutral retrieval corpora — carry neither, and stance toward a social group is not a property that can be inferred from a neutral passage, because a neutral passage does not express one. We therefore could not substitute a neutral corpus for BBQ, and neither can the defenses we evaluate: an R1-constraining defense needs the same group labels, and an R2-constraining defense needs labels that no existing neutral corpus provides. The framework's applicability is thus bounded by annotation, not by computation, and constructing a neutral, group- and stance-annotated retrieval benchmark is the field's outstanding infrastructure problem. Our two corpora bound the behaviour from the two sides available today: a template-controlled corpus with an exactly known reference, and a naturally written bias benchmark. We flag this as an open problem rather than a gap in the present study.
+2. **Neither corpus is a neutral retrieval benchmark, and they disagree in two respects.** The text-only template attack is effective only on the controlled corpus (Finding 4), and the R2 constraint reduces adversarial inclusion only on BBQ. We report both conditions rather than selecting the favourable one. The mechanism behind the first disagreement is identified (lexical room depends on corpus repetitiveness), which we regard as a finding rather than a gap; the second is a smaller effect whose magnitude we expect to depend on the corpus's pre-existing stance imbalance.
+3. **The absolute R2 metric does not transfer.** `stance_gap` is exactly 0 on the balanced controlled corpus and near its maximum (0.9326) on BBQ *before any attack*, where it is dominated by the benchmark's own stereotyped construction. On such a corpus only the change from the clean baseline is informative. A corpus-relative normalisation of $\Delta_{\text{R2}}$ would be preferable and we leave it open.
+4. **Injection budget is a rate, not a count.** We report an injection rate throughout (§5.4), because a fixed passage count measures corpus size and produced a spurious conclusion in our own earlier experiment. Readers comparing against work that reports absolute counts should convert.
+5. **Retrieval back-ends, and what the scale check changed.** Nine retrievers are evaluated: BM25, a self-contained feature-hashing dense retriever, SPLADE and SPLADE-large, and five dense semantic encoders — GTE-base, GTE-large, Contriever, E5-base-v2 and E5-large-v2 (§5.5, §5.6). An earlier draft of this paper listed the large checkpoints as "to be added" and *predicted* that they would disagree with the base models. We have since measured it and report the correction: the prediction was right in direction and far too weak in magnitude, since **GTE-base → GTE-large moves from 0.0625 to 0.5000 — an eight-fold increase in susceptibility within a single encoder family and training recipe.** That has three consequences for how this study should be read. First, feature-hashing dense retrieval retains the lexical attack surface and should not be read as a stand-in for a semantic encoder. Second, text-attack effectiveness varies **nine-fold across the base dense encoders alone** (Contriever 0.5625 versus GTE-base and E5-base-v2 at 0.0625) and the susceptible one is the encoder used by the fair-ranking work we compare against [8]. Third, and most importantly, **even holding the family and training recipe fixed, changing the checkpoint changes the answer qualitatively** — so a single-encoder robustness claim does not establish how robust a defense is in general. This is a limitation of our study and, we argue, of the standard evaluation protocol in this area. We have not swept Contriever at large scale, nor multilingual or instruction-tuned embedders, and we expect the spread to widen rather than narrow in those directions. Our scale pairs are parameter-matched (110M → 335M for GTE and E5; 66M → 110M for SPLADE), so the SPLADE pair tests a smaller size delta than the other two and a "large SPLADE is no more robust" conclusion carries correspondingly less weight.
+6. **The generation-stage evaluation is multi-generator and multi-probe, and the probes disagree in a way that is itself a result.** §5.7 reports four generators spanning three model families (API-served Qwen and DeepSeek, plus open-weight Mistral-7B run locally in 4-bit on an RTX 5060), two corpora, and two probes: free-form answers scored by entailment, and a forced-choice probe scored by the choice it forces. Three limits remain. (i) *Retrieval conditions are measured on one backbone* (GTE-base), held fixed across the generation-stage comparison, so the encoder-dependence of §5.5 is not varied here. (ii) *The two probes support different conclusions, and the freer one is the weaker.* Free-form answers commit to a position in only 15.6% of cases on the controlled corpus and 1.0% on BBQ, so that probe is near-blind on natural text; the forced-choice probe detects the effect on both. We report both rather than the favourable one, because a probe that manufactures commitment can also manufacture an effect, and §5.7.1 records the checks we ran to establish that the forced choice tracks statement content rather than option position (100% versus 35% agreement with the placement of the favourable statement). (iii) *The effect is generator-dependent.* One of three generators carries most of the signal on both corpora, a second shows a single group on BBQ, and the third shows none reaching significance there. A result of this shape is not summarisable as one number, and we no longer report one. Whether a larger generator would show more or less is an open question: we ran one open-weight model and three API models, and the scale of the API models is not controlled.
+
+   *Query diversity.* The controlled corpus's 48 retrieval slots correspond to only **16 distinct question texts** (each repeated 3×, once per paraphrase variant). Any statistic aggregated over the 48 is therefore aggregated over 16 questions, and the effective sample size is a third of what the table suggests. The natural-corpus evaluation does not have this problem (BBQ supplies 144 distinct, naturally written questions), which is an additional reason to prefer it for output-level measurement rather than treating it as a replication check.
+
+   *The generator does not follow an inverted context on this corpus.* We ran a negative control that flips the stance of every retrieved passage while holding the question fixed. On the controlled corpus the answer was **unchanged in 6 of 6 cases under inversion**, but **changed in 6 of 6 cases when the context was replaced by unrelated passages** or removed entirely. The generator is therefore reading the context at the level of *topic* — it knows a question about an engineering evaluation calls for naming an engineer — but not at the level of *stance*, and the answers are determined by the question's framing rather than by the evidence on trial. This is a property of a template corpus whose questions presuppose their own answer, and it means a null propagation result on that corpus would have been uninformative. The forced-choice probe reported in §5.7 avoids the problem by construction, which is why it is the primary measurement; we now report the control because the free-form probe alone cannot distinguish "no propagation" from "generator ignores stance".
+
+   *A metric we reported as failed is now fixed, and the fix is not cosmetic.* The per-passage attribution probe asked the generator itself whether its answer relied on a given passage; the judge answered YES almost always and the resulting EAE-D was a constant 1.000 in every condition. The cause is direction: an NLI model must be asked whether the **passage entails the answer**, not the reverse. Calibrated on this corpus, a passage the answer used scores 0.996 in the correct direction and 0.008 in the reversed one, and an unused passage scores 0.000 in both — so the reversed form returns noise rather than an obviously wrong value. §5.7's EAE-D figures should be read as produced by the probe we have now replaced.
+
+   A multi-generator evaluation with entailment-based attribution is in progress and is not reported here; we do not otherwise report attributed exposure [8] or generator bias [4, 7].
+7. **Binary groups.** Following [6, 7, 8], we use two groups per stratum. Extension to $|\mathcal{G}| > 2$ is mechanical for R1 and R2 but is not evaluated here. We note that the race/ethnicity category of BBQ is markedly imbalanced in our corpus build (960 passages about the protected group versus 88 about the non-protected group), which is itself a property of the benchmark worth flagging for anyone reusing it.
+
+---
+
 ---
 
 ## References
+
+**Declaration of generative AI and AI-assisted technologies in the manuscript preparation process.** During the preparation of this work the author used DeepSeek Harness (deepseek-flash) in order to search and verify bibliographic metadata, draft and revise prose, and produce one conceptual schematic figure of the framework from a description supplied by the author. After using this tool, the author reviewed and edited all output, verified every citation against the primary source, and takes full responsibility for the content of the publication.
+
+**On the tooling used for the research itself.** The generator outputs analysed in §5.7 were produced by the DeepSeek and Qwen API models and by a local Mistral-7B checkpoint, exactly as stated in §5.7 and Appendix D.6. No other AI tool contributed to the research procedure.
+
 
 [1] P. Lewis, E. Perez, A. Piktus, et al. Retrieval-augmented generation for knowledge-intensive NLP tasks. *NeurIPS*, 2020.
 
@@ -967,16 +1012,20 @@ Tables moved out of the main body to keep it readable. Each is referenced from t
 
 [13] G. Bagwe, S. S. Chaturvedi, X. Ma, et al. Your RAG is unfair: Exposing fairness vulnerabilities in retrieval-augmented generation via backdoor attacks. *arXiv:2509.22486*, 2025.
 
-[14] S. K. Mohanty, R. Patel, K. Yuvaraj, et al. TriShieldRAG: 3 rings, one blind spot in layered defenses for retrieval-augmented generation. *arXiv:2607.23838*, 2026.
+[14] S. Dai, X. Chen, S. Xu, L. Pang, Z. Dong, J. Xu. Bias and unfairness in information retrieval systems: New challenges in the LLM era. *KDD*, pp. 6437–6447, 2024.
 
-[15] A. Parrish, A. Chen, N. Nangia, et al. BBQ: A hand-built bias benchmark for question answering. *Findings of ACL*, pp. 2086–2105, 2022.
+[15] M. Hu, H. Wu, Z. Guan, et al. No free lunch: Retrieval-augmented generation undermines fairness in LLMs, even for vigilant users. *arXiv:2410.07589*, 2024.
 
-[16] M. Nadeem, A. Bethke, S. Reddy. StereoSet: Measuring stereotypical bias in pretrained language models. *ACL*, 2021.
+[16] S. K. Mohanty, R. Patel, K. Yuvaraj, et al. TriShieldRAG: 3 rings, one blind spot in layered defenses for retrieval-augmented generation. *arXiv:2607.23838*, 2026.
 
-[17] M. D. Ekstrand, G. McDonald, A. Raj, I. Johnson. Overview of the TREC 2022 fair ranking track. *TREC*, 2022.
+[17] A. Z. Jacobs, H. Wallach. Measurement and fairness. *ACM Conference on Fairness, Accountability, and Transparency (FAccT)*, pp. 375–385, 2021.
 
-[18] S. Dai, X. Chen, S. Xu, L. Pang, Z. Dong, J. Xu. Bias and unfairness in information retrieval systems: New challenges in the LLM era. *KDD*, pp. 6437–6447, 2024.
+[18] M. D. Ekstrand, A. Das, R. Burke, F. Diaz. Fairness in information access systems. *Foundations and Trends in Information Retrieval*, vol. 16, no. 1–2, pp. 1–177, 2022.
 
-[19] M. Hu, H. Wu, Z. Guan, et al. No free lunch: Retrieval-augmented generation undermines fairness in LLMs, even for vigilant users. *arXiv:2410.07589*, 2024.
+[19] M. D. Ekstrand, G. McDonald, A. Raj, I. Johnson. Overview of the TREC 2022 fair ranking track. *TREC*, 2022.
 
-[20] R. Shrestha, Y. Zou, Q. Chen, et al. FairRAG: Fair human generation via fair retrieval augmentation. *CVPR*, 2024.
+[20] B. Efron, R. J. Tibshirani. *An Introduction to the Bootstrap*. Chapman & Hall/CRC, 1993.
+
+[21] A. Parrish, A. Chen, N. Nangia, et al. BBQ: A hand-built bias benchmark for question answering. *Findings of ACL*, pp. 2086–2105, 2022.
+
+[22] M. Nadeem, A. Bethke, S. Reddy. StereoSet: Measuring stereotypical bias in pretrained language models. *ACL*, 2021.
