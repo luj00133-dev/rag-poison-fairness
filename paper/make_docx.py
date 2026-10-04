@@ -158,6 +158,16 @@ def render_markdown(md_path, docx_path, title, subtitle=None):
     while i < len(lines):
         line = lines[i].rstrip()
 
+        # An html comment is a note to whoever reads the source, not manuscript
+        # content, so it is skipped rather than printed. The submission-artefact
+        # marker introduces the highlights block, which belongs in the submission
+        # system (and is supplied as its own file), so that block is skipped too.
+        if line.strip().startswith("<!--"):
+            while i < len(lines) and "-->" not in lines[i]:
+                i += 1
+            i += 1
+            continue
+
         # figures: ![caption](path){width=NNmm}
         m_img = re.match(
             r"^!\[(?P<cap>[^\]]*)\]\((?P<path>[^)]+)\)"
@@ -294,8 +304,8 @@ def main():
     out.append(render_markdown(
         os.path.join(HERE, "manuscript_R1R2_v1.md"),
         os.path.join(HERE, "manuscript_R1R2_v1.docx"),
-        "Two Dimensions of Retrieval Fairness",
-        "Why Group-Proportion Constraints Cannot Defend RAG Against Pairwise Poisoning",
+        "Adversarially Invariant Fairness Statistics",
+        "Why Aggregate Retrieval-Fairness Metrics Cannot Detect Pairwise Poisoning",
     ))
     out.append(render_markdown(
         os.path.join(HERE, "manuscript_B_adaptive_v1.md"),

@@ -1,8 +1,8 @@
 # The Fragility of Fair Retrieval Under an Informed Attacker: Why Randomized and Composition-Constrained RAG Defenses Do Not Survive Adaptation
 
-**Author**: Jiang Lu
+**Author**: Lu Jiang
 **Affiliation**: School of Electronic and Optical Engineering, Nanjing University of Science and Technology
-**Corresponding author**: Jiang Lu (lujiang12@njust.edu.cn; luj00133@gmail.com). ORCID: 0009-0001-0717-2732.
+**Corresponding author**: Lu Jiang (lujiang12@njust.edu.cn; luj00133@gmail.com). ORCID: 0009-0001-0717-2732.
 
 **Target venue**: IEEE Transactions on Dependable and Secure Computing / IEEE Transactions on Information Forensics and Security
 
