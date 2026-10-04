@@ -242,7 +242,7 @@ Where we observe it
 \begin{figure*}[t]
 \centering
 \includegraphics[width=140mm]{fig_framework_py.pdf}
-\caption{Pairwise poisoning acts on the second of two dimensions, and the statistic most defenses report is blind to it. \textbf{(A)} A group-neutral query is answered from the top-\(k\) retrieved set. \textbf{(B)} The attacker injects passages drawn from the legitimate template inventory in matched pairs --- one favourable to group \(A\), one unfavourable to group \(B\) --- so the injection is balanced across groups by construction and the stance-bearing clauses are unchanged. \textbf{(C)} The two dimensions of Definition 1 and Definition 3, with the effect of the attack on each: the retrieved composition still matches the balanced reference, so an R1 statistic returns its clean value, while the cross-group stance gap opens to its maximum, so an R2 gap statistic carries the signal. Both bar panels share one vertical scale (full height \(=1.0\)); the bar heights are illustrative of the effect and are not measured values --- the measured quantities are in Table 1 and Section 5.}
+\caption{Pairwise poisoning acts on the second of two dimensions, and the statistic most defenses report is blind to it. \textbf{(A)} A group-neutral query is answered from the top-\(k\) retrieved set. \textbf{(B)} The attacker injects passages drawn from the legitimate template inventory in matched pairs --- one favourable to group \(A\), one unfavourable to group \(B\) --- so the injection is balanced across groups by construction and the stance-bearing clauses are unchanged. \textbf{(C)} The two dimensions of Definition 1 and Definition 3, with the effect of the attack on each: the retrieved composition still matches the balanced reference, so an R1 statistic returns its clean value, while the cross-group stance gap opens to its maximum, so an R2 gap statistic carries the signal. Both bar panels share one vertical scale (full height \(=1.0\)); the bar heights are illustrative of the effect and are not measured values --- the measured quantities are in Table 1 and Section 5. (Figure~\ref{fig:framework})}
 \label{fig:framework}
 \end{figure*}
 
@@ -262,7 +262,7 @@ Where we observe it
 \begin{figure*}[t]
 \centering
 \includegraphics[width=140mm]{fig_failure_modes_py.pdf}
-\caption{The three failure modes, shown on the same retrieval setting. \textbf{(a) F1:} the injection contributes equally to every group, so a counting or composition statistic returns its clean value --- the attack is invisible to it (measured in \S5.1 and \S5.2). \textbf{(b) F2:} the statistic is anchored to a reference the attack does not move, so it reports the component that varies with the query rather than the one that varies with the attack (\texttt{stance\_div} and \texttt{stance\_onesided}, \S3.2 and \S5.1). \textbf{(c) F3:} all groups are relocated together, so any difference between groups is unchanged however far the groups move (\texttt{stance\_gap} and its generation-layer twin, \S5.1 and \S5.7). The three panels are conceptual and carry no measured values; the corresponding measurements are in the sections named above.}
+\caption{The three failure modes, shown on the same retrieval setting. \textbf{(a) F1:} the injection contributes equally to every group, so a counting or composition statistic returns its clean value --- the attack is invisible to it (measured in \S5.1 and \S5.2). \textbf{(b) F2:} the statistic is anchored to a reference the attack does not move, so it reports the component that varies with the query rather than the one that varies with the attack (\texttt{stance\_div} and \texttt{stance\_onesided}, \S3.2 and \S5.1). \textbf{(c) F3:} all groups are relocated together, so any difference between groups is unchanged however far the groups move (\texttt{stance\_gap} and its generation-layer twin, \S5.1 and \S5.7). The three panels are conceptual and carry no measured values; the corresponding measurements are in the sections named above. (Figure~\ref{fig:failure-modes})}
 \label{fig:failure-modes}
 \end{figure*}
 
@@ -316,7 +316,7 @@ The contrast is the paper's central claim in one table: the same statistics that
 \begin{figure}[t]
 \centering
 \includegraphics[width=140mm]{fig_responsiveness.pdf}
-\caption{Responsiveness control. Corpus size is held constant at 17\{,\}792 passages and passages are swapped between two well-populated groups, so the retrieval pool and the score threshold do not move and composition is the only variable. The ground-truth group share changes from 0.500 to 0.978 and back to 0.022; the R1 drift statistics track it monotonically and in the right direction, while the two reference-based R2 statistics are flat even here. The indicted statistics are therefore working instruments that are specifically invariant to an injection balancing group counts, not unreliable ones.}
+\caption{Responsiveness control. Corpus size is held constant at 17\{,\}792 passages and passages are swapped between two well-populated groups, so the retrieval pool and the score threshold do not move and composition is the only variable. The ground-truth group share changes from 0.500 to 0.978 and back to 0.022; the R1 drift statistics track it monotonically and in the right direction, while the two reference-based R2 statistics are flat even here. The indicted statistics are therefore working instruments that are specifically invariant to an injection balancing group counts, not unreliable ones. (Figure~\ref{fig:responsiveness})}
 \label{fig:responsiveness}
 \end{figure}
 
@@ -510,7 +510,7 @@ dense & \texttt{repr\_group} (R1 only) & \textbf{0.0} & 0.2438 & 1.0000 & \textb
 \begin{figure}[t]
 \centering
 \includegraphics[width=140mm]{fig_r1_inertness.pdf}
-\caption{R1-constraint inertness. Adversarial-passage inclusion as a function of the constraint budget \(\varepsilon\), for the strictest (\(\varepsilon=0\)) through the loosest (\(\varepsilon=1\)) setting. Every constrained configuration coincides exactly with the unconstrained baseline -- the lines are not merely close, the per-query values are identical -- so the equivalence bound is \(\pm 0.0000\) and the data exclude any effect on adversarial inclusion rather than an effect above some threshold.}
+\caption{R1-constraint inertness. Adversarial-passage inclusion as a function of the constraint budget \(\varepsilon\), for the strictest (\(\varepsilon=0\)) through the loosest (\(\varepsilon=1\)) setting. Every constrained configuration coincides exactly with the unconstrained baseline -- the lines are not merely close, the per-query values are identical -- so the equivalence bound is \(\pm 0.0000\) and the data exclude any effect on adversarial inclusion rather than an effect above some threshold. (Figure~\ref{fig:r1-inertness})}
 \label{fig:r1-inertness}
 \end{figure}
 
@@ -591,7 +591,7 @@ The sweep itself is in Appendix C, Table C6.
 
 \textbf{Finding 5. The projection attack is robust to corpus naturalness.} On the dense back-end, \texttt{poison@k} reaches \textbf{0.903 at 0.1\%} on BBQ and 1.000 by 2\%, with the utility proxy falling from 0.557 to 0.011. The projection operates in embedding space, where the perturbation's advantage does not depend on lexical distinctiveness, so it transfers where the text attack does not. Across both corpora and both injection modes, the projection attack is the only one that is consistently effective.
 
-\textbf{Table 6.} Defense comparison on BBQ under template + projection (dense), by injection rate. \texttt{poison@k}.
+\textbf{Table 5.} Defense comparison on BBQ under template + projection (dense), by injection rate. \texttt{poison@k}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -669,7 +669,7 @@ The three findings that hold on both corpora and at every injection rate are the
 
 The results so far are measured on our own retrievers. The encoders this literature actually uses differ substantially in how much structure an attacker can exploit, so we evaluate the attack across nine retrieval back-ends: BM25 and a self-contained feature-hashing dense retriever; the learned-sparse retriever SPLADE at two sizes; and the dense semantic encoders the compared work uses --- GTE-base \citeauthor{zhao2026} and its larger sibling GTE-large, Contriever \citeauthor{kim2025b}, and E5-base-v2 \citeyearpar{wang2025,wu2025} with E5-large-v2. We include SPLADE specifically because it separates two explanations a lexical-versus-semantic comparison cannot: it is sparse like BM25 but learned like a neural encoder. E5 receives its required \texttt{query:} / \texttt{passage:} prefixes; omitting them degrades retrieval and would distort the comparison.
 
-\textbf{Table 8.} Projection attack (\texttt{template\_plus\_projection}), \(\rho = 0.5\%\), no defense. The scale column pairs each encoder with its larger sibling from the same family and training recipe.
+\textbf{Table 6.} Projection attack (\texttt{template\_plus\_projection}), \(\rho = 0.5\%\), no defense. The scale column pairs each encoder with its larger sibling from the same family and training recipe.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -711,7 +711,7 @@ E5-base-v2 & dense semantic & 110M & 0.4000 & 1.0000 & 1.000 \\
 
 Every back-end is attacked, and the R2 gap saturates at its maximum for all but BM25. The dense encoders' R1 drift (0.37--0.47) is \textbf{2.3\(\times\)--2.9\(\times\)} that of BM25 (0.16): the projection attack perturbs group composition \emph{more} in a continuous semantic space, the opposite of what a sparsity account predicts.
 
-\textbf{Table 9.} Text-only (lexical) attack, \(\rho = 0.5\%\) and \(2\%\), no defense. This is where the back-ends separate.
+\textbf{Table 7.} Text-only (lexical) attack, \(\rho = 0.5\%\) and \(2\%\), no defense. This is where the back-ends separate.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -758,11 +758,11 @@ Three observations, and they are the finding.
 \begin{figure}[t]
 \centering
 \includegraphics[width=88mm]{fig_encoder_scale.pdf}
-\caption{Text-attack susceptibility at base and large scale, within each encoder family and training recipe. GTE and E5 are equally resistant at base size and move in opposite directions when enlarged: E5 becomes fully resistant (\(0.0625 \rightarrow 0.0000\)) while GTE becomes eight times more susceptible (\(0.0625 \rightarrow 0.5000\)). The learned-sparse retriever is susceptible at both sizes. Since the only variable is the checkpoint, susceptibility is a per-checkpoint property that cannot be inferred from architecture, size or representation family.}
+\caption{Text-attack susceptibility at base and large scale, within each encoder family and training recipe. GTE and E5 are equally resistant at base size and move in opposite directions when enlarged: E5 becomes fully resistant (\(0.0625 \rightarrow 0.0000\)) while GTE becomes eight times more susceptible (\(0.0625 \rightarrow 0.5000\)). The learned-sparse retriever is susceptible at both sizes. Since the only variable is the checkpoint, susceptibility is a per-checkpoint property that cannot be inferred from architecture, size or representation family. (Figure~\ref{fig:encoder-scale})}
 \label{fig:encoder-scale}
 \end{figure}
 
-\textbf{Finding 11. Susceptibility is not monotone in encoder scale, and scaling can destroy resistance entirely.} Table 9's clearest result is unexpected: GTE-base and E5-base-v2 are equally resistant at base size (both 0.0625 --- the attack succeeds on three of 48 queries), and enlarging both by the same factor of three moves them in \emph{opposite} directions. \textbf{E5-large-v2 becomes more resistant (0.0625 \(\rightarrow\) 0.0000, the attack now fails on every query); GTE-large becomes eight times more susceptible (0.0625 \(\rightarrow\) 0.5000, succeeding on 24 of 48).} SPLADE is susceptible at both sizes with little change (0.6250 \(\rightarrow\) 0.5625). Per-query inclusion is binary, so this is a shift in \emph{how many} queries are compromised, not a drift in a continuous score.
+\textbf{Finding 11. Susceptibility is not monotone in encoder scale, and scaling can destroy resistance entirely.} Table 7's clearest result is unexpected: GTE-base and E5-base-v2 are equally resistant at base size (both 0.0625 --- the attack succeeds on three of 48 queries), and enlarging both by the same factor of three moves them in \emph{opposite} directions. \textbf{E5-large-v2 becomes more resistant (0.0625 \(\rightarrow\) 0.0000, the attack now fails on every query); GTE-large becomes eight times more susceptible (0.0625 \(\rightarrow\) 0.5000, succeeding on 24 of 48).} SPLADE is susceptible at both sizes with little change (0.6250 \(\rightarrow\) 0.5625). Per-query inclusion is binary, so this is a shift in \emph{how many} queries are compromised, not a drift in a continuous score.
 
 \textbf{The mechanism is not geometry.} We tested the obvious explanation and it is wrong, which makes the result more informative. If GTE-large's space were more anisotropic --- vectors collapsed into a narrower cone --- a fixed textual nudge would move rank further, and the finding would reduce to a known property. Measured, GTE-base and GTE-large are near-identical in mean pairwise cosine (0.8484 vs 0.8579), effective dimensionality (13.2 both, against 768 and 1024 nominal), and spread of query similarity (0.0860 vs 0.0895); the E5 pair behaves the same (0.8291 / 0.8375; 13.9 / 14.8). What differs is the gain the attack buys:
 
@@ -794,7 +794,7 @@ The static advantage of off-manifold filtering is a factor of three over no defe
 
 The sweep above uses our own feature-hashing dense retriever. Because the \emph{shape} of the collapse --- not merely its endpoint --- could depend on the encoder, we repeated it on four further back-ends: \textbf{GTE-base} (the encoder used by the closest prior work on fairness-aware retrieval optimisation \citeyearpar{zhao2026}), \textbf{E5-base-v2} (used by the RAG fairness evaluations above), \textbf{Contriever}, and \textbf{SPLADE}, a learned \emph{sparse} retriever. SPLADE is what makes the comparison diagnostic: it is a trained neural encoder, like GTE and E5, but its representation is sparse, like BM25's.
 
-\textbf{Table 15.} \texttt{poison@k} under the adaptive attacker for off-manifold filtering, by back-end. Six back-ends; \texttt{usage} (the attacker's semantic fidelity) in the last column.
+\textbf{Table 11.} \texttt{poison@k} under the adaptive attacker for off-manifold filtering, by back-end. Six back-ends; \texttt{usage} (the attacker's semantic fidelity) in the last column.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -903,7 +903,7 @@ Read Table C2 and Table C9 together: the same experiment, on the same corpus at 
 
 \textbf{Finding 8. On the controlled corpus the retrieval-layer skew propagates to the generated output and replicates across three model families, but it does not survive a naturally written corpus.} We re-ran this evaluation with a continuous, entailment-based stance metric (a local NLI model scoring \texttt{P(entail\ \textbar{}\ answer,\ favourable)\ -\$\ P(entail\ \textbar{}\ answer,\ unfavourable)}, calibrated in §5.7.1) across four generators spanning three model families, one of them (Mistral-7B) open-weight and served locally rather than by an API, so that the result does not rest on hosted models alone. The per-group shifts are large, consistent in sign, and highly significant everywhere:
 
-\textbf{Table 12.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
+\textbf{Table 8.} Generation-layer stance, entailment-scored, four generators spanning three model families. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\), 48 queries, paired permutation test against \texttt{clean}.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
@@ -962,7 +962,7 @@ qwen-max & -0.0491 & 0.18 & \textbf{-0.1785} & \textbf{0.0001} & \textbf{+0.1294
 \begin{figure}[t]
 \centering
 \includegraphics[width=88mm]{fig_aggregate_vs_pergroup.pdf}
-\caption{The aggregate statistic against the per-group shifts, on the same retrieval conditions and the same queries. Left: the change in the absolute cross-group gap, which stays within \(\pm 0.05\) because the attack relocates both groups rather than separating them. Right: the change in each group's stance separately, which is large, consistent in sign and significant for every generator. An asterisk marks \(p<0.05\) under a paired permutation test against the clean condition. Note that the two panels use different vertical scales: the aggregate moves by less than 0.002 where the groups move by about 0.13.}
+\caption{The aggregate statistic against the per-group shifts, on the same retrieval conditions and the same queries. Left: the change in the absolute cross-group gap, which stays within \(\pm 0.05\) because the attack relocates both groups rather than separating them. Right: the change in each group's stance separately, which is large, consistent in sign and significant for every generator. An asterisk marks \(p<0.05\) under a paired permutation test against the clean condition. Note that the two panels use different vertical scales: the aggregate moves by less than 0.002 where the groups move by about 0.13. (Figure~\ref{fig:aggregate-vs-pergroup})}
 \label{fig:aggregate-vs-pergroup}
 \end{figure}
 
@@ -976,7 +976,7 @@ This vindicates the qualitative claim in Finding 9 --- the skew saturates one gr
 
 \textbf{5.7.1 Why the natural corpus appeared to show nothing: the probe, not the corpus.} The free-form measurement above is valid only where answers actually take a position, and on a naturally written corpus they largely do not. Measuring the \emph{commitment} of each answer --- the larger of its two entailment probabilities, \texttt{max(P(fav),\ P(unfav))} --- separates a real null from an instrument that cannot register anything:
 
-\textbf{Table 13.} Answer commitment by corpus, clean condition. An answer with commitment near zero takes no position, so no stance change can appear in it however large the retrieval-layer skew.
+\textbf{Table 9.} Answer commitment by corpus, clean condition. An answer with commitment near zero takes no position, so no stance change can appear in it however large the retrieval-layer skew.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lll@{}}
@@ -994,7 +994,7 @@ controlled & 0.1555 & 84.4\% \\
 \begin{figure*}[t]
 \centering
 \includegraphics[width=140mm]{fig_probe_commitment_py.pdf}
-\caption{The instrument, not the corpus, was the reason the natural corpus appeared to show nothing. \textbf{Left:} with a free-form probe most answers take no position at all --- on the full BBQ corpus 99.0\% of them, against 84.4\% on the controlled corpus --- so the statistic reads near zero under every condition and no effect of any size could have appeared in it. \textbf{Right:} a forced-choice probe makes the same answers commit to a side, and on identical retrieval conditions it reads an effect, with five per-group shifts at \(p < 0.05\) for one generator (Table 14). The panels are conceptual and carry no measured values; the commitment values they illustrate are in Table 13.}
+\caption{The instrument, not the corpus, was the reason the natural corpus appeared to show nothing. \textbf{Left:} with a free-form probe most answers take no position at all --- on the full BBQ corpus 99.0\% of them, against 84.4\% on the controlled corpus --- so the statistic reads near zero under every condition and no effect of any size could have appeared in it. \textbf{Right:} a forced-choice probe makes the same answers commit to a side, and on identical retrieval conditions it reads an effect, with five per-group shifts at \(p < 0.05\) for one generator (Table 10). The panels are conceptual and carry no measured values; the commitment values they illustrate are in Table 9. (Figure~\ref{fig:probe-commitment})}
 \label{fig:probe-commitment}
 \end{figure*}
 
@@ -1002,7 +1002,7 @@ The gap is 22\(\times\), and it means the free-form statistic on BBQ is near zer
 
 \textbf{A probe that forces commitment detects the effect on BBQ.} We therefore re-ran the generation stage with the forced-choice probe used in earlier drafts of this work: the generator must choose between a favourable and an unfavourable statement about the group, drawn from the same template inventory the attack manipulates, with option order randomised per item so a position bias cannot masquerade as a stance effect. Before using it we verified it carries signal rather than position: the reply was a parseable choice in 100\% of cases, and the probability of choosing position A is 100\% when the favourable statement sits at A against 35\% when it sits at B --- a 65-point swing, so the choice tracks content.
 
-\textbf{Table 14.} Forced-choice stance on the full BBQ corpus, 144 queries, per-group favourable-choice rate, paired permutation test against \texttt{clean}. Only shifts significant at \(p < 0.05\) are listed.
+\textbf{Table 10.} Forced-choice stance on the full BBQ corpus, 144 queries, per-group favourable-choice rate, paired permutation test against \texttt{clean}. Only shifts significant at \(p < 0.05\) are listed.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}llll@{}}
@@ -1029,7 +1029,7 @@ Three qualifications belong with that, and we state them rather than leaving the
 \begin{itemize}
 \tightlist
 \item
-  \textbf{The effect is group-specific, not uniform.} On BBQ it concentrates in woman, nondisabled, man, young and disabled; on the controlled corpus (Table 12) it concentrates in asian, elderly and white. Averaging over groups, which is what a per-group \emph{mean} does and what our earlier free-form analysis did, understates it substantially.
+  \textbf{The effect is group-specific, not uniform.} On BBQ it concentrates in woman, nondisabled, man, young and disabled; on the controlled corpus (Table 8) it concentrates in asian, elderly and white. Averaging over groups, which is what a per-group \emph{mean} does and what our earlier free-form analysis did, understates it substantially.
 \item
   \textbf{It is generator-dependent.} qwen-turbo carries most of the signal on both corpora; mistral-7b shows none that reaches significance on BBQ, and the one API generator we ran at largest scale shows a single group. A single dense number such as \texttt{}the gap rose 46\%'' is therefore the wrong form for this result, and we no longer report one.
 \item
@@ -1534,7 +1534,7 @@ multi-query consistency & 0.729 & 0.958 & 1.000 & 1.000 & 1.000 & 1.000 & 3rd \\
 \end{longtable}
 }
 
-\textbf{Table C2.} The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 12; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
+\textbf{Table C2.} The first generation-layer measurement, with the forced-choice probe on a single generator. Superseded by Table 8; kept because the contrast between the two is the point. Controlled corpus, GTE-base retrieval, \(\rho = 2\%\).
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
