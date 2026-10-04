@@ -68,7 +68,7 @@ In response, a body of work has begun to defend the retrieval layer on fairness 
 
 R1 and R2 are orthogonal: a set can be perfectly balanced in R1 while every passage about one group is unfavourable, and vice versa. Crucially, the adversarial construction that arises naturally in this setting is \textbf{balanced in R1 by construction}. An attacker who wishes to skew representation does not inject one-sided material; they inject matched pairs --- a favourable passage about group \(A\), an unfavourable passage about group \(B\) --- which are individually indistinguishable from legitimate passages because they are drawn from the \emph{same template inventory}. The injected set therefore contributes equally to both groups' counts, leaving R1 essentially unchanged, while shifting R2 systematically.
 
-Every statistic that aggregates over group composition is blind to this. It reports the group distribution as clean, admits the injected passages, and returns success.
+Every candidate metric has that form; whether it reads clean depends on whether the injection balances the terms it aggregates. That is a property of the back-end rather than of the metric, and section 5.9 measures it across four of them.
 
 \textbf{A second failure, and it is a property of a metric class rather than of any one choice.} The obvious repair is to move from composition to stance and to keep using the same arithmetic: measure the \emph{gap} between the two groups. That repair also fails, and the reason generalises. An absolute difference between two group-level quantities is dominated by whatever constant asymmetry the corpus already had, so it is insensitive to an attack that \textbf{relocates both groups together} --- which is what this attack does, suppressing one group while elevating the other. The diagnostic is the \emph{per-group shift}. We identify this failure at the retrieval layer (§5.3), where two of three candidate R2 statistics are flat across the clean and fully attacked conditions, and the same failure repeats at the generation layer (§5.7): the absolute gap moved by less than 0.002 while the per-group shifts moved by 0.13 at \(p \le 0.0035\), consistently across three generators. A metric that is dominated by a corpus constant reports that constant and not the attack.
 
@@ -96,7 +96,7 @@ Every statistic that aggregates over group composition is blind to this. It repo
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{A framework for why adversarial fairness statistics fail.} Every candidate metric in this literature is a per-group quantity aggregated across groups, and an adversary can defeat the aggregation in exactly three ways: by balancing what the statistic counts (F1), by anchoring it to a reference the attack preserves (F2), or by moving all groups together so a difference between them cancels (F3). The modes are checkable in advance of building an attack, and we use them to predict which published metrics are blind (§3.4), then confirm the predictions empirically (§5.1, §5.2, §5.7).
+  \textbf{A framework for when adversarial fairness statistics are invariant.} The form is universal; the invariance is conditional, and checkable in advance. Every candidate metric in this literature is a per-group quantity aggregated across groups, and an adversary can defeat the aggregation in exactly three ways: by balancing what the statistic counts (F1), by anchoring it to a reference the attack preserves (F2), or by moving all groups together so a difference between them cancels (F3). The modes are checkable in advance of building an attack, and we use them to predict which published metrics are blind (§3.4), then confirm the predictions empirically (§5.1, §5.2, §5.7).
 \item
   \textbf{A positive control that separates blindness from breakage.} With the ground truth moved by a known amount and the corpus size held fixed, the indicted statistics respond monotonically and directionally (Table 1). The claim is therefore specific --- these statistics are immune to an adversary who balances what they count --- rather than a general complaint that the instrument is unreliable.
 \item
@@ -203,7 +203,7 @@ This asymmetry is the attack's entire mechanism, and it is invisible to an R1 mo
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
-\subsection{One form for every candidate metric, and three ways it loses the signal}\label{one-form-for-every-candidate-metric-and-three-ways-it-loses-the-signal}
+\subsection{One form for every candidate metric, and three invariances an adversary can impose}\label{one-form-for-every-candidate-metric-and-three-ways-it-loses-the-signal}
 
 Every fairness statistic in this literature, including the ones we introduce, has the same shape: a per-group quantity aggregated across groups.
 
@@ -1068,6 +1068,33 @@ Three qualifications belong with that, and we state them rather than leaving the
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
 
+\subsection{The composition statistic's validity is a property of the back-end}\label{the-composition-statistics-validity-is-a-property-of-the-back-end}
+
+The results so far establish the invariance and its cause. This section establishes where it holds, which turns out to vary by retrieval back-end in a way that is measurable and that a practitioner can check before trusting a null aggregate.
+
+\textbf{Design.} The same balanced pairwise injection is applied to four retrieval back-ends under identical conditions, and the composition statistic is read as a function of how much of the retrieved set is adversarial. If composition drifts nowhere, the invariance is a property of the statistic. If it drifts on some back-ends and not others, the invariance is a property of the back-end, and that distinction decides whether a clean aggregate means anything.
+
+\textbf{Result.} Undefended composition drift, by relocated fraction:
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+back-end & attack & composition drift \\
+\hline
+\texttt{st} (GTE-base) & lexical & \textbf{0.0000 at every partial level}, 0.2400 only at full relocation \\
+dense & lexical & 0.0000 at the lowest level, rising to \textbf{0.1750} at full relocation \\
+BM25 & lexical, projected & 0.0000 at low relocation, rising to \textbf{0.2280} at full relocation \\
+SPLADE & lexical, projected & 0.0000 at zero, 0.2000--0.4000 through the middle, \textbf{0.2250} at full \\
+\hline
+\end{tabular}
+\end{center}
+
+On \texttt{st} the injected set is compositionally balanced and stays balanced however much of it is retrieved, so the composition statistic reads clean while the evidence moves: the regime in which the aggregate is uninformative. On the other three back-ends the retrieved set relocates composition as well and the statistic moves with it, so a clean reading there would carry information.
+
+\textbf{The dependence is not a monotone function of the relocated fraction.} BM25 reads 0.0000 at a relocated fraction of 0.8 while reading 0.2000 at 0.6, and SPLADE peaks in the middle (0.4000 at 0.6) and falls back (0.2250 at 1.0). The relation between how much adversarial evidence is present and how much composition moves therefore cannot be summarised by a single slope, which is the practical reason to measure the regime rather than extrapolate to it.
+
+\textbf{Why this is a result and not a caveat.} The balanced pairwise construction is a sufficient condition for the invariance, not a universal one. Stated that way the finding is actionable: the three-question test of §3.4 predicts whether a candidate statistic is invariant \emph{for a stated back-end and threat model}, and this section supplies the measurement that tells a practitioner which regime they are in. A paper reporting a null aggregate cannot interpret it without this, and the table is the check.
+
 \section{Why Distribution-Level Defense Has a Limit}\label{why-distribution-level-defense-has-a-limit}
 
 Findings 2, 3 and 6 are not tuning failures. They follow from what a distributional constraint \emph{is}, and we give the derivation here.
@@ -1302,7 +1329,7 @@ We close with the protocol the results imply. The first four points are about \t
 
 Point 9 is the one most easily overlooked and, in our experiments, decisive for the defense that looked strongest statically. Point 5 is the one most often omitted in this literature. Points 1--4 are prerequisites for a fairness statistic to be reported at all under adversarial conditions, and points 5--9 for a robustness claim to be credited.
 
-\subsection{Scope of the invariance}\label{scope-of-the-invariance}
+\subsection{When the aggregate is informative}\label{scope-of-the-invariance}
 
 The invariance results above are conditional, and the conditions are measurable, so they are stated here rather than left for a reader to infer. They also identify which settings the framework covers.
 

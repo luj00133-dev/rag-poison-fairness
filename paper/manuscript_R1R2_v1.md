@@ -39,7 +39,7 @@ A more recent observation is that poisoning need not target factual correctness 
 
 In response, a body of work has begun to defend the retrieval layer on fairness grounds. The proposed defenses share a common objective: they measure the **group composition** of the retrieved set and constrain it to remain balanced. Concretely, they partition the corpus by group and either re-rank to equalise group proportions [5], adjust the proportion and ordering of group-relevant passages [6], reverse-bias the embedder so that its retrieved group balance compensates for the generator's own bias [7], or randomise the ranking so that equally deserving items receive equal exposure [8]. Item-side variants of the same idea equalise *exposure* rather than group share, but still operate on aggregate composition [8].
 
-**This paper is about the measurement those defenses rest on, not about the defenses themselves.** A fairness defense is selected, tuned and validated by a statistic, and it is only as good as that statistic's sensitivity to the threat. We show that the standard statistics are structurally insensitive to the attack that motivates them, that the insensitivity has a single identifiable cause, and that the same cause reappears at the generation layer, where an absolute difference between groups is blind for the same structural reason. The defense failure that follows is then a *consequence* we prove, not a separate claim.
+**This paper is about the measurement those defenses rest on, not about the defenses themselves.** A fairness defense is selected, tuned and validated by a statistic, and it is only as good as that statistic's sensitivity to the threat. We show that the standard statistics are structurally insensitive to the attack that motivates them, because that attack preserves the very composition those statistics summarise, that the insensitivity has a single identifiable cause, and that the same cause reappears at the generation layer, where an absolute difference between groups is blind for the same structural reason. The defense failure that follows is then a *consequence* we prove, not a separate claim.
 
 **The problem, stated as a measurement problem.** "Group representation" is not one quantity but two, and the standard statistics measure the wrong one. A retrieved set can be described by
 
@@ -48,7 +48,7 @@ In response, a body of work has begun to defend the retrieval layer on fairness 
 
 R1 and R2 are orthogonal: a set can be perfectly balanced in R1 while every passage about one group is unfavourable, and vice versa. Crucially, the adversarial construction that arises naturally in this setting is **balanced in R1 by construction**. An attacker who wishes to skew representation does not inject one-sided material; they inject matched pairs — a favourable passage about group $A$, an unfavourable passage about group $B$ — which are individually indistinguishable from legitimate passages because they are drawn from the *same template inventory*. The injected set therefore contributes equally to both groups' counts, leaving R1 essentially unchanged, while shifting R2 systematically.
 
-Every statistic that aggregates over group composition is blind to this. It reports the group distribution as clean, admits the injected passages, and returns success.
+Every candidate metric has that form; whether it reads clean depends on whether the injection balances the terms it aggregates. That is a property of the back-end rather than of the metric, and §5.9 measures it across four of them.
 
 **A second failure, and it is a property of a metric class rather than of any one choice.** The natural repair is to move from composition to stance while keeping the same arithmetic: measure the *gap* between the two groups. That repair fails for the same structural reason. An absolute difference between two group-level quantities is dominated by whatever constant asymmetry the corpus already had, so it is insensitive to an attack that **relocates both groups together** — which is what this attack does, suppressing one group while elevating the other. The diagnostic is the *per-group shift*, and the failure repeats at both layers we measure: at the retrieval layer two of three candidate R2 statistics are flat across the clean and fully attacked conditions (§5.3), and at the generation layer the absolute gap moves by less than 0.002 while the per-group shifts move by 0.13 at $p \le 0.0035$, consistently across generators (§5.7). A metric that is dominated by a corpus constant reports that constant and not the attack.
 
@@ -63,7 +63,7 @@ Every statistic that aggregates over group composition is blind to this. It repo
 
 **Contributions.**
 
-1. **A framework for why adversarial fairness statistics fail.** Every candidate metric in this literature is a per-group quantity aggregated across groups, and an adversary can defeat the aggregation in exactly three ways: by balancing what the statistic counts (F1), by anchoring it to a reference the attack preserves (F2), or by moving all groups together so a difference between them cancels (F3). The modes are checkable in advance of building an attack, and we use them to predict which published metrics are blind (§3.4), then confirm the predictions empirically (§5.1, §5.2, §5.7).
+1. **A framework for when adversarial fairness statistics are invariant.** The form is universal; the invariance is conditional, and checkable in advance. Every candidate metric in this literature is a per-group quantity aggregated across groups, and an adversary can defeat the aggregation in exactly three ways: by balancing what the statistic counts (F1), by anchoring it to a reference the attack preserves (F2), or by moving all groups together so a difference between them cancels (F3). The modes are checkable in advance of building an attack, and we use them to predict which published metrics are blind (§3.4), then confirm the predictions empirically (§5.1, §5.2, §5.7).
 2. **A positive control that separates blindness from breakage.** With the ground truth moved by a known amount and the corpus size held fixed, the indicted statistics respond monotonically and directionally (Table 1). The claim is therefore specific — these statistics are immune to an adversary who balances what they count — rather than a general complaint that the instrument is unreliable.
 3. Identification of a **shared cause of measurement failure**: statistics that aggregate over group counts, or that take an absolute difference between groups, are insensitive to an attack that balances the former and relocates the latter — with the failure demonstrated at two layers, retrieval and generation (§5.1, §5.3, §5.7).
 4. A controlled pairwise-poisoning construction that makes both dimensions measurable without a generator, so the mechanism can be studied independently of LLM behaviour (§4), replicated on a naturally written bias benchmark.
@@ -155,7 +155,7 @@ This asymmetry is the attack's entire mechanism, and it is invisible to an R1 mo
 
 ---
 
-### 3.4 One form for every candidate metric, and three ways it loses the signal
+### 3.4 One form for every candidate metric, and three invariances an adversary can impose
 
 Every fairness statistic in this literature, including the ones we introduce, has the same shape: a per-group quantity aggregated across groups.
 
@@ -587,6 +587,46 @@ Findings 12 and 13 are not sensitive to our particular attack. They follow from 
 5. **For a randomised defense, state the distribution and assume it is known**, and report the attacker's optimal response to its expectation rather than to a sample. By Proposition 4, randomisation bounds the variance of the attacker's utility and not its mean.
 6. **For a penalty-based defense, report whether the penalty is computable from public information**, and if it is, treat it as a constraint in the attacker's optimisation rather than as an unknown. This is Corollary 2, and in our experiments it is decisive for the defense that looked strongest statically: publishing a scoring function, which auditability requires, is equivalent to handing the attacker a differentiable objective.
 
+### 5.9 The composition statistic's validity is a property of the back-end
+
+The results so far establish the invariance and its cause. This section establishes where it
+holds, which turns out to vary by retrieval back-end in a way that is measurable and that a
+practitioner can check before trusting a null aggregate.
+
+**Design.** The same balanced pairwise injection is applied to four retrieval back-ends under
+identical conditions, and the composition statistic is read as a function of how much of the
+retrieved set is adversarial. If composition drifts nowhere, the invariance is a property of the
+statistic. If it drifts on some back-ends and not others, the invariance is a property of the
+back-end, and that distinction decides whether a clean aggregate means anything.
+
+**Result.** Undefended composition drift, by relocated fraction:
+
+| back-end | attack | composition drift |
+|---|---|---|
+| `st` (GTE-base) | lexical | **0.0000 at every partial level**, 0.2400 only at full relocation |
+| dense | lexical | 0.0000 at the lowest level, rising to **0.1750** at full relocation |
+| BM25 | lexical, projected | 0.0000 at low relocation, rising to **0.2280** at full relocation |
+| SPLADE | lexical, projected | 0.0000 at zero, 0.2000--0.4000 through the middle, **0.2250** at full relocation |
+
+On `st` the injected set is compositionally balanced and stays balanced however much of it is
+retrieved, so the composition statistic reads clean while the evidence moves: the regime in which
+the aggregate is uninformative. On the other three back-ends the retrieved set relocates
+composition as well and the statistic moves with it, so a clean reading there would carry
+information.
+
+**The dependence is not a monotone function of the relocated fraction.** BM25 reads 0.0000 at a
+relocated fraction of 0.8 while reading 0.2000 at 0.6, and SPLADE peaks in the middle
+(0.4000 at 0.6) and falls back (0.2250 at 1.0). The relation between how much adversarial
+evidence is present and how much composition moves therefore cannot be summarised by a single
+slope, which is the practical reason to measure the regime rather than extrapolate to it.
+
+**Why this is a result and not a caveat.** The balanced pairwise construction is a sufficient
+condition for the invariance, not a universal one. Stated that way the finding is actionable: the
+three-question test of §3.4 predicts whether a candidate statistic is invariant *for a stated
+back-end and threat model*, and §5.9 supplies the measurement that tells a practitioner which
+regime they are in. A paper reporting a null aggregate cannot interpret it without this, and the
+table is the check.
+
 ## 6. Why Distribution-Level Defense Has a Limit
 
 Findings 2, 3 and 6 are not tuning failures. They follow from what a distributional constraint *is*, and we give the derivation here.
@@ -765,11 +805,12 @@ We close with the protocol the results imply. The first four points are about **
 
 Point 9 is the one most easily overlooked and, in our experiments, decisive for the defense that looked strongest statically. Point 5 is the one most often omitted in this literature. Points 1–4 are prerequisites for a fairness statistic to be reported at all under adversarial conditions, and points 5–9 for a robustness claim to be credited.
 
-### 8.1 Scope of the invariance
+### 8.1 When the aggregate is informative
 
-The invariance results above are conditional, and the conditions are measurable, so they are
-stated here rather than left for a reader to infer. They also identify which settings the
-framework covers.
+The aggregate statistics this paper examines are informative only where the
+composition they summarise is itself informative, and §5.9 measured which
+back-ends that is. The conditions are restated here in the form a practitioner
+needs in order to interpret a null result.
 
 **The composition statistic is flat on the lexical retriever, and moves elsewhere.** Undefended
 composition drift on the controlled corpus, at the relocation levels where the label is partial:
