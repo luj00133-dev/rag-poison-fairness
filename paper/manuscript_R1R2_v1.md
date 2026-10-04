@@ -6,6 +6,17 @@
 
 **Target venue**: *Computers & Security* (Q1, CCF-B) — alternative: IEEE TDSC / IEEE TIFS
 
+<!-- SUBMISSION ARTIFACT — entered in the journal submission system, not typeset into the manuscript.
+Highlights (3-5 items, each <= 85 characters):
+
+* Aggregate fairness statistics are adversarially invariant by structure
+* Three predictable modes defeat composition, reference and difference metrics
+* Per-group shifts move 0.13 where the cross-group gap moves under 0.002
+* Static defense advantage is largest on the encoders the field uses
+* A six-point protocol makes retrieval robustness claims interpretable
+
+-->
+
 ---
 
 ## Abstract
@@ -740,6 +751,20 @@ is in Appendix D.
 | 6 | **The generation-stage evaluation is multi-generator and multi-probe, and the probes disagree** | Three sub-limits, each with a measurement behind it: retrieval conditions are fixed to one backbone; the free-form probe commits to a position in only 15.6\% (controlled) and 1.0\% (BBQ) of cases, which is why the forced-choice probe is primary; and the effect is generator-dependent. Appendix D.6 also records the inverted-context negative control and a corrected attribution metric. |
 | 7 | **Binary groups: $\vert\mathcal{G}\vert = 2$ throughout** | Extension to $\vert\mathcal{G}\vert > 2$ is mechanical for R1 and R2 but is not evaluated here. BBQ's race/ethnicity category is also markedly imbalanced in our build (960 vs 88 passages). |
 
+We close with the protocol the results imply. The first four points are about **measurement validity** — whether a statistic can see the attack at all — and the last five about **adversarial evaluation hygiene**, which is what makes a robustness claim interpretable:
+
+1. **Measure per-group shifts, not cross-group differences.** An absolute gap between groups is dominated by pre-existing corpus asymmetry and is blind to an attack that relocates both groups together. Report both group-level quantities, and report the change in each.
+2. **Report injection as a rate, not a count.** A fixed passage count measures corpus size rather than attack strength.
+3. **Report the encoder as a factor.** Susceptibility is a per-checkpoint property that is not monotone in encoder size — within one family and training recipe, scaling GTE raised text-attack success eight-fold while scaling E5 lowered it to zero. A single-encoder robustness claim reports an unmeasured property of that checkpoint.
+4. **Give equivalence bounds for null claims.** "No effect detected" and "no effect" are different claims, and only the second supports a conclusion about a defense family. Where the per-query difference is identically zero this is conclusive; where it is not, the bound is the honest statement.
+5. **State the threat model explicitly, including whether the attacker knows the defense.** A robustness claim without this qualifier is uninterpretable, and the qualifier is what separates the two evaluations in §5.6.
+6. **Report adversarial inclusion as a function of attacker strength, not at a single operating point.** One value cannot distinguish a robust defense from one evaluated below its failure threshold. In our sweep every defense fails by $\lambda \le 2$; a sweep stopping at $\lambda = 0.25$ would have shown three apparently robust defenses.
+7. **Report a utility-preserving baseline.** A defense can achieve low adversarial inclusion trivially by returning fewer or worse passages, which is why we report `in_pool_rate` alongside `poison@k` throughout.
+8. **For a randomised defense, state the distribution and assume it is known.** Report the attacker's optimal response to the expectation rather than to a sample; by Proposition 4, randomisation bounds variance and not the expectation.
+9. **For a penalty-based defense, report whether the penalty is computable from public information.** If it is, treat it as a constraint in the attacker's optimisation rather than as an unknown; by Corollary 2 that is the difference between a cost and a barrier.
+
+Point 9 is the one most easily overlooked and, in our experiments, decisive for the defense that looked strongest statically. Point 5 is the one most often omitted in this literature. Points 1–4 are prerequisites for a fairness statistic to be reported at all under adversarial conditions, and points 5–9 for a robustness claim to be credited.
+
 ## 9. Conclusion
 
 Fairness defenses for retrieval-augmented generation are chosen and validated by aggregate statistics of the retrieved set. We have shown that the standard statistics are adversarially invariant: an attacker who balances what they count, preserves what they reference, or relocates all groups together leaves the statistic at its clean value while controlling the evidence. The invariance has one cause, it is predictable from the form of the statistic rather than measured after the fact, and the defense failure that follows is a consequence of it rather than a separate phenomenon.
@@ -750,7 +775,7 @@ The consequence for the defense class is a ceiling rather than a null. The uncon
 
 Under a defense-aware attacker the picture sharpens rather than softens. Across six retrieval back-ends the static advantage of the strongest defense is *largest* on the pretrained encoders the compared literature uses — four of the six begin at exactly 0.000 adversarial inclusion — and no defense retains measurable benefit beyond one perturbation step on any of them, while the injected passages stay over 94% semantically intact. A defense selected on its static advantage is therefore defeated comprehensively, and the static numbers that would select it are most optimistic exactly where that literature looks.
 
-Two things follow, and they are what this paper contributes. The first is a **test**: three questions that predict, before any attack is built, whether a candidate statistic is invariant to an adversary who balances the quantity it counts, anchors it to a reference the attack preserves, or moves all groups together. The second is a **standard**: the reporting requirements a robustness or fairness claim must meet to be interpretable, set out in §8 — per-group shifts rather than cross-group differences, injection as a rate rather than a count, the encoder reported as a factor, equivalence bounds for null claims, the threat model stated, adversarial inclusion reported as a function of attacker strength, and a penalty treated as the attacker's constraint when it is computable from public information. Applied together these change what a result has to contain; they do not require a new defense, and every one of them is cheap.
+Two things follow, and they are what this paper contributes. The first is a **test**: three questions that predict, before any attack is built, whether a candidate statistic is invariant to an adversary who balances the quantity it counts, anchors it to a reference the attack preserves, or moves all groups together. The second is a **standard**: the reporting requirements a robustness or fairness claim must meet to be interpretable, set out in §8 and §5.8.1 — per-group shifts rather than cross-group differences, injection as a rate rather than a count, the encoder reported as a factor, equivalence bounds for null claims, the threat model stated, adversarial inclusion reported as a function of attacker strength, and a penalty treated as the attacker's constraint when it is computable from public information. Applied together these change what a result has to contain; they do not require a new defense, and every one of them is cheap.
 
 The open problem is the one the framework itself exposes. A per-group report is more sensitive than an aggregate, and a more sensitive instrument still has to be shown to measure the right quantity. The individual-level signal we report in §7 is a candidate in that direction, and the test that would settle it is stated with it: it must survive on naturally written text. Establishing which cues about individual passages do survive — and why — is the measurement problem this work leaves open.
 

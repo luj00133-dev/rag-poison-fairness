@@ -1,0 +1,5 @@
+Aggregate fairness statistics are adversarially invariant by structure
+Three predictable modes defeat composition, reference and difference metrics
+Per-group shifts move 0.13 where the cross-group gap moves under 0.002
+Static defense advantage is largest on the encoders the field uses
+A six-point protocol makes retrieval robustness claims interpretable
