@@ -4,7 +4,7 @@
 **Affiliation**: School of Electronic and Optical Engineering, Nanjing University of Science and Technology
 **Corresponding author**: Lu Jiang (lujiang12@njust.edu.cn; luj00133@gmail.com). ORCID: 0009-0001-0717-2732.
 
-**Target venue**: *Computers & Security* (Q1, CCF-B) — alternative: IEEE TDSC / IEEE TIFS
+**Target venue**: *Information Processing & Management* (CAS Q1 Top, IF 8.1) — alternative: *Information Sciences*
 
 <!-- SUBMISSION ARTIFACT — entered in the journal submission system, not typeset into the manuscript.
 Highlights (3-5 items, each <= 85 characters):
