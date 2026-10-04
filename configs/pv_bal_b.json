@@ -1,0 +1,45 @@
+{
+  "run_tag": "pv_bal_b",
+  "_comment": "Balanced-but-partial tuning run: align_strength lowered to 0.05 so fewer injected passages saturate the top-k. The aim is to raise the count of queries whose label is partial at zero composition drift, which is the regime the validation needs.",
+  "seed": 20260101,
+  "corpus": "controlled",
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": [
+    "bbq-gender",
+    "bbq-disability",
+    "stereoset-age",
+    "stereoset-race"
+  ],
+  "attacks": [
+    "clean",
+    "template"
+  ],
+  "retrievers": [
+    "st"
+  ],
+  "retriever": "st",
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [
+    1.0
+  ],
+  "budget_modes": [
+    "group",
+    "both"
+  ],
+  "subspace_lambda": 0.25,
+  "adaptive_lambdas": [
+    0.0
+  ],
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [
+    0.005
+  ],
+  "align_graded": true,
+  "align_strength": 0.05,
+  "align_min_frac": 0.02
+}

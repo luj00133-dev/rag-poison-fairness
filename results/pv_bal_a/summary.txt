@@ -1,0 +1,19 @@
+Retrieval Poisoning / Group-Representation Drift -- summary
+run_tag=pv_bal_a  elapsed=1101.5s
+
+TABLE 1  Attack effect (no defense), by retriever
+                    attack retriever  drift_tv  drift_js stance_sh stance_dv  poison@k    util
+                     clean        st    0.0000    0.0000    0.5000    0.3113       nan   0.021
+                  template        st    0.0625    0.0714    0.5000    0.3113     0.312   0.010
+
+TABLE 2  Defense comparison under the strongest attack
+retriever      defense   eps  drift_tv stance_dv  poison@k    util mean_score
+
+TABLE 3  Epsilon sweep (representation budget) -- the frontier
+retriever      defense   eps  drift_tv   stance  poison@k    util
+
+TABLE 4  Adaptive attacker (knows the defense)
+           defense  lambda  poison@k  drift_tv stance_dv
+       multi_query    0.00     0.339    0.1624    0.2967
+          manifold    0.00     0.062    0.0000    0.3113
+   repr_conserving    0.00     0.062    0.0000    0.3113
