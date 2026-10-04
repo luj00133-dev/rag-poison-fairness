@@ -152,6 +152,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     help="exercise the pipeline without API calls")
     ap.add_argument("--limit", type=int, default=0,
                     help="cap queries per condition (0 = all)")
+    ap.add_argument("--generator", default=None,
+                    help="local generator name (e.g. mistral-7b) instead of the "
+                         "DeepSeek API; no API key needed")
     args = ap.parse_args(argv)
 
     cfg = load_config(args.config, quick=False)
@@ -180,9 +183,18 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         pk = np.mean([len(p) for _, _, p in conditions[c]]) if n else float("nan")
         print(f"  {c:<9s} n={n:<4d} mean poison in context = {pk:.2f}")
 
-    client = DeepSeekClient(dry_run=args.dry_run)
-    print(f"generator : {client.model} @ {client.base_url}"
-          f"{'  [DRY RUN]' if args.dry_run else ''}")
+    if args.generator:
+        from .eval.generation import LocalGenerator  # local import: heavy deps
+
+        client = LocalGenerator.from_name(args.generator)
+        # LocalGenerator exposes model_id; DeepSeekClient exposes model. Use whichever the
+        # client provides so neither path depends on the other's attribute name.
+        _name = getattr(client, "model", None) or getattr(client, "model_id", "local")
+        print(f"generator : {_name} (local weights, no API calls)")
+    else:
+        client = DeepSeekClient(dry_run=args.dry_run)
+        print(f"generator : {client.model} @ {client.base_url}"
+              f"{'  [DRY RUN]' if args.dry_run else ''}")
 
     res = run_attribution(
         conditions=conditions,

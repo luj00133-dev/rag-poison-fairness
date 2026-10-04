@@ -1,0 +1,23 @@
+{
+  "run_tag": "pv_graded2",
+  "_comment": "Second test of the graded injection, on the channel where passage text actually decides the ranking. The first attempt used template_plus_projection, whose subspace projection pushes every injected vector toward the query directions; when projection sets the ranking, passage text is irrelevant and the alignment gradient changes nothing, so all 192 attacked queries were fully contaminated again. This config keeps the word-level 'template' attack (no projection) in both the plain and the epsilon-restricted form, plus the projection attack at a LOW lambda so the lexical channel still has influence. The aim is to find whether the alignment gradient moves poison_share into intermediate values.",
+  "seed": 20260101,
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template", "template_plus_projection"],
+  "retrievers": ["st"],
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 0.25,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [0.005],
+  "align_graded": true,
+  "align_strength": 1.0
+}

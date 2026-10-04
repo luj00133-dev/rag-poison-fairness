@@ -1,0 +1,23 @@
+{
+  "run_tag": "pv_attrib2",
+  "_comment": "Prospective-validation generation stage, attempt 2: a configuration chosen because it PRODUCES PARTIAL CONTAMINATION. The first attempt (dense + template_plus_projection) put all five top-k slots on adversarial passages for every attacked query, so the retrieval-side label n_poison_in_context was 5 everywhere and there was no graded label to compute a ROC against. Across all committed runs, intermediates (poison_share 0.2/0.4/0.6/0.8) occur in about 18% of rows, and the st retriever with the word-level 'template' attack at rho = 0.001 gave poison_share in {0.0, 0.4} -- a usable spread. That combination is used here. Costs nothing for keys already cached.",
+  "seed": 20260101,
+  "corpus": "controlled",
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template"],
+  "retrievers": ["st"],
+  "retriever": "st",
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.001,
+  "poison_rates": [0.001]
+}

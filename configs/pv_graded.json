@@ -1,0 +1,23 @@
+{
+  "run_tag": "pv_graded",
+  "_comment": "Retrieval-side test of the graded injection. The hypothesis: with align_graded on, the injected passages span a range of retrieval strengths, so how many of them land in a query's top-k varies per query and poison_share takes intermediate values often enough to supervise on -- which is what the prospective validation needs. The st retriever is used because it is the fastest on this CPU (dense is slower) and because it saturated under the projection attack, giving the graded change something to actually fix.",
+  "seed": 20260101,
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template_plus_projection"],
+  "retrievers": ["st"],
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [0.005],
+  "align_graded": true,
+  "align_strength": 1.0
+}

@@ -1,0 +1,21 @@
+{
+  "run_tag": "pv_mild",
+  "_comment": "Bounded check of whether a graded evidence-relocation label exists at all. The poison-rate knob saturates: with the projection attack every retrieved passage is adversarial (poison_share = 1.0) even at rho = 0.05%, so the label never varies. This run turns the ATTACK STRENGTH knob instead, keeping the word-level attack that previously produced partial success (poison_share spread 0.0-1.0 at rho = 0.001-0.005 in the controlled run), to establish whether an intermediate regime is reachable. If every setting is again 0.0 or 1.0, no graded label exists and the prospective validation is not achievable with this pipeline -- a design conclusion, not a tuning problem.",
+  "seed": 20260101,
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template"],
+  "retrievers": ["st"],
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0, 0.75, 0.5, 0.25],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 0.5,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.001,
+  "poison_rates": [0.001, 0.0025]
+}

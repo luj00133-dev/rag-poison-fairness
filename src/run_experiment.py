@@ -331,6 +331,11 @@ def apply_attack(
             n_poison=n_per,
             prefix=f"POISON-{stratum}",
             seed=int(cfg["seed"]) + i,
+            # Optional: spread the injected passages across retrieval strengths so the
+            # retrieved adversarial fraction varies per query instead of being all-or-none.
+            # Off by default, which reproduces every committed result exactly.
+            align_graded=bool(cfg.get("align_graded", False)),
+            align_strength=float(cfg.get("align_strength", 1.0)),
         )
         poison.extend(make_poison_docs(pool, spec))
 

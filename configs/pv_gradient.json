@@ -1,0 +1,21 @@
+{
+  "run_tag": "pv_gradient",
+  "_comment": "Prospective-validation experiment, stage 1: the retrieval-side poison-share gradient on the controlled corpus. Supplies the graded label (per-query fraction of the retrieved set that is adversarial) that the validation is supervised on, at six poison rates so the label varies continuously rather than being the binary condition. Same anatomy as the controlled generation run; 48 queries per stratum so each point of the gradient has enough queries to resolve.",
+  "seed": 20260101,
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 48,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template_plus_projection"],
+  "retrievers": ["st"],
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.005,
+  "poison_rates": [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.02]
+}

@@ -1,0 +1,23 @@
+{
+  "run_tag": "pv_attrib",
+  "_comment": "Prospective-validation experiment, stage 2: the generation stage with a GRADED retrieval-side label. The poison-rate gradient on the st retriever saturates (poison_share = 1.0 at every rate, because the projection attack reliably fills every top-5), so no partial relocation is reachable there. The dense retriever does take intermediate values (0.0/0.4/0.6/1.0 in the controlled run), so the label varies per query and the validation becomes possible. The label is retrieval-side evidence relocation; the monitors are answer-level, which keeps them independent of it.",
+  "seed": 20260101,
+  "corpus": "controlled",
+  "top_k": 5,
+  "n_poison": 6,
+  "n_queries_per_stratum": 36,
+  "strata": ["bbq-gender", "bbq-disability", "stereoset-age", "stereoset-race"],
+  "attacks": ["clean", "template_plus_projection"],
+  "retrievers": ["dense"],
+  "retriever": "dense",
+  "backbone": "gte-base",
+  "st_batch_size": 32,
+  "st_max_length": 512,
+  "epsilons": [1.0],
+  "budget_modes": ["group", "both"],
+  "subspace_lambda": 1.0,
+  "adaptive_lambdas": [0.0],
+  "poison_budget": "rate",
+  "poison_rate": 0.0025,
+  "poison_rates": [0.001, 0.0025, 0.005]
+}

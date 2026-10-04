@@ -52,6 +52,15 @@ class PoisonSpec:
     #: identifier prefix so attack-success metrics need no oracle at eval time
     prefix: str = "POISON"
     seed: int = 1234
+    #: When True, each poisoned passage receives a DIFFERENT share of the query-alignment
+    #: vocabulary, so the injected set straddles the retrieval boundary rather than
+    #: crossing it as a block. This is what makes the retrieved fraction of adversarial
+    #: passages vary per query instead of being all-or-nothing, which a graded validation
+    #: requires. Default False keeps the original behaviour and every committed number.
+    align_graded: bool = False
+    #: Scale on the alignment vocabulary when align_graded is set. 1.0 spreads passages
+    #: across the full ALIGN string; smaller values compress them toward the weak end.
+    align_strength: float = 1.0
 
 
 def make_poison_docs(
@@ -119,6 +128,30 @@ def make_poison_docs(
                 return text[:i].rstrip()
         return text.strip()
 
+    def _align_for(idx: int, spec: "PoisonSpec") -> str:
+        """Alignment vocabulary for one poisoned passage.
+
+        With align_graded off this returns ALIGN unchanged, so the generated text is
+        byte-identical to the original implementation. With it on, passage ``idx`` receives
+        a prefix of ALIGN whose length is spread across the passage set, giving the injected
+        passages a range of retrieval strengths: the strongest still out-rank clean evidence
+        while the weakest do not, so the number of adversarial passages in a top-k varies
+        per query. The stance-bearing clause is untouched either way, so the group signal a
+        defense must detect is unchanged.
+        """
+        if not spec.align_graded:
+            return ALIGN
+        terms = ALIGN.split()
+        n = spec.n_poison
+        if n <= 1:
+            frac = 1.0
+        else:
+            # spread idx across (0, 1]: weakest first, strongest last
+            frac = (idx + 1) / float(n)
+        frac *= max(0.0, min(1.0, float(spec.align_strength)))
+        k = max(1, int(round(frac * len(terms))))
+        return " ".join(terms[:k])
+
     poison: List[Document] = []
     for i in range(spec.n_poison):
         if i % 2 == 0:
@@ -132,7 +165,7 @@ def make_poison_docs(
         poison.append(
             Document(
                 doc_id=f"{spec.prefix}-{i:04d}",
-                text=f"{core} {ALIGN}",
+                text=f"{core} {_align_for(i, spec)}",
                 group=group,
                 stance=stance,
                 is_poison=True,
