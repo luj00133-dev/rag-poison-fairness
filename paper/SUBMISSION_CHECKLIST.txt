@@ -1,0 +1,92 @@
+Submission file mapping
+=======================
+
+I cannot upload to Editorial Manager: it needs the corresponding author's account sign-in, and I
+have no browser session. What follows says which file goes in which slot, so the upload is
+mechanical. Everything listed exists and has been verified.
+
+
+REQUIRED ITEMS
+
+  Item type in the system      File                          Size
+  ---------------------------  ----------------------------  ------
+  Cover Letter                 cover_letter.docx             0.04 MB
+  Manuscript                   manuscript_R1R2_v1.docx       0.99 MB
+  Highlights                   highlights.docx               0.04 MB
+  Title Page                   title_page.docx               0.04 MB
+  Supplementary Material       supplementary_data.zip        2.11 MB
+
+A PDF of the manuscript also exists, paperA_R1R2.pdf (57 pages, fully vector). Editorial Manager
+builds its own review PDF from the source file, so upload the DOCX as the manuscript; keep the PDF
+to hand only if the system offers an optional "PDF" slot or if a co-author asks for a copy. The
+DOCX and the PDF are generated from the same markdown and carry the same 25 references and the same
+7 figures, so they cannot disagree.
+
+
+THE ONE DECISION YOU HAVE TO MAKE
+
+Does IP&M review double-anonymized? The Data and Code Availability section names a GitHub URL that
+contains your username, and the manuscript carries your name, email and ORCID on its first page.
+
+  * If review is SINGLE-anonymized (author known to reviewers): submit as is. Nothing to change.
+  * If review is DOUBLE-anonymized: use the two files marked below instead, and delete the
+    identifying front matter from the manuscript.
+
+    manuscript_anonymized.docx   the manuscript with the repository URL replaced by
+                                            "[anonymized repository]" and the title page stripped
+                                            of name, email and ORCID
+    title_page.docx                         already separate, so it can be withheld from reviewers
+                                            and restored at acceptance
+
+Elsevier journals usually state the review model on the journal's guide-for-authors page. If it is
+not stated there, the safe default is to prepare the anonymized version, because submitting an
+identifying manuscript to a double-anonymized venue gets it returned.
+
+
+WHY THERE IS NOTHING ELSE TO UPLOAD
+
+  * No separate figures or tables. All 7 figures and all 21 tables are inside the manuscript, and
+    Editorial Manager builds the production files from it. Uploading them again is how a submission
+    ends up with two versions of Figure 3.
+  * No code archive. The Data and Code Availability statement points at the repository, which
+    carries the implementation, the configurations and the scripts that regenerate every number.
+    The supplementary zip deliberately does NOT duplicate the code; it carries the per-query result
+    data and the raw model outputs, because those are what a reader cannot recreate -- the
+    generation outputs would cost API calls to reproduce.
+  * No graphical abstract. Not requested by the journal, and this paper's result is a table of
+    invariances rather than an image.
+  * No suggested reviewers. The cover letter states that none are supplied, to avoid a conflict of
+    interest, and offers them on request. That is a defensible position and it is stated rather
+    than left silent.
+
+
+WHAT IS IN THE SUPPLEMENTARY ZIP, AND WHY IT IS THE ONLY OPTIONAL ITEM
+
+  14 directories, 34 MB extracted, 2.1 MB zipped, plus README_SUPPLEMENTARY.txt.
+
+  S1-S10   retrieval layer: per-query files for the controlled corpus, BBQ, six encoders and the
+           three encoder-scale runs. These back Tables 2, 3, 4, 6, 8, 9, 15 and Figures 3, 4, 5, 6.
+  S11-S12  generation layer: the model outputs behind the propagation result, including the answer
+           text of every call.
+  S13-S14  forced-choice probe: the measurements behind Tables 13 and 14 and Figure 7.
+
+The README documents all three schemas separately, because the directories do not share one: the
+retrieval files carry the R1/R2 metrics, the generation files carry per-group stance with the answer
+text, and the forced-choice files carry a per-group two-alternative measurement. A reader looking
+for drift_tv in a generation file will not find it, and should not.
+
+
+BEFORE YOU CLICK SUBMIT
+
+  1. Confirm the review model and pick the manuscript version accordingly (above).
+  2. Confirm the reference style the system expects. The manuscript is in IP&M's printed
+     author-date style, verified against two 2026 articles' deposited reference strings, so it
+     should need no conversion; if the system demands numeric, say so and it can be converted.
+  3. Check the ORCID. The manuscript states 0009-0001-0717-2732. You gave the author name but never
+     confirmed the ORCID, and it is printed on the paper.
+  4. Confirm you are not submitting Paper B alongside. manuscript_B_adaptive_v1 shares material with
+     Paper A's section 5.8; sending both to the same journal at the same time is a self-overlap that
+     would be raised at review.
+  5. Rotate the API keys. G:\keyan\_session_dump.jsonl is 36 MB and contains plaintext keys. You
+     said to ignore this; it is the last unclosed item I know of, and it is the only one that gets
+     worse with time.

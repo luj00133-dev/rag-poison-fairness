@@ -1,0 +1,33 @@
+Retrieval Poisoning / Group-Representation Drift -- summary
+run_tag=contriever_ad  elapsed=172.9s
+
+TABLE 1  Attack effect (no defense), by retriever
+                    attack retriever  drift_tv  drift_js stance_sh stance_dv  poison@k    util
+                     clean        st    0.0000    0.0000    0.5000    0.3113       nan   0.096
+
+TABLE 2  Defense comparison under the strongest attack
+retriever      defense   eps  drift_tv stance_dv  poison@k    util mean_score
+
+TABLE 3  Epsilon sweep (representation budget) -- the frontier
+retriever      defense   eps  drift_tv   stance  poison@k    util
+
+TABLE 4  Adaptive attacker (knows the defense)
+           defense  lambda  poison@k  drift_tv stance_dv
+       multi_query    0.00     0.896    0.2500    0.3056
+       multi_query    0.25     1.000    0.3625    0.3113
+       multi_query    0.50     1.000    0.3479    0.3113
+       multi_query    1.00     1.000    0.3521    0.3113
+       multi_query    2.00     1.000    0.3563    0.3113
+       multi_query    4.00     1.000    0.3792    0.3113
+          manifold    0.00     0.000    0.0000    0.3113
+          manifold    0.25     0.625    0.2000    0.3113
+          manifold    0.50     1.000    0.3312    0.3113
+          manifold    1.00     1.000    0.3438    0.3113
+          manifold    2.00     1.000    0.3063    0.3113
+          manifold    4.00     1.000    0.3188    0.3113
+   repr_conserving    0.00     0.562    0.2375    0.3113
+   repr_conserving    0.25     1.000    0.5687    0.3113
+   repr_conserving    0.50     1.000    0.5938    0.3113
+   repr_conserving    1.00     1.000    0.5875    0.3113
+   repr_conserving    2.00     1.000    0.5875    0.3113
+   repr_conserving    4.00     1.000    0.6000    0.3113
