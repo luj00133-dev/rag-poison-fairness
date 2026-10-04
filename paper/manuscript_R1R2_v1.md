@@ -25,7 +25,7 @@ Fairness defenses for retrieval-augmented generation are selected, tuned and val
 
 The attack that realises them is *pairwise poisoning*, which injects matched passages drawn from the legitimate template inventory — one favourable to a group, one unfavourable to another — so that the injection is balanced across groups by construction and the stance of the evidence is skewed instead. We formalise representation as two orthogonal dimensions, **(R1) group composition** and **(R2) within-group stance**, and measure both on a controlled corpus and on a naturally written bias benchmark. A positive control in which the ground truth changes by a known amount while corpus size is held fixed establishes that the indicted statistics are *working instruments*: they respond monotonically and in the correct direction. Against those same instruments, the R1 constraint is inert with an equivalence bound of exactly ±0.0000 — every constrained configuration reproduces the unconstrained inclusion rate per query, because the unconstrained baseline already admits adversarial passages on every query where it can (1.000 dense, 0.750 BM25), leaving no headroom for a reduction to appear. The signal lives in the per-group shifts rather than in the gap between groups: injection moves the suppressed group's stance by −0.13 to −0.18 and the favoured group's by +0.13, consistently across four generators spanning three model families at $p \le 0.0035$, while the absolute cross-group gap moves by less than 0.002. A defense-aware attacker then inverts the static ranking of defenses across six retrieval back-ends: the strongest defense's static advantage is *largest* on the pretrained encoders the compared literature uses — four begin at exactly 0.000 inclusion — and no defense retains measurable benefit beyond one perturbation step on any of them, while the injected passages stay over 94% semantically intact.
 
-The consequence is a reporting requirement rather than another defense. We give a six-point protocol under which a robustness claim is interpretable: per-group shifts rather than cross-group differences, adversarial inclusion as a function of attacker strength rather than at a single operating point, the encoder reported as a factor, equivalence bounds for null claims, and the threat model stated explicitly. The study covers binary group partitions at the retrieval and generation layers across two corpora; the framework's applicability is bounded by the availability of group- and stance-annotated passages, which is an infrastructure problem for the field rather than a computation.
+The consequence is a reporting requirement rather than another defense. We give a six-point protocol under which a robustness claim is interpretable: per-group shifts rather than cross-group differences, adversarial inclusion as a function of attacker strength rather than at a single operating point, the encoder reported as a factor, equivalence bounds for null claims, and the threat model stated explicitly. The study covers binary group partitions at the retrieval and generation layers across two corpora, and the invariance is conditional on the back-end: §8.1 states the retrievers and threat models in which the composition statistic stays flat, which is what a reader needs in order to know whether a null aggregate is informative in their own setting.
 
 **Keywords**: retrieval-augmented generation, data poisoning, fairness measurement, within-group stance, adversarial robustness, evaluation validity
 
@@ -54,7 +54,7 @@ Every statistic that aggregates over group composition is blind to this. It repo
 
 **What we do.** We formalise R1 and R2 and derive the sensitivity of each candidate statistic to the attack. We build a controlled evaluation in which group and stance labels are exact and the clean reference for both dimensions is known by construction, and we replicate on a naturally written bias benchmark. We re-implement the defense family these statistics motivate and evaluate it against the attack across six retrieval back-ends, before and after scaling each encoder. Our findings are:
 
-- **The standard statistics are blind, and the blindness is systematic rather than incidental.** R1 drift stays at or below the level legitimate retrieval variance produces; two of three candidate R2 statistics are flat across the clean and fully attacked conditions. The reason is shared: each aggregates over a quantity the attack does not perturb, either group counts (which the injection balances by construction) or a topic-conditioned component (which it preserves).
+- **The standard statistics are blind, and the blindness is systematic rather than incidental.** On the lexical retriever the composition statistic reads clean however much of the injected set is retrieved, while two of three candidate R2 statistics are flat across the clean and fully attacked conditions; §8.1 states the retrievers and attacks on which each part of this holds. The reason is shared: each aggregates over a quantity the attack does not perturb, either group counts (which the injection balances by construction) or a topic-conditioned component (which it preserves).
 - **The right axis is the per-group shift, and the gap between groups is the wrong one.** Absolute differences between groups are dominated by pre-existing corpus asymmetry and are blind to attacks that relocate both groups. Per-group shifts are large, consistent and highly significant, at both the retrieval and generation layers, and they are what a defense should be selected on.
 - **The R1-only defense is not weak, it is inert — and the reason is a ceiling, which is a stronger statement than a failure to detect an effect.** The unconstrained baseline already admits adversarial passages on every query where it can, so there is no headroom for a reduction to appear even in principle; the per-query difference is identically zero and the equivalence bound is exactly ±0.0000, excluding *any* effect rather than an effect above a threshold. It is not that the constraint cannot change the selection — it does — but that changing the selection does not displace a single adversarial passage.
 - **The encoder must be reported as a factor, not as an implementation detail.** Text-attack susceptibility is predicted by the sparsity of the representation rather than by whether the encoder is learned, but sparsity is a correlate and not a law: enlarging GTE within one family and training recipe makes it eight times more susceptible while enlarging E5 makes it more resistant. A single-encoder robustness claim therefore reports a property of a checkpoint that was never measured.
@@ -764,6 +764,53 @@ We close with the protocol the results imply. The first four points are about **
 9. **For a penalty-based defense, report whether the penalty is computable from public information.** If it is, treat it as a constraint in the attacker's optimisation rather than as an unknown; by Corollary 2 that is the difference between a cost and a barrier.
 
 Point 9 is the one most easily overlooked and, in our experiments, decisive for the defense that looked strongest statically. Point 5 is the one most often omitted in this literature. Points 1–4 are prerequisites for a fairness statistic to be reported at all under adversarial conditions, and points 5–9 for a robustness claim to be credited.
+
+### 8.1 Scope of the invariance
+
+The invariance results above are conditional, and the conditions are measurable, so they are
+stated here rather than left for a reader to infer. They also identify which settings the
+framework covers.
+
+**The composition statistic is flat on the lexical retriever, and moves elsewhere.** Undefended
+composition drift on the controlled corpus, at the relocation levels where the label is partial:
+
+| back-end | attack | composition drift at partial relocation |
+|---|---|---|
+| `st` (GTE-base) | lexical | 0.0000 at every partial level |
+| dense | lexical | 0.0000 at the lowest level, rising to 0.1750 at full relocation |
+| BM25 | lexical, projected | 0.0000 at low relocation, rising to 0.2280 at full relocation |
+| SPLADE | lexical, projected | 0.0000 at zero relocation, 0.2000-0.4000 through the middle, 0.2250 at full relocation |
+
+On `st` the injected set is compositionally balanced and stays so however much of it is
+retrieved, so the aggregate reads clean while the evidence moves — the regime the framework
+describes. On the other back-ends the retrieved set relocates composition as well, and the
+aggregate moves with it, reaching 0.1750 on dense and 0.2 or above on the projected
+lexical back-ends. The dependence is not strictly monotone in the relocated fraction,
+which is itself a reason to measure the regime rather than assume it. The balanced pairwise construction is therefore a sufficient condition
+for the blindness and not a universal one, and the practical reading is: check which regime your
+retriever is in before treating a null aggregate as evidence of robustness.
+
+**Subspace projection removes the passage text from the ranking decision.** Under
+`template_plus_projection` the relocated fraction was 1.000 for all 192 queries at every
+alignment setting we tried. Projection sets the ranking from document and query vectors, so the
+composition the composition statistics observe is fixed by the projection rather than by the
+passages. This bounds what any text-side defence or perturbation can achieve against that
+back-end, and it is the mechanism behind the saturation reported in §5.8.
+
+**The per-group statistic is a batch average, and its power is bounded by batch count.** Every
+group-level rate in this paper averages binary stance decisions over the queries in a stratum. A
+single query contributes one draw, so the diagnostic is not a per-query test and should not be
+evaluated as one; we report it per stratum for this reason. The consequence is a power bound that
+does not yield to more queries of the same kind: on a corpus whose queries are instantiations of a
+small template set, raising the query count repeats the same texts, and we measured this rather
+than assuming it — a regime that held 36 of 192 queries held 0 of 1,536 once the count was raised.
+Obtaining more power requires more independent strata or repeated audits over time, not a larger
+sample of the same queries.
+
+**What this means for reporting.** The framework's three questions (§3.4) and the protocol above
+identify blindness in advance, but they identify it for a stated retriever and threat model. A
+robustness claim should say which of these regimes it was evaluated in, because a null result in
+the first regime is informative and a null result in the others is not.
 
 ## 9. Conclusion
 
