@@ -1,0 +1,5 @@
+monitor,family,auc
+aggregate_gap,aggregate,0.5607638888888888
+pergroup_g1_dev,per-group,0.5
+pergroup_g2_dev,per-group,0.5
+pergroup_stratum_dev,per-group,0.4615885416666667

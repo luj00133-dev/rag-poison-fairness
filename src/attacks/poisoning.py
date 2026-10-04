@@ -61,6 +61,11 @@ class PoisonSpec:
     #: Scale on the alignment vocabulary when align_graded is set. 1.0 spreads passages
     #: across the full ALIGN string; smaller values compress them toward the weak end.
     align_strength: float = 1.0
+    #: Weakest fraction of the alignment vocabulary, as a share of align_strength. The
+    #: default reproduces even spacing across the passage set (1/n, 2/n, ... 1). Lowering it
+    #: pushes the weakest passages below clean evidence so that some queries retrieve few or
+    #: no adversarial passages, widening the range of the graded label.
+    align_min_frac: float = 0.0
 
 
 def make_poison_docs(
@@ -146,8 +151,10 @@ def make_poison_docs(
         if n <= 1:
             frac = 1.0
         else:
-            # spread idx across (0, 1]: weakest first, strongest last
-            frac = (idx + 1) / float(n)
+            # spread idx across [floor, 1]: weakest first, strongest last
+            lo = float(spec.align_min_frac) if spec.align_min_frac > 0 else 1.0 / n
+            lo = max(0.0, min(1.0, lo))
+            frac = lo + (1.0 - lo) * (idx / float(n - 1))
         frac *= max(0.0, min(1.0, float(spec.align_strength)))
         k = max(1, int(round(frac * len(terms))))
         return " ".join(terms[:k])
