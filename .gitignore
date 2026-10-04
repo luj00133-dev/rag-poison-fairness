@@ -81,3 +81,9 @@ results/gen_smoke_local/
 results/fc_smoke/
 results/fc_cache.json
 results/**/fc_cache.json
+# internal working documents: not part of the released artefact
+HANDOVER_from_stuck_session.md
+R2*裂变报告.docx
+# prose-process scripts used once while revising the manuscript; the regeneration
+# entry points the paper names are kept
+analysis/rw_*.py
