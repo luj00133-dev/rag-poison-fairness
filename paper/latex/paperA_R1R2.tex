@@ -241,7 +241,7 @@ Where we observe it
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=140mm]{fig_framework_tikz.pdf}
+\includegraphics[width=140mm]{fig_framework_py.pdf}
 \caption{Pairwise poisoning acts on the second of two dimensions, and the statistic most defenses report is blind to it. \textbf{(A)} A group-neutral query is answered from the top-\(k\) retrieved set. \textbf{(B)} The attacker injects passages drawn from the legitimate template inventory in matched pairs --- one favourable to group \(A\), one unfavourable to group \(B\) --- so the injection is balanced across groups by construction and the stance-bearing clauses are unchanged. \textbf{(C)} The two dimensions of Definition 1 and Definition 3, with the effect of the attack on each: the retrieved composition still matches the balanced reference, so an R1 statistic returns its clean value, while the cross-group stance gap opens to its maximum, so an R2 gap statistic carries the signal. Both bar panels share one vertical scale (full height \(=1.0\)); the bar heights are illustrative of the effect and are not measured values --- the measured quantities are in Table 1 and Section 5.}
 \label{fig:framework}
 \end{figure*}
@@ -261,29 +261,11 @@ Where we observe it
 
 \begin{figure*}[t]
 \centering
-\begin{subfigure}[b]{0.315\textwidth}
-\centering
-\includegraphics[width=\linewidth]{fig_f_f1.png}
-\caption{F1, balanced count}
-\label{fig:f1}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.315\textwidth}
-\centering
-\includegraphics[width=\linewidth]{fig_f_f2.png}
-\caption{F2, preserved nuisance}
-\label{fig:f2}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.315\textwidth}
-\centering
-\includegraphics[width=\linewidth]{fig_f_f3.png}
-\caption{F3, cancelled shift}
-\label{fig:f3}
-\end{subfigure}
-\caption{The three failure modes, shown on the same retrieval setting. \textbf{(a) F1:} the injection contributes equally to every group, so a counting or composition statistic returns its clean value --- the attack is invisible to it (measured in §5.1 and §5.2). \textbf{(b) F2:} the statistic is anchored to a reference the attack does not move, so it reports the component that varies with the query rather than the one that varies with the attack (\texttt{stance\_div} and \texttt{stance\_onesided}, §3.2 and §5.1). \textbf{(c) F3:} all groups are relocated together, so any difference between groups is unchanged however far the groups move (\texttt{stance\_gap} and its generation-layer twin, §5.1 and §5.7). The three panels are conceptual and carry no measured values; the corresponding measurements are in the sections named in the table above and in Figure~\ref{fig:responsiveness}.}
+\includegraphics[width=140mm]{fig_failure_modes_py.pdf}
+\caption{The three failure modes, shown on the same retrieval setting. \textbf{(a) F1:} the injection contributes equally to every group, so a counting or composition statistic returns its clean value --- the attack is invisible to it (measured in \S5.1 and \S5.2). \textbf{(b) F2:} the statistic is anchored to a reference the attack does not move, so it reports the component that varies with the query rather than the one that varies with the attack (\texttt{stance\_div} and \texttt{stance\_onesided}, \S3.2 and \S5.1). \textbf{(c) F3:} all groups are relocated together, so any difference between groups is unchanged however far the groups move (\texttt{stance\_gap} and its generation-layer twin, \S5.1 and \S5.7). The three panels are conceptual and carry no measured values; the corresponding measurements are in the sections named above.}
 \label{fig:failure-modes}
 \end{figure*}
+
 
 A statistic that survives all three is, in our setting, one that reports \textbf{per-group levels} rather than a difference between them, because that is the only form that is not invariant under at least one of the three moves. §5.1 and §5.7 test this prediction: on the same retrieval conditions where a difference statistics reports a change of 0.002, the per-group levels move by 0.13 and the paired test rejects at \(p < 0.01\). The prediction was made from the form of the statistic, not fitted to those numbers, and §8 records that we violated it ourselves in an earlier version of the generation-layer analysis.
 
@@ -1011,7 +993,7 @@ controlled & 0.1555 & 84.4\% \\
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=140mm]{fig_probe_commitment.png}
+\includegraphics[width=140mm]{fig_probe_commitment_py.pdf}
 \caption{The instrument, not the corpus, was the reason the natural corpus appeared to show nothing. \textbf{Left:} with a free-form probe most answers take no position at all --- on the full BBQ corpus 99.0\% of them, against 84.4\% on the controlled corpus --- so the statistic reads near zero under every condition and no effect of any size could have appeared in it. \textbf{Right:} a forced-choice probe makes the same answers commit to a side, and on identical retrieval conditions it reads an effect, with five per-group shifts at \(p < 0.05\) for one generator (Table 14). The panels are conceptual and carry no measured values; the commitment values they illustrate are in Table 13.}
 \label{fig:probe-commitment}
 \end{figure*}
